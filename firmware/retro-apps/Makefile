@@ -91,7 +91,8 @@ CSRCS += src/common/driver/lvgl_font_compat.c
 CSRCS += src/common/driver/hid_ascii.c
 # 唯一字体 12px（全系 CLI+GUI 单字号，AGENTS.md 7.3 / HARDWARE.md 6.4）
 CSRCS += src/lvgl/fonts/lv_font_notosans_sc_12.c
-# 半角拉丁 6px 等宽点阵（cvbs_console 半格网格，宋体 9pt 半角形态）
+# console 点阵表（Fusion Pixel 12px 等宽 OFL-1.1，gen_pixel_fonts.py 生成）：
+# 半角 6px 等宽 + 全角标点 12px 满格（cvbs_console 半格网格专用）
 CSRCS += src/lvgl/fonts/lv_font_ascii_6.c
 CSRCS += src/lvgl/fonts/lv_font_fullwidth.c
 endif

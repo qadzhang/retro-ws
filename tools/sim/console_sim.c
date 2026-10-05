@@ -5,7 +5,8 @@
 /*
  * console_sim.c - AV 控制台无头模拟器（README 截图专用）
  *
- * WHAT : 以真实 cvbs_console（12px 点阵、12x14 网格）在 320x240
+ * WHAT : 以真实 cvbs_console（12px 点阵、半角 6px/全角 12px 半格网格，
+ *        半角与全角标点 Fusion Pixel 点阵）在 320x240
  *        帧缓冲上跑一段 NSH 会话并导出截图
  * WHY  : CLI 档全系走 AV 视频输出（AGENTS.md 7.3）；README 配图
  *        需要真实渲染路径的 240p 控制台样张（非示意图）
@@ -63,7 +64,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    /* NSH 风格会话（26 列 x 17 行，行宽控制在列内避免折行） */
+    /* NSH 风格会话（53 半格列 x 17 行，行宽控制在列内避免折行） */
     put("nsh> uname -a\n");
     put("NuttX 12.12.0 ESP32-C3\n");
     put("RISC-V RV32IMC 160MHz\n");

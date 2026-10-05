@@ -54,7 +54,8 @@ ARM 三种架构——项目早已不只是"ESP32 项目"。
 以下截图全部由**真实固件源码**无头渲染（非示意图）：GUI 经真实
 desktop.c/wmaker_shell.c + LVGL 9.5 以 RGB565 渲染后量化为 **8-bit
 256 色调色板**（640x480，Win3.2 时代 VGA 规格）；CLI 经真实
-cvbs_console（12px 点阵、12x14 网格）渲染（320x240，240p）。
+cvbs_console（12px 点阵、半角 6px/全角 12px 半格网格，半角与全角
+标点为 Fusion Pixel 点阵）渲染（320x240，240p，53 半格列）。
 
 | Win3.2 外壳（640x480 8bit 彩色） | WindowMaker/NeXT 外壳（640x480 8bit 彩色） |
 |:---:|:---:|
@@ -388,7 +389,7 @@ pico-sdk 依赖经本项目垫片层（`port/`）落到 NuttX（AGENTS.md 11.5 �
 >
 > **为何 GUI 与 CLI 分道而行**：
 > - **语义不同**——NSH/vi/输入法是字符流世界（write() + termios），
->   一个 cell 网格（320x240 下 26x17 格）+ 32.6KB 场环即可伺候；
+>   一个半格网格（320x240 下 53x17 半格）+ 32.6KB 场环即可伺候；
 >   LVGL 是像素帧缓冲世界（640x480 8bpp ≈300KB + 128KB LVGL 堆），
 >   只有 S3/CAM 的 PSRAM 放得下。
 > - **刷新跟得上吗**——跟得上：CVBS 场频由 DMA 永续流锁定（50Hz 240p），
@@ -568,11 +569,11 @@ nsh> script status
 ### 字体转换工具
 
 ```bash
-# 生成字体文件（需要 Node.js 和 npx）
+# 一键生成全部字体表（需 Node.js/npx + python3-PIL；Fusion 字体
+# 由 download_deps.sh 自动下载到 deps/fonts/，缺失时会跳过并提示）
 ./scripts/convert_font.sh
-
-# 仅提取字符集（不生成字体）
-./scripts/convert_font.sh --charset-only
+# 产物：lv_font_notosans_sc_12.c（汉字全量）
+#      + lv_font_ascii_6.c / lv_font_fullwidth.c（console 半角/全角标点）
 ```
 
 ## 脚本 UI 胶水层 / Script UI Glue Layer
@@ -691,6 +692,25 @@ _最后更新: 2026-10-05（项目更名 retro-ws，文档全面修正为五板�
 - 落地：`convert_font.sh` 两档齐生、`RETRO_FONT_DEFAULT` 按档自动选择
   （GUI 构建=12 / CLI=16）、`LV_FONT_DEFAULT`=montserrat_12；
   glm53f 多模态验收 12px 中文点阵清晰可辨（两种外壳截图 pass）
+
+### 2026-10-05（同日晚间二次定稿）：控制台半格网格 + Fusion 点阵字体
+
+唯一 12px 字号定稿后，控制台排版经历三轮用户目视反馈收敛
+（glm53f 五轮像素级验收，末轮全屏 266 字形模板匹配 0 失配）：
+
+- **半格步进体系**（= 中文 Win3.2/95 宋体 9pt 半角/全角点阵）：
+  `cvbs_console` 半角 6px（1 半格）/ 全角 12px（2 半格，
+  1 汉字=2 字母宽）、行高 14；320x240→53 半格列x17 行、
+  640x480→106 半格列x34 行；全角右半标记位图（\b 连退 2 半格、
+  光标宽度跟随）、全角行末先折行后画
+- **半角/全角标点换源 Fusion Pixel Font 12px 等宽**（OFL-1.1，
+  逐像素设计 1:1 渲染）：`lv_font_ascii_6`（半角）+
+  `lv_font_fullwidth`（全角标点 ！满高 3px 粗、，。沉底、引号
+  右上=宋体全角布局）；Noto 矢量比例字形光栅化后半角溢出重叠、
+  全角标点墨迹过细，弃用于 console（汉字主体仍 Noto 全量表）
+- 字体管线：`scripts/gen_pixel_fonts.py` 生成两表（挂入
+  `convert_font.sh`），`download_deps.sh` 自动下载 Fusion 字体；
+  nano 垫片 mini_curses 列宽语义同步（列=半格列）
 
 ### 2026-10-05（同日修订）：收敛为全系唯一 12px 字号
 

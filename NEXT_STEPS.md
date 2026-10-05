@@ -107,7 +107,7 @@ c3（合宙核心板 CLI 档）、pico（本地教学终端 CLI 档）。
 | 40 | 崩溃计数持久化 | 看门狗重启计数需写 Flash（RTC 内存或易失文件），安全模式逻辑才真正生效 |
 | 41 | Pico 文件 IO 服务实义化 | rp2040 Core1 服务当前为心跳占位；接 SD/SPI0 驱动后挂真实作业 |
 | 42 | 五板实机烧录验证 | esptool(ESP 系)/UF2 拖入(Pico)；验 NSH 控制台、双核日志、pkg 命令 |
-| 43 | GUI/字库入固件 | 当前五配置为 CLI 档（含拼音 CLI）；S3 加 LVGL+notosans_sc_16(911KB) 的 GUI 档 appconfig |
+| 43 | GUI/字库入固件 | 当前五配置为 CLI 档（含拼音 CLI）；S3 加 LVGL GUI 档 appconfig（12px 字库已含于现配置） |
 | 44 | WiFi/BLE 档 | RETRO_WIFI/BLE 默认关（体积优先）；开启需重验 ROM |
 | 45 | C3/Pico CVBS 硬件钩子 | **已完成（2026-10-04 晚）**：C3=I2S0 PDM raw 单脚 sigma-delta、Pico=PIO 4-bit + DMA 逐行（Core1 生成） |
 | 46 | NSH 全输出上屏 | **已完成（2026-10-04 晚）**：/dev/cvbscon + UART 键盘泵 + NSH_ALTCONDEV（C3/Pico） |
@@ -125,7 +125,7 @@ c3（合宙核心板 CLI 档）、pico（本地教学终端 CLI 档）。
 | 51 | 真机联调（示波器） | AV 各板首板联调：S3 LCD PCLK 13.3333MHz、C3 PDM 位率/位序、Pico SM 时钟校准（代码已按 TRM 推导，标注见各驱动头注释）|
 | 52 | C3/Pico 硬件 I2C/SPI 驱动 | C3=NuttX 无 esp32c3 i2c/spi 驱动（现走位摆软总线）；Pico=rp2040_i2c 已有可接 /dev/i2c0（注：S3/CAM 已于 2026-10-04 深夜开硬件 I2C0，见 HARDWARE.md 13.1） |
 | 54 | 五板载板打样验证 | eda/ 立创EDA 工程已生成（零交叉校验）；打开后补铺铜/泪滴/DRC 收尾再下单；合宙 C3 需先在核心板焊公排 |
-| 55a | 240p 实机 CRT 抽验 12px | cvbs_console 240p 档（26x17 网格）的 12px 中文在宿主验收为可读下限——实机 CRT TV 上抽验密笔画字（警/编类），发糊则评估该档行距/字重微调 |
+| 55a | 240p 实机 CRT 抽验 12px | cvbs_console 240p 档（53x17 半格网格）的 12px 中文在宿主验收为可读下限——实机 CRT TV 上抽验密笔画字（警/编类），发糊则评估该档行距/字重微调 |
 | 55 | RMT/I2C 实机验证 | s3/s3n8 appconfig 已开 RMT+I2C0；上机验 /dev/rmt0 点灯与 /dev/i2c0 探测 RTC |
 | 53 | nano 增强 | nanorc 语法定义（现裁剪 ENABLE_COLOR=0）、bracketed paste、undo 加深测试 |
 

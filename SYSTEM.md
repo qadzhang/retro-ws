@@ -400,10 +400,17 @@ DENY  inbound ICMP (ping)
 - src/nuttx/common/apps/system/cmd_*_main.c：薄壳 main → cmd_*()
 - 系统编辑器 vi 为 nuttx-apps 内置（CONFIG_SYSTEM_VI）；nano 为 .rpk 包（不占 builtin）
 
-### 2F. 全系唯一字号 12px（2026-10-05 定稿）⭐
-- 唯一字型唯一字号：Noto Sans SC 12px 1bpp 点阵（lv_font_notosans_sc_12，
+### 2F. 全系唯一字号 12px（2026-10-05 定稿；同日晚半格化+点阵化修订）⭐
+- 汉字主体：Noto Sans SC 12px 1bpp 点阵（lv_font_notosans_sc_12，
   UTF-8 全量字符集；嵌入式体积优先，CLI/GUI 共用）
-- cvbs_console 网格 12x14（320x240→26x17；640x480→53x34）
+- console 半角/全角标点：Fusion Pixel Font 12px 等宽（OFL-1.1，
+  TakWolf 缝合像素字体）——lv_font_ascii_6（半角 94 字形，6px 等宽）
+  + lv_font_fullwidth（全角标点/符号 169 字形，12px 满格），由
+  scripts/gen_pixel_fonts.py 生成；Noto 矢量比例字形光栅化后半角
+  溢出重叠、全角标点墨迹 1-3px 分不清，2026-10-05 晚弃用于 console
+- cvbs_console 半格步进网格（宋体 9pt 半角/全角体系：半角 6px /
+  全角 12px，1 汉字=2 字母宽、行高 14；全角右半标记位图支持 
+  连退；320x240→53 半格列x17 行；640x480→106 半格列x34 行）
 - RETRO_FONT_DEFAULT/RETRO_FONT_CONSOLE 同指 12px；LVGL
   LV_FONT_DEFAULT=montserrat_12；CLI 兼容层 lvgl_font_compat 同步
 

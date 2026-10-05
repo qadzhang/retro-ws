@@ -384,6 +384,7 @@ const char *retro_ui_get_lang(void);       // 获取当前语言
 | jslogo | master | Apache 2.0 | UCBLogo 子集海龟画图（可选） |
 | **GNU nano** | **8.4** | **GPL-3.0** | **CLI 编辑器（.rpk 独立包交付，不入固件 ROM；系统默认 vi——2026-10-05 定稿）** |
 | NotoSansSC | - | OFL-1.1 | 12px 中文字库点阵源 |
+| Fusion Pixel Font | 12px 等宽 | OFL-1.1 | console 半角/全角标点点阵源（TakWolf，gen_pixel_fonts.py） |
 
 ## 5. 文件结构 / File Structure
 

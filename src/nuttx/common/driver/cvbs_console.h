@@ -12,10 +12,13 @@
  *        无 LVGL，由本模块 + lvgl_font_compat 直接驱动字体位图
  * WHO  : retro_boot（横幅/系统消息镜像）、NSH con 命令、后续 syslog
  * WHERE: retro-ws/src/nuttx/common/driver/cvbs_console.[ch]
- * WHEN : 2026-10-04 新增
- * HOW  : UTF-8 解码 -> retro_compat_glyph_dsc/bitmap -> 1bpp 位图
- *        按 MSB-first 展开到 L8 亮度（direct luma 模式下 0/255）；
- *        控制序列：\n \r \b \t；满行滚动（帧缓冲 memmove）
+ * WHEN : 2026-10-04 新增；2026-10-05 ANSI/CSI+状态条；同日晚半格
+ *        步进定稿（半角 6px/全角 12px，宋体 9pt 体系）
+ * HOW  : UTF-8 解码 -> 半角/全角标点走 Fusion 点阵表
+ *        (ascii6/fullwidth)，汉字走 retro_compat Noto 全量 -> 1bpp
+ *        位图按 MSB-first 展开到 L8 亮度（0/255）；半格步进 +
+ *        全角右半标记位图（\b 连退）；控制序列 \n \r \b \t +
+ *        ANSI/CSI；满行滚动（帧缓冲 memmove）
  */
 
 #ifndef __CVBS_CONSOLE_H

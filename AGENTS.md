@@ -284,7 +284,8 @@ void my_keypad_read(lv_indev_t *indev, lv_indev_data_t *data)
   字符界面通过 `cvbs_console`（帧缓冲点阵控制台）渲染上屏——
   Pico/C3 的"字符输出"也必须走 AV 视频输出，不允许只有串口
 - 禁止再引入第二套中文字型、第二档字号或字符集转换表；换字型/字号 =
-  改 `scripts/convert_font.sh` 重新生成全量 UTF-8 版本
+  改 `scripts/convert_font.sh` 重新生成全量 UTF-8 版本（含
+  `gen_pixel_fonts.py` 的 console 半角/全角标点表）
 
 ### 7.2 语言存储优先级 / Language Storage Priority
 | 优先级 | 路径 |

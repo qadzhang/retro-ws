@@ -7,7 +7,7 @@
  *        控制台渲染经解码器还原成 PGM 供视觉验收
  * WHO  : tests/host/run_all.sh
  * WHERE: retro-ws/tests/host/test_cvbs_console.c
- * WHEN : 2026-10-04 新增
+ * WHEN : 2026-10-04 新增；2026-10-05 位置矩阵+半格语义（666 检查）
  * HOW  : 1) 兼容层 glyph_dsc vs LVGL lv_font_get_glyph_dsc 差分
  *           （ASCII + 抽样 CJK + 边界）
  *        2) UTF-8 解码：中文/回退/非法序列

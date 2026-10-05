@@ -16,7 +16,8 @@
  * WHO  : retro_boot / NSH(CONFIG_NSH_CONDEV=/dev/cvbscon) / nano
  *        / 测试 tests/host/test_cvbs_console.c
  * WHERE: retro-ws/src/nuttx/common/driver/cvbs_console.c
- * WHEN : 2026-10-04 新增；同日(晚)加 ANSI+字符设备+输入泵
+ * WHEN : 2026-10-04 新增；同日(晚)加 ANSI+字符设备+输入泵；
+ *        2026-10-05 状态条+半格步进定稿（半角 6px/全角 12px）
  * HOW  : 字形 1bpp 行距 = ceil(box_w/8)；半格步进体系（2026-10-05
  *        三次定稿 = 中文 Win3.2/95 宋体 9pt 半角/全角点阵）：
  *        半角 ASCII 6px=1 半格、全角 CJK 12px=2 半格（1 汉字=2 字母宽）；

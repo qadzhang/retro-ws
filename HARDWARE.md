@@ -1142,6 +1142,7 @@ script <名字>   → 引擎从 Flash 指针直接执行（script_exec_buffer）
 |------|------|
 | **2026-10-05** | **文档全面修正为 retro-ws 五板定位：标题/开发策略去 ESP32 单板前缀；1.1 目标表补 s3n8 与 pico；1.2 档案表补 hw_rp2040_pico.h；6.4 支持范围表补 C3/Pico（320x240 字符控制台档）；12.1/12.2 核间分工改为全局规范（CPU0=程序核 / CPU1=媒体核，与代码 sched_setaffinity 实现同步，原"Core0 图形/Core1 系统"旧表作废）** |
 | **2026-10-05** | **字号定稿（6.4）：全系唯一 12px（lv_font_notosans_sc_12，CLI/GUI 共用，嵌入式体积优先）；cvbs_console 网格 16x18→12x14（320x240→26x17、640x480→53x34）；16px 档废除；LVGL 默认字体 montserrat_12；glm53f 验收 640/240p 两档控制台+双桌面全 pass（240p 为可读下限，实机 CRT 抽验登记 NEXT_STEPS）** |
+| **2026-10-05（晚）** | **控制台半格网格+点阵字体二次定稿（6.4）：半格步进体系（半角 6px/全角 12px，1 汉字=2 字母宽；320x240→53 半格列、640x480→106 半格列）；半角+全角标点换源 Fusion Pixel 12px 等宽（OFL-1.1，lv_font_ascii_6/lv_font_fullwidth；Noto 比例字形光栅化后半角溢出/全角标点过细弃用于 console，汉字主体仍 Noto）；全角右半位图退格、行末先折后画；glm53f 像素级验收 0/266 失配** |
 | **2026-10-04(深夜)** | **硬件全真外设收口：WS2812 改 RMT 真外设驱动（ws2812_rmt.c + /dev/rmt0，2.8 节）；FSK TX 接 audio_play_pcm() I2S/DAC DMA（13.1）；Pico CVBS 移脚 GP12-15（GP23=SMPS 省电脚会把电源纹波耦合进 R-2R 基准 + PIO 只能连续映射，3B.2A）；合宙 C3 板载 LED 修正为 GPIO12/13 **高电平**点亮、Flash 占用修正为 11=VDD_SPI+14-17 总线（GPIO12/13 DIO 模式可用，3A.2/3A.3）；C3 GPIO10 释放为教学脚；CAM 补 GPIO17=PSRAM CLK 禁用；S3 CVBS 注释由"I2S bitbang"修正为 LCD_CAM I80（6.5 对齐驱动实现 OUT0-3 低 4 位）；新增"板上指示灯引脚避让"全局原则（13.1）** |
 | **2026-10-04(晚)** | **AV 输出全真硬件化定稿：S3=LCD_CAM I80 并行(6.5)、C3=I2S0 PDM raw 单脚(3A.2A)、Pico=PIO 4-bit 并行(3B.2A)、CAM 时钟改整除；每板采样时钟表(6.2)；新增 13 章真外设规范（nano 全系统一 / retro_bus / 板级脚本 ROM XIP）** |
 | 2026-04-01 | 初版：验证 ESP32-S3 规格 |

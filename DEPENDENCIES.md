@@ -21,6 +21,7 @@
 | curl | 8.x | nuttx-apps `netutils/webclient` 等 | MIT |
 | Links（待移植） | 2.30 | https://links.twibright.com | GPL-2.0，下载脚本已支持；板端集成见 NEXT_STEPS 48 |
 | NotoSansSC 字体 | - | 系统字体 / 字体源 NotoSansCJK-Regular.ttc | OFL-1.1（`convert_font.sh` 生成 12px 点阵） |
+| Fusion Pixel 字体 | 12px 等宽 | GitHub releases（download_deps.sh 自动下载 deps/fonts/） | OFL-1.1（`gen_pixel_fonts.py` 生成 console 半角/全角标点表） |
 | Berry（codegen 副本） | nuttx-apps 同源 | 手动放置 `deps/berry/` | 构建期宿主 gcc 跑 `make prebuild` 生成 be_const_strtab；固件编入走 nuttx-apps |
 
 ## GPL 独立程序包策略（2026-10-04）⭐
