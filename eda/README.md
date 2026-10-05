@@ -26,7 +26,7 @@
 | `s3n8/` | ESP32-S3-DevKitC-1 N8R8 | 同上（同封装） | 同上 | 同上 |
 | `cam/` | ESP32-CAM (AI-Thinker) | 57 x 58 | 2x8 母排 @22.86mm + 24P FPC 0.5mm | CVBS 滤波/功放/RTC/麦克风/UART/5V + RCA |
 | `c3/` | 合宙 ESP32-C3 核心板 | 49 x 71 | 2x16 母排 @21.0mm（邮票孔焊公排后插入） | PDM 滤波/microSD/UART/I2C+教学/5V + RCA |
-| `pico/` | Raspberry Pi Pico | 45.5 x 78 | 2x20 母排 @17.78mm | R-2R/microSD/UART/教学 GP2-11/ADC GP26-28 + RCA |
+| `pico/` | Raspberry Pi Pico | 48.5 x 78 | 2x20 母排 @17.78mm | R-2R/microSD/UART/教学 GP2-11/ADC GP26-28/USB 键盘 GP20-21(22Ω) + RCA |
 
 引脚分配严格对齐 `HARDWARE.md`（含 2026-10-04 晚修订：S3 CVBS=
 LCD_CAM GPIO2/15/16/17、C3 PDM=GPIO1、Pico R-2R=GP12-15、

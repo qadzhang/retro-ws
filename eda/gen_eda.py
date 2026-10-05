@@ -859,8 +859,8 @@ def build_pico(out_pcb, out_sch):
         return (xl if col == "L" else xr, y0 + (i - 1) * P)
 
     c = Carrier(doc, corridors=(-12.5, 30.0), margins=(-10.5, 59.5))
-    c.set_bounds(-14.0, -14.0, 31.5, 64.0)
-    bx0, by0, bx1, by1 = -14.0, -14.0, 31.5, 64.0
+    c.set_bounds(-14.0, -14.0, 34.0, 64.0)
+    bx0, by0, bx1, by1 = -14.0, -14.0, 34.0, 64.0
     outline(doc, bx0, by0, bx1, by1)
     for hx, hy in [(bx0 + 2.5, by0 + 2.5), (bx1 - 2.5, by0 + 2.5),
                    (bx0 + 2.5, by1 - 2.5), (bx1 - 2.5, by1 - 2.5)]:
@@ -907,7 +907,7 @@ def build_pico(out_pcb, out_sch):
     c.route("GP28", p("R", 7), (ax_[2][1], ax_[2][2]))
     silk_text(doc, "ADC GP26-28(插)", -18.0, p("L", 18)[1] - 1.2, 1.0)
 
-    # 教学 GPIO 排（行对齐左列）
+    # 教学 GPIO 排（行对齐左列；GP20/21 已让位 USB 键盘差分对）
     ex = c.socket(["GP2", "GP3", "GP4", "GP5", None, "GP6", "GP7",
                    "GP8", "GP9", None, "GP10", "GP11"],
                   -9.0, p("L", 4)[1], tag="EX")
@@ -915,6 +915,15 @@ def build_pico(out_pcb, out_sch):
                      (11, 7), (12, 8), (14, 10), (15, 11)):
         c.route(lft[row - 1], p("L", row), (ex[idx][1], ex[idx][2]))
     silk_text(doc, "教学 GP2-GP11(插)", -13.5, p("L", 3)[1] - 1.2, 1.0)
+
+    # USB 键盘座（PIO-USB 主机；GP20=DP、GP21=DM，D+/D- 串联 22Ω 后出线）
+    uk = c.socket(["USB5V", "USB_DP", "USB_DM", "UK_GND"], 29.0,
+                  p("R", 19)[1], tag="UK")
+    c.route("GP20", p("R", 14), (uk[1][1], uk[1][2]), label="GP20->DP")
+    c.route("GP21", p("R", 13), (uk[2][1], uk[2][2]), label="GP21->DM")
+    c.route("VBUS", p("R", 1), (uk[0][1], uk[0][2]), label="VBUS->5V")
+    silk_text(doc, "USB 键盘(插)", 27.5, p("R", 18)[1] - 1.2, 1.0)
+    silk_text(doc, "D+/D- 串 22Ω", 28.5, p("R", 22)[1], 0.9)
 
     # UART 控制台（GP0/GP1 -> 右上座）
     ur = c.socket(["UART_TX", "UART_RX", "UR_GND", "UR_3V3"], 23.0,
@@ -926,7 +935,8 @@ def build_pico(out_pcb, out_sch):
     c.power("GND", [p("L", 3), p("L", 8), p("L", 13), p("L", 18),
                     p("R", 3), p("R", 12), p("R", 18), (10.0, -11.0),
                     (-9.0, r2r[6][2]), (23.0, sd[6][2]),
-                    (23.0, ur[2][2]), (-14.0, ax_[3][2])])
+                    (23.0, ur[2][2]), (23.0, uk[3][2]),
+                    (-14.0, ax_[3][2])])
     c.power("3V3", [p("R", 5), (23.0, sd[5][2]), (23.0, ur[3][2])])
 
     assert not c.unrouted, "Pico unrouted: %r" % c.unrouted

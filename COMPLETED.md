@@ -353,6 +353,9 @@
   PIO1 IRQ0→上游 pio_usb_host_irq_handler
 - **验证**：Pico 固件编译通过 1123.1KB（+17.7KB = PIO-USB 全链入）；
   语法矩阵 95/95；宿主全套 ALL PASS；剩实机 USB 时序联调
+- **EDA 载板同步（同日）**：pico 载板新增 USB 键盘 4P 座（GP20=DP/
+  GP21=DM 串 22Ω + VBUS 5V + GND；座落 SD 座下方 x=29 避 3V3 走线
+  走廊，板框右界 31.5→34.0）；check_eda 五板零交叉 PASS
 
 ### 28. 无实机代码项批量关单（2026-10-05 晚，用户方针：代码先写好跑通，实测日后）⭐
 - **firewall 持久化（NEXT_STEPS 51 关）**：/opt/etc/firewall.conf CSV 文本，
