@@ -986,7 +986,7 @@ GDMA(通道) <- 环形描述符 <- 场信号缓冲（PSRAM，双场乒乓）
 | 分区 | 内容 | 可写性 | 说明 |
 |------|------|--------|------|
 | 固件区 | nuttx.bin（内核 + builtin + ROMFS 板级脚本） | 只读（烧录写入） | S3/CAM/C3 经 esptool 分区表烧录；Pico 固件占 flash 头部（UF2） |
-| **片上数据区** | littlefs，挂载点 **`/opt`** | **可写** | 固件区之后的剩余 flash：系统包安装位（`/opt/bin`、`/opt/share/<包>`）、包数据库（`/opt/var/lib/rpkg`）、系统配置（`/opt/etc`：crontab/boot.cfg/lang.conf）、重启计数（`/opt/var/log/reboot.log`，安全模式判定用）、用户数据（`/opt/home`）——**无 SD 卡时系统完整可用** |
+| **片上数据区** | littlefs，挂载点 **`/opt`** | **可写** | 固件区之后的剩余 flash：系统包安装位（`/opt/bin`、`/opt/share/<包>`）、包数据库（`/opt/var/lib/rpkg`）、系统配置（`/opt/etc`：crontab/boot.cfg/lang.conf/**network.conf**——WiFi 凭据+dhcp|static 固定 IP）、重启计数（`/opt/var/log/reboot.log`，安全模式判定用）、用户数据（`/opt/home`）、BLE bond（`/opt/var/ble_bond.dat`）——**无 SD 卡时系统完整可用** |
 | SD 卡（可选硬件） | FAT32，`/sdcard` | 可写 | 大容量扩展：第三方包默认根（`/sdcard/apps`）、用户脚本库 |
 
 **设计要点**：

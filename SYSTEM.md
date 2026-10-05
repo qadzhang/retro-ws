@@ -239,7 +239,7 @@ retro-ws/                        # 项目根目录（任意位置克隆均可）
 | 看门狗 | watchdog.c | ~560 | 完成 |
 | 防火墙 | firewall.c | 623 | 完成 |
 | 内存监控 | memmon.c | 537 | 完成 |
-| WiFi/网络 | network.c | 432 | 完成 |
+| WiFi/网络 | network.c + wifi_conf.c | 432+180 | 完成（配置文件 /opt/etc/network.conf，dhcp|static，`wifi` 命令） |
 | NTP | ntp.c | 444 | 完成 |
 | Cron | cron.c | 739 | 完成 |
 | RTC 驱动 | drv_rtc.c | 538 | 完成 |
@@ -320,7 +320,7 @@ nsh> ble status   # 显示连接状态
 - 出站规则：允许所有出站
 - 防 ping：禁止外部 ICMP ping
 - 连接跟踪：记录活跃连接（最多128个）
-- 规则存储于 Flash，重启不丢失
+- 规则当前为 RAM 态（重启复位；持久化到 /opt/etc/firewall.conf 登记 NEXT_STEPS）
 - `fw_enable` / `fw_disable` 动态开关
 - `fw_add_rule` / `fw_del_rule` 动态管理
 
@@ -449,9 +449,11 @@ WiFi 802.11 b/g/n (2.4GHz)
 
 /opt/                 # 片上可写数据分区（littlefs，HARDWARE 12.4）
 +-- bin/ + share/     #   系统包装载位（Root: system，如 /opt/bin/nano）
-+-- etc/              #   系统配置：crontab、boot.cfg、lang.conf
++-- etc/              #   系统配置：crontab、boot.cfg、lang.conf、
+                      #     network.conf（WiFi 凭据/静态 IP）
 +-- var/lib/rpkg/     #   包数据库（control 快照 + manifest + 维护脚本）
 +-- var/log/          #   仅重启计数（reboot.log，安全模式判定用）
++-- var/ble_bond.dat  #   BLE 配对信息（蓝牙板）
 +-- home/             #   用户数据写入区（无 SD 卡时的主数据区）
 
 /sdcard/              # TF 卡（FAT32，可选硬件；最大 32GB）

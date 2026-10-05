@@ -171,6 +171,10 @@
 
 #### 2.2.4 网络功能 / Network Functions
 - [x] WiFi 连接
+- [x] **网络配置文件 /opt/etc/network.conf**（2026-10-05，片上可写区）：
+  ssid/password/ip_mode(dhcp|static)/ip/netmask/gateway/dns；SD 卡同名
+  文件作搬运回退；开机 wifi_auto_connect 自动连接
+- [x] `wifi` NSH 命令（status/connect；connect 即存片上，static 需 IP 组）
 - [x] NTP 时间同步
 - [x] TCP/UDP 协议栈
 - [x] 网络配置接口

@@ -57,7 +57,7 @@
 #define CONFIG_RETRO_BLE_MAX_BOND  3
 #endif
 
-#define BLE_STORAGE_PATH           "/mnt/sd0/ble_bond.dat"
+#define BLE_STORAGE_PATH           "/opt/var/ble_bond.dat"
 #define BLE_STORAGE_MAGIC         0x424C4530  /* "BLE0" */
 #define BLE_STORAGE_VERSION        1
 
@@ -214,6 +214,7 @@ int ble_storage_save(void)
     /* TODO: 检查 /mnt/sd0 是否挂载 */
 
     /* 写入存储 */
+    mkdir("/opt/var", 0755);   /* 片上可写区（无 SD 卡可用，2026-10-05） */
     fd = open(BLE_STORAGE_PATH, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd < 0) {
         syslog(LOG_ERR, "[BLE] Failed to open bond storage for write: %d\n", errno);

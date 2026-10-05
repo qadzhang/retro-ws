@@ -115,6 +115,8 @@ c3（合宙核心板 CLI 档）、pico（本地教学终端 CLI 档）。
 | 48 | 浏览器（Links 2.30 移植） | nuttx-apps 无现成浏览器；需移植（webclient 库已有；w3m 弃议）|
 | 49 | GPIO 兼容层扩总线 | **已完成（2026-10-04 晚）**：retro_bus（硬后端探测 + 软总线回退 + 三引擎绑定） |
 | 50 | 脚本 XIP（ROM 直跑） | **已完成（2026-10-04 晚）**：mkromfs.py + /rom/scripts + script 命令（长度型接口直吃 Flash 指针）|
+| 51 | firewall 规则持久化 | RAM 态 -> /opt/etc/firewall.conf（load 于 init、save 于增删；格式同 network.conf key=value 或逐行规则） |
+| 52 | 静态 IP netlib 接线 | wifi_apply_static_ip 现仅记录状态；接 netlib_set_ipv4addr/netmask/dripv4addr + dns_add_server（实机联调时做） |
 
 | 51 | 真机联调（示波器） | AV 各板首板联调：S3 LCD PCLK 13.3333MHz、C3 PDM 位率/位序、Pico SM 时钟校准（代码已按 TRM 推导，标注见各驱动头注释）|
 | 52 | C3/Pico 硬件 I2C/SPI 驱动 | C3=NuttX 无 esp32c3 i2c/spi 驱动（现走位摆软总线）；Pico=rp2040_i2c 已有可接 /dev/i2c0（注：S3/CAM 已于 2026-10-04 深夜开硬件 I2C0，见 HARDWARE.md 13.1） |

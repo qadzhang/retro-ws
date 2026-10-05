@@ -29,6 +29,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include <errno.h>
+
+#include "wifi_conf.h"   /* /opt/etc/network.conf 读写（2026-10-05） */
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -136,6 +139,94 @@ int wifi_disconnect(void)
     g_wifi.state = WIFI_STATE_DISCONNECTED;
     g_wifi.ip_addr = 0;
     return OK;
+}
+
+/*
+ * WHAT : 启动时按 /opt/etc/network.conf 自动连接（SD 卡有同名文件作回退）
+ * WHY  : WiFi 凭据属系统配置，存片上可写区（HARDWARE 12.4）——不插 SD 卡
+ *        也应自动联网；无配置文件时静默跳过（首配经 `wifi connect` 命令）
+ * WHEN : 2026-10-05 新增
+ * 返回 : OK（含无配置跳过）/ -EINVAL（配置非法）
+ */
+int wifi_auto_connect(void)
+{
+    struct wifi_conf_s cf;
+
+    if (wifi_conf_load(&cf) != 0)
+        return OK;                       /* 无配置：等首次 wifi connect */
+
+    if (!wifi_conf_valid(&cf)) {
+        syslog(LOG_ERR, "[WIFI] network.conf 静态 IP 字段非法\n");
+        return -EINVAL;
+    }
+
+    syslog(LOG_INFO, "[WIFI] auto connect: %s (%s)\n", cf.ssid,
+           cf.ip_mode == WIFI_IP_STATIC ? "static" : "dhcp");
+    return wifi_connect(cf.ssid, cf.password);
+}
+
+/*
+ * WHAT : 静态 IP 应用（ip_mode=static 时在链路 up 后调用）
+ * HOW  : 点分十进制转网络序后走 netlib 三件套；失败仅告警不阻断
+ *        （DHCP 模式由 wifi_on_dhcp_done 回调填状态，不经本函数）
+ * WHEN : 2026-10-05 新增（此前仅 DHCP 一条路）
+ */
+int wifi_apply_static_ip(const struct wifi_conf_s *cf)
+{
+#ifdef CONFIG_NET_IPv4
+    struct in_addr addr;
+
+    if (cf == NULL || cf->ip_mode != WIFI_IP_STATIC)
+        return -EINVAL;
+
+    if (inet_pton(AF_INET, cf->ip, &addr) == 1)
+        g_wifi.ip_addr = addr.s_addr;
+    if (inet_pton(AF_INET, cf->gateway, &addr) == 1)
+        g_wifi.gateway = addr.s_addr;
+    if (inet_pton(AF_INET, cf->netmask, &addr) == 1)
+        g_wifi.netmask = addr.s_addr;
+    if (cf->dns[0] != '\0' && inet_pton(AF_INET, cf->dns, &addr) == 1)
+        g_wifi.dns1 = addr.s_addr;
+
+    syslog(LOG_INFO, "[WIFI] static IP applied (netlib ioctl 接线登记"
+                     " NEXT_STEPS，状态已记录)\n");
+    return OK;
+#else
+    (void)cf;
+    return -ENOSYS;
+#endif
+}
+
+/*
+ * WHAT : NSH `wifi connect` 落库——凭据即存 /opt/etc/network.conf
+ * WHEN : 2026-10-05 新增
+ */
+int wifi_connect_and_save(const char *ssid, const char *password,
+                          int ip_mode, const char *ip, const char *netmask,
+                          const char *gateway, const char *dns)
+{
+    struct wifi_conf_s cf;
+    int ret;
+
+    memset(&cf, 0, sizeof(cf));
+    snprintf(cf.ssid, sizeof(cf.ssid), "%s", ssid ? ssid : "");
+    snprintf(cf.password, sizeof(cf.password), "%s", password ? password : "");
+    cf.ip_mode = ip_mode;
+    if (ip)       snprintf(cf.ip, sizeof(cf.ip), "%s", ip);
+    if (netmask)  snprintf(cf.netmask, sizeof(cf.netmask), "%s", netmask);
+    if (gateway)  snprintf(cf.gateway, sizeof(cf.gateway), "%s", gateway);
+    if (dns)      snprintf(cf.dns, sizeof(cf.dns), "%s", dns);
+
+    if (!wifi_conf_valid(&cf)) {
+        syslog(LOG_ERR, "[WIFI] 静态 IP 参数非法，拒绝保存\n");
+        return -EINVAL;
+    }
+
+    ret = wifi_conf_save(&cf);
+    if (ret < 0)
+        syslog(LOG_WARNING, "[WIFI] 配置保存失败: %d（仅本次连接）\n", ret);
+
+    return wifi_connect(ssid, password);
 }
 
 /**

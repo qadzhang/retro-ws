@@ -53,6 +53,7 @@ endif
 
 ifeq ($(CONFIG_RETRO_WIFI),y)
 CSRCS += src/common/driver/network.c
+CSRCS += src/common/driver/wifi_conf.c
 CSRCS += src/common/driver/ntp.c
 CSRCS += src/common/driver/firewall.c
 CSRCS += src/common/network_utils.c
@@ -317,6 +318,12 @@ MAINSRC  += src/common/apps/system/cmd_shell_main.c
 ifeq ($(CONFIG_RETRO_PINYIN_CLI),y)
 PROGNAME += ime
 MAINSRC  += src/common/apps/system/cmd_ime_main.c
+endif
+
+# wifi：连接与配置管理（status/connect；凭据存 /opt/etc，2026-10-05）
+ifeq ($(CONFIG_RETRO_WIFI),y)
+PROGNAME += wifi
+MAINSRC  += src/common/apps/system/cmd_wifi_main.c
 endif
 
 # nano：GNU nano 8.4（全系 CLI 文本编辑器）

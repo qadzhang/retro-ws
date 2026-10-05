@@ -158,7 +158,7 @@
 | 防火墙默认封禁外部入站 | `common/driver/firewall.c` | 完成 |
 | 允许所有出站 | `common/driver/firewall.c` | 完成 |
 | 禁止外部 ping | `common/driver/firewall.c` | 完成 |
-| 规则存于 Flash/LittleFS | `common/driver/firewall.c` | 完成 |
+| 规则持久化 | `common/driver/firewall.c` | 待办（RAM 态；/opt/etc/firewall.conf 登记 NEXT_STEPS 51） |
 
 ### 5. 时间与定时任务
 
@@ -337,6 +337,20 @@
   插座），check_eda.py 零交叉校验 PASS
 - 板卡几何经官方 DXF/wiki 核实（DevKitC 22.86mm/CAM 22.86/合宙 21.0
   非 2.54 网格/Pico 17.78）
+
+### 27. 网络配置文件化 + 持久化状态盘点收口（2026-10-05）⭐
+- **盘点结果**：WiFi 凭据原本无任何配置文件（调用方传入）、firewall 规则
+  纯 RAM（文档曾失实声称存 Flash）、BLE bond 存 SD 卡（无卡不可用）
+- **wifi_conf.[ch]**（纯函数件，宿主 44 检查）：/opt/etc/network.conf
+  读写（ssid/password/ip_mode dhcp|static/ip/netmask/gateway/dns，
+  点分十进制校验、超长值拒绝、逐级建目录）；SD 同名文件作搬运回退
+- **network.c**：wifi_auto_connect（开机读配置自动连）、
+  wifi_apply_static_ip（静态 IP 状态记录，netlib ioctl 接线登记
+  NEXT_STEPS）、wifi_connect_and_save（连即存）
+- **`wifi` NSH 命令**（cmd_wifi_main.c + Makefile builtin）：status/connect
+- **BLE bond 迁片上** /opt/var/ble_bond.dat（原 /mnt/sd0）
+- **firewall 文档改实况**：RAM 态，持久化登记 NEXT_STEPS 51
+- 语法矩阵 90/90（新增两文件）；宿主全套 ALL PASS
 
 ### 26. 编辑器许可证边界定稿：nano 出 ROM 转 .rpk，系统默认 vi（2026-10-05）⭐
 - **项目所有者裁决**（解除 7.4 与 11.1 第 9 条的张力）：固件 ROM 零 GPL，
