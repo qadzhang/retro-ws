@@ -666,6 +666,14 @@ R-2R，见 3B.2A）、GP16-19（SD SPI0）；板上专用禁用：GP23（SMPS �
 控制，勿动）、GP24（VBUS 检测）、GP25（板载 LED，指示灯脚避让）、
 GP29（VSYS 监测，不在排针）。
 
+**USB 主机（PIO-USB，2026-10-05 网络核实）**：RP2040 硬件 USB 块官方
+SDK 仅支持设备模式；社区事实标准为 **Pico-PIO-USB**（sekigon-gonnoc，
+PIO 状态机纯软件实现 USB 全速主机：1 SM 发 + 2 SM 收，跨两个 PIO 块，
+基于 TinyUSB，**支持 HUB 多口与 USB 键鼠 HID**，RP2350 同样支持）。
+本项目 CVBS 占 PIO0-SM0，**PIO1 空闲可承载 PIO-USB**（引脚任选两只，
+如 GP20/21）——硬件不冲突，NuttX 12.12 树内无 PIO-USB 驱动，移植登记
+NEXT_STEPS 54。这使 Pico 的输入优先级路线升级为：PIO-USB 键盘 > 串口。
+
 **教学脚（GP25 板载 LED 遵循"指示灯脚避让"原则不派给脚本）**：
 GP2-GP11（数字 IO 十只）、GP20-GP22（数字 IO 三只）、
 GP26-GP28（ADC0/1/2 三只，3.3V 量程）。
@@ -881,6 +889,23 @@ GDMA(通道) <- 环形描述符 <- 场信号缓冲（PSRAM，双场乒乓）
 | 带宽 | 20MHz / 40MHz |
 | 最大速率 | 150 Mbps（802.11n, 1T1R） |
 | 安全 | WPA/WPA2/WPA3 |
+
+### 8.1 有线网卡路线（2026-10-05 网络核实）⭐
+
+**USB PHY ≠ 以太网 PHY**：PHY 是"物理层收发器"通称，前缀定协议——USB PHY
+只说 USB 主从差分总线（点对点），Ethernet PHY 才说 802.3（配 MAC 成网卡）。
+USB 网卡（ASIX AX88772 等）= USB 设备 + 以太网 MAC/PHY 桥接芯片，需 USB
+**主机**能力驱动，与"插上 PHY 就有网卡"是两回事。
+
+| 路线 | 说明 | NuttX 12.12 树内支持（已核实） |
+|------|------|------------------------------|
+| **SPI 以太网模块（推荐）** | W5500/ENC28J60 模块自带 MAC+PHY+变压器+RJ45，MCU 走 SPI | `drivers/net/w5500.c`、`enc28j60.c` 现成；**官方 W5500-EVB-PICO 板**（RP2040+W5500）即此路线 |
+| ESP32 EMAC（仅 CAM 板） | 经典 ESP32 内置以太网 MAC，**不内置 PHY**——需外置 IP101/LAN8720（RMII+50MHz）+变压器+RJ45，即 Espressif 官方 Ethernet-Kit 参考设计 | `arch/xtensa/src/esp32/esp32_emac.c` 现成；但 CAM 引脚几无富余，实际可行性低 |
+| USB 网卡（ASIX） | 需 USB 主机能力 | 无现成组合，不采用 |
+
+> ESP32-P4 集成的是 **USB 2.0 HS OTG PHY**（USB 侧），以太网 PHY 仍需外置；
+> 五板没有任何一片集成以太网 PHY。**结论：要网线就插 W5500 模块**（任意板
+> SPI 可挂，Waveshare 等成品模块即插即用）。
 
 ---
 
