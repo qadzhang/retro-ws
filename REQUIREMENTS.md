@@ -150,6 +150,9 @@
 #### 2.2.3 输入设备 / Input Devices
 - **ESP32-S3**: USB HID（USB OTG，GPIO19=DM, GPIO20=DP）+ BLE HID
 - **ESP32-CAM**: BLE HID（蓝牙 4.2）
+- **ESP32-C3 / Pico**: 无 HID 驱动——UART 键盘泵（cvbs_console 内 avkbin 任务；
+  C3 经 CH343 串口（经典款）或原生 USB（简约款），Pico 经 UART0/USB-CDC，
+  读入键盘字节流喂 /dev/cvbscon 输入环）
 - **蓝牙状态 LED**: ESP32-S3 (WS2812 RGB，v1.1=GPIO38 / v1.0=GPIO48), ESP32-CAM (GPIO4 Flash LED)
 
 #### 2.2.4 网络功能 / Network Functions

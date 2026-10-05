@@ -250,6 +250,7 @@ cd scripts/esp32s3 && ./nuttx_build.sh defconfig && ./build.sh nuttx && ./build.
 | I2S/DAC 音频 | drv_audio.c / drv_audio_dac.c | ~1234 | 完成 |
 | RTC 时钟 | drv_rtc.c | 538 | 完成 |
 | USB HID 键鼠 | usb_hid.c (S3) | 424 | 完成 |
+| 键盘输入（C3/Pico） | cvbs_console.c 内 avkbin 键盘泵（UART/USB-CDC -> /dev/cvbscon，无 HID 驱动） | 内嵌 | 完成 |
 | BLE HID 驱动 | ble_hid.c (S3/CAM，封存于 IDF 栈选项) | 1001 | 完成 |
 | BLE Bond 存储 | ble_storage.c | 391 | 完成 |
 | BLE NSH 命令 | ble_nsh.c | 289 | 完成 |
