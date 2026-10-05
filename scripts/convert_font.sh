@@ -70,6 +70,14 @@ gen_full() {
         --font "$SRC_TTF" \
         -r 0x20-0x7F,0x3000-0x303F,0x4E00-0x9FFF,0xFF00-0xFFEF,0x2018-0x201D,0x2026 \
         --format lvgl -o "src/lvgl/fonts/lv_font_notosans_sc_12.c")
+
+    # 半角/全角标点点阵表（cvbs_console 半格网格专用，Fusion Pixel
+    # OFL-1.1；汉字主体仍为上面的 Noto 全量表——两表独立再生成）
+    echo "[font] generating pixel tables (Fusion 12px monospaced, OFL)..."
+    (cd "$PROJECT_ROOT" && python3 scripts/gen_pixel_fonts.py \
+        "$PROJECT_ROOT/deps/fonts/fusion-pixel-12px-monospaced-latin.ttf" \
+        "$PROJECT_ROOT/deps/fonts/fusion-pixel-12px-monospaced-zh_hans.ttf" \
+        "src/lvgl/fonts")
 }
 
 case "${1:-full}" in

@@ -91,6 +91,9 @@ CSRCS += src/common/driver/lvgl_font_compat.c
 CSRCS += src/common/driver/hid_ascii.c
 # 唯一字体 12px（全系 CLI+GUI 单字号，AGENTS.md 7.3 / HARDWARE.md 6.4）
 CSRCS += src/lvgl/fonts/lv_font_notosans_sc_12.c
+# 半角拉丁 6px 等宽点阵（cvbs_console 半格网格，宋体 9pt 半角形态）
+CSRCS += src/lvgl/fonts/lv_font_ascii_6.c
+CSRCS += src/lvgl/fonts/lv_font_fullwidth.c
 endif
 
 # ---- LVGL 图形界面（S3/CAM 全栈） ----
@@ -234,6 +237,7 @@ endif
 
 # ---- 头文件搜索路径 ----
 CFLAGS += -Isrc/common -Isrc/common/driver -Isrc/common/apps/system
+CFLAGS += -Isrc/lvgl/fonts   # 半角点阵表（cvbs_console CLI 档也用）
 CFLAGS += -Isrc/esp32s3/board -Isrc/esp32/board
 CFLAGS += -Isrc/esp32c3/board -Isrc/rp2040/board
 CFLAGS += -Isrc/esp32s3 -Isrc/esp32s3/chip

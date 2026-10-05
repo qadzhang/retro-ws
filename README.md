@@ -497,6 +497,7 @@ retro-ws/
 |------|------|------|--------|
 | Apache NuttX | 12.12.0 | RTOS 内核（含 RP2040 外设支持，Pico 无需外部 SDK） | Apache 2.0 |
 | LVGL | 9.5.0 | 图形引擎 / Graphics library（仅图形档 S3/CAM） | MIT |
+| Fusion Pixel Font | 12px 等宽 | console 半角/全角标点点阵（缝合像素字体） | OFL-1.1 |
 | ESP-IDF | v5.5.4 | 乐鑫 HAL（Xtensa 与 RISC-V 即 S3/CAM/C3 共用；Pico 不用） | Apache 2.0 |
 | esp-hal-3rdparty | NuttX 配套（mbedtls pin v3.6.2 单体版） | 乐鑫 HAL 装配：WiFi/BLE/PHY/mbedtls 子模块 | Apache 2.0 |
 | littlefs | v2.5.1（NuttX 树内） | 文件系统 / Filesystem | BSD-3-Clause |
@@ -552,9 +553,17 @@ nsh> script status
 
 ## 中文字体 / Chinese Font
 
-项目使用 Noto Sans SC 点阵字体（`lv_font_notosans_sc_12.c`，1bpp，UTF-8
-全量字符集约 2.1 万字形，Unicode 码点索引）。**全系唯一字号 12px**
-（CLI/GUI 共用，见 AGENTS.md 7.3 铁律），不再有第二套字型/字号/字符集转换表。
+- **汉字主体**：Noto Sans SC 点阵字体（`lv_font_notosans_sc_12.c`，
+  1bpp，UTF-8 全量字符集约 2.1 万字形，Unicode 码点索引）
+- **半角拉丁/数字/半角标点 + 全角标点**（仅 cvbs_console）：Fusion
+  Pixel Font 12px 等宽（OFL-1.1，[TakWolf/fusion-pixel-font]
+  (https://github.com/TakWolf/fusion-pixel-font)）——逐像素设计点阵，
+  半角 6px/全角 12px 1:1 渲染（`lv_font_ascii_6.c`/`lv_font_fullwidth.c`，
+  由 `scripts/gen_pixel_fonts.py` 生成；Noto 光栅化后半角溢出重叠、
+  全角标点墨迹过细分不清，2026-10-05 弃用于 console）
+
+**全系唯一字号 12px**（CLI/GUI 共用，见 AGENTS.md 7.3 铁律），不再有
+第二套中文字型/第二档字号/字符集转换表。
 
 ### 字体转换工具
 

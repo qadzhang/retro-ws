@@ -272,9 +272,14 @@ void my_keypad_read(lv_indev_t *indev, lv_indev_data_t *data)
 - **唯一字型唯一字号 12px**（2026-10-05 用户定稿：嵌入式体积优先，
   全系 CLI/GUI 单一字号档）：`src/lvgl/fonts/lv_font_notosans_sc_12.c`
   （Noto Sans SC **1bpp 点阵**，Unicode 区段全量 ≈2.1 万字形，UTF-8
-  码点索引）。12px = 中文 Windows 3.2/95 界面宋体 9pt 点阵的历史
-  标准字号；cvbs_console 网格按 12x14 设计；字号考证表见
-  HARDWARE.md 6.4；不再提供 GB2312/GBK 子集档，不再有第二档字号
+  码点索引，汉字主体）。12px = 中文 Windows 3.2/95 界面宋体 9pt
+  点阵的历史标准字号；cvbs_console 按宋体 9pt 半角/全角体系设计：
+  半角 6px、全角 12px（1 汉字=2 字母宽）、行高 14——半角与全角
+  标点/符号用 **Fusion Pixel 12px 等宽点阵**（OFL-1.1，
+  `lv_font_ascii_6`/`lv_font_fullwidth`，逐像素设计 1:1 渲染；
+  Noto 矢量比例字形光栅化后半角溢出/全角标点墨迹过细，2026-10-05
+  弃用）；字号考证表见 HARDWARE.md 6.4；不再提供 GB2312/GBK
+  子集档，不再有第二档字号、第二套中文字型
 - **所有板必须能显示中文**：AV/CVBS 视频输出是全系标配（含 CLI 档），
   字符界面通过 `cvbs_console`（帧缓冲点阵控制台）渲染上屏——
   Pico/C3 的"字符输出"也必须走 AV 视频输出，不允许只有串口

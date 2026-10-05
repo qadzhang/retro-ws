@@ -116,6 +116,7 @@ NUTTX_INC="-I $RI -I $DEPS/nuttx/include -I $RI/archroot -I $RI/chiproot \
  -I $ROOT/tests/host/stubs -I $ROOT \
  -I $ROOT/deps/my_basic/core -I $ROOT/deps/duktape/src \
  -I $ROOT/src/nuttx/common -I $ROOT/src/nuttx/common/driver \
+ -I $ROOT/src/lvgl/fonts \
  -I $ROOT/src/nuttx/common/apps/system \
  -I $ROOT/src/nuttx/esp32s3 -I $ROOT/src/nuttx/esp32s3/chip -I $ROOT/src/nuttx/esp32s3/board \
  -I $ROOT/src/nuttx/esp32 -I $ROOT/src/nuttx/esp32/chip -I $ROOT/src/nuttx/esp32/board \
@@ -145,6 +146,7 @@ NUTTX_INC_ESP32="-I $RI -I $DEPS/nuttx/include -I $RI/archroot -I $RI/chiproot_e
  -I $ROOT/tests/host/stubs -I $ROOT \
  -I $ROOT/deps/my_basic/core -I $ROOT/deps/duktape/src \
  -I $ROOT/src/nuttx/common -I $ROOT/src/nuttx/common/driver \
+ -I $ROOT/src/lvgl/fonts \
  -I $ROOT/src/nuttx/esp32 -I $ROOT/src/nuttx/esp32/chip -I $ROOT/src/nuttx/esp32/board"
 
 # LVGL 侧

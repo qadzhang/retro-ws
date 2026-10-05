@@ -77,8 +77,8 @@ int main(int argc, char **argv)
     put("你好，世界！AV 控制台\n");
     put("nsh> pkg list\n");
     put("  ucblogo 6.2.2-1\n");
-    put("标点基线: AaBb19 ,.;:!? \"'_\n");
-    put("全角对比: 你好, 世界; 界: \"引\"\n");
+    put("半角基线: MWmw AaBb19 ,.;:!?\n");
+    put("全角标点: ，。！：；“”‘’～·\n");
 
     /* CCDOS 式输入法演示：ime on -> 底部常驻条 -> nihao 选字 */
     put("nsh> ime on\n");

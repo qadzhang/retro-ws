@@ -87,22 +87,22 @@ static void test_console_basic(void)
 
     int cols = cvbs_console_cols();
     int rows = cvbs_console_rows();
-    CHECK(cols == 640 / 12);    /* 53 列 */
+    CHECK(cols == 640 / 6);    /* 106 半格列（半角 6px/全角 12px） */
     CHECK(rows >= 34);          /* 480/14 = 34 行 */
 
-    /* ASCII 写入与光标推进 */
+    /* ASCII 写入与光标推进（半角 1 半格） */
     cvbs_console_write("AB", 2);
     CHECK_EQ_INT(cvbs_console_cursor_x(), 2);
     CHECK_EQ_INT(cvbs_console_cursor_y(), 0);
 
-    /* UTF-8 中文（三字节跨字节流；等宽网格一字一格——2026-10-05
-     * 二次修正：12px 全角恰占满 1 格，AB(2) + 你好(2) = 4） */
+    /* UTF-8 中文（全角 2 半格——半格步进体系 2026-10-05：
+     * AB(2) + 你好(4) = 6 半格） */
     cvbs_console_write("\xe4\xbd\xa0\xe5\xa5\xbd", 6);   /* 你好 */
-    CHECK_EQ_INT(cvbs_console_cursor_x(), 4);
+    CHECK_EQ_INT(cvbs_console_cursor_x(), 6);
 
-    /* 回车/退格 */
+    /* 回车/退格（退全角连退 2 半格：删"好"6->4） */
     cvbs_console_putc('\b');
-    CHECK_EQ_INT(cvbs_console_cursor_x(), 3);
+    CHECK_EQ_INT(cvbs_console_cursor_x(), 4);
     cvbs_console_putc('\r');
     CHECK_EQ_INT(cvbs_console_cursor_x(), 0);
 
@@ -204,16 +204,15 @@ static void test_console_render_pgm(const char *path)
  *        - 下伸小写 g/j/p/q/y：底边入 12..13
  *        - 逗号句号：整体在基线下半带（top>=7）
  *        - 引号类：上半带（top<=5）
- *        - 全角 CJK：等宽网格一字一格（12px 字面恰满 1 格）、
- *          顶 0..2 底 11..13
+ *        - 全角 CJK：占 2 半格（12px 字面）、顶 0..2 底 11..13
  *        - 全角逗号：右下带
- * HOW  : 表驱动：每项（UTF-8 串, 占格数, top 带, bottom 带）；
+ * HOW  : 表驱动：每项（UTF-8 串, 占半格数, top 带, bottom 带）；
  *        写前 init 清屏，从格 (0,0) 起逐项推进并扫描
  */
 struct glyph_pos_exp_s
 {
     const char *u8;
-    int cells;        /* 占格数：等宽网格一律 1（2026-10-05 起） */
+    int cells;        /* 占半格数：半角 1 / 全角 2（半格步进体系） */
     int top_min, top_max;
     int bot_min, bot_max;
 };
@@ -224,8 +223,8 @@ static int cell_span(const uint8_t *fb, int w, int cell_x, int ncells,
     *ymin = 1 << 30;
     *ymax = -1;
     for (int y = 0; y < 14; y++)
-        for (int x = 0; x < ncells * 12; x++)
-            if (fb[y * w + cell_x * 12 + x]) {
+        for (int x = 0; x < ncells * 6; x++)
+            if (fb[y * w + cell_x * 6 + x]) {
                 if (y < *ymin) *ymin = y;
                 if (y > *ymax) *ymax = y;
             }
@@ -245,13 +244,13 @@ static void test_glyph_positions(void)
         {"y", 1, 4, 8, 12, 13},
         /* 数字 */
         {"0", 1, 2, 6, 10, 11}, {"7", 1, 2, 6, 10, 11},
-        /* 中文全角（等宽一字一格，填满 12px 字面） */
-        {"\xe4\xbd\xa0", 1, 0, 3, 10, 13},          /* 你 */
-        {"\xe7\x95\x8c", 1, 0, 3, 10, 13},          /* 界 */
+        /* 中文全角（占 2 半格，填满 12px 字面） */
+        {"\xe4\xbd\xa0", 2, 0, 3, 10, 13},          /* 你 */
+        {"\xe7\x95\x8c", 2, 0, 3, 10, 13},          /* 界 */
         /* 全角符号 */
-        {"\xef\xbc\x8c", 1, 8, 12, 12, 13},         /* ，右下带 */
-        {"\xef\xbc\x9a", 1, 3, 9, 10, 13},          /* ：两点跨中带 */
-        {"\xe2\x80\x9c", 1, 1, 6, 3, 9},            /* “ 上半带 */
+        {"\xef\xbc\x8c", 2, 8, 12, 12, 13},         /* ，右下带 */
+        {"\xef\xbc\x9a", 2, 3, 9, 10, 13},          /* ：两点跨中带 */
+        {"\xe2\x80\x9c", 2, 1, 6, 3, 9},            /* “ 上半带 */
         /* 半角符号（用户点名的种类） */
         {",", 1, 8, 12, 12, 13},      /* 逗号：基线下 */
         {".", 1, 10, 13, 11, 12},     /* 句号：点在基线上 */
@@ -314,7 +313,7 @@ int main(int argc, char **argv)
     cvbs_core_fb_free();
     CHECK_EQ_INT(cvbs_core_fb_alloc(320, 240), 0);
     CHECK_EQ_INT(cvbs_console_init(), 0);
-    CHECK(cvbs_console_cols() == 320 / 12);   /* 26 列 */
+    CHECK(cvbs_console_cols() == 320 / 6);   /* 53 半格列 */
     CHECK(cvbs_console_rows() >= 17);         /* 240/14 = 17 行 */
     cvbs_console_write("AV 控制台 320x240 (240p) 12px\n",
                        strlen("AV 控制台 320x240 (240p) 12px\n"));

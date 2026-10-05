@@ -732,6 +732,47 @@ install_esp_idf_tools() {
     echo "  3. ./scripts/nuttx_build.sh build"
 }
 
+# WHAT : Fusion Pixel 12px 等宽点阵字体下载（cvbs_console 半角/
+#        全角标点表源字体，OFL-1.1）
+# WHY  : Noto 矢量比例字形 12px 光栅化后半角溢出重叠、全角标点
+#        墨迹 1-3px 分不清（2026-10-05 用户确认）；Fusion 为逐像素
+#        设计点阵（半角 adv=6/全角 adv=12），生成管线见
+#        scripts/gen_pixel_fonts.py / convert_font.sh
+download_fusion_pixel() {
+    local font_dir="$DEPS_DIR/fonts"
+    mkdir -p "$font_dir"
+
+    local latin="$font_dir/fusion-pixel-12px-monospaced-latin.ttf"
+    local hans="$font_dir/fusion-pixel-12px-monospaced-zh_hans.ttf"
+
+    if [ -f "$latin" ] && [ -f "$hans" ]; then
+        log_info "Fusion Pixel 字体已存在"
+        return 0
+    fi
+
+    log_step "下载 Fusion Pixel Font 12px monospaced..."
+    local url
+    url="$(curl -sL https://api.github.com/repos/TakWolf/fusion-pixel-font/releases/latest \
+        | grep -o '"browser_download_url": *"[^"]*12px-monospaced-ttf-v[^"]*\.zip"' \
+        | head -1 | cut -d'"' -f4)"
+    if [ -z "$url" ]; then
+        log_warn "无法获取 Fusion Pixel 下载地址（网络），跳过——已生成表仍可用"
+        return 0
+    fi
+
+    local tmp_zip="$DOWNLOAD_DIR/fusion12.zip"
+    wget -q -O "$tmp_zip" "$url" || { log_warn "Fusion Pixel 下载失败，跳过"; return 0; }
+    unzip -oq "$tmp_zip" -d "$DOWNLOAD_DIR/fusion12" \
+        "fusion-pixel-12px-monospaced-*/fusion-pixel-12px-monospaced-latin.ttf" \
+        "fusion-pixel-12px-monospaced-*/fusion-pixel-12px-monospaced-zh_hans.ttf"
+    find "$DOWNLOAD_DIR/fusion12" -name "fusion-pixel-12px-monospaced-latin.ttf" \
+        -exec mv {} "$latin" \;
+    find "$DOWNLOAD_DIR/fusion12" -name "fusion-pixel-12px-monospaced-zh_hans.ttf" \
+        -exec mv {} "$hans" \;
+    rm -rf "$DOWNLOAD_DIR/fusion12" "$tmp_zip"
+    log_info "Fusion Pixel 字体就绪: deps/fonts/"
+}
+
 download_notosans_sc() {
     local font_dir="$PROJECT_ROOT/tools/fonts"
     mkdir -p "$font_dir"
@@ -857,6 +898,7 @@ main() {
         download_links
         download_esp_hal_3rdparty
         download_notosans_sc
+        download_fusion_pixel
         download_esp_idf_tools
     fi
 

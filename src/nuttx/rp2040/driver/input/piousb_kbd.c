@@ -38,7 +38,9 @@
 
 #include <nuttx/sched.h>
 #include <nuttx/kthread.h>
-#include <arch/irq.h>
+/* PIO1 中断号走 port 垫片（树内 <arch/irq.h> 经 arch/chip 软链解析，
+ * 随最后一次 configure 的板变化——宿主矩阵/固件两环境不可达） */
+#include "piousb_irq.h"
 
 #include "pio_usb.h"
 #include "pio_usb_configuration.h"
@@ -435,14 +437,14 @@ int piousb_kbd_init(void)
         return -EIO;
     }
 
-    ret = irq_attach(RP2040_PIO1_IRQ_0, piousb_irq_handler, NULL);
+    ret = irq_attach(PIOUSB_PIO1_IRQ_0, piousb_irq_handler, NULL);
     if (ret < 0)
     {
         syslog(LOG_WARNING, "[piousb] IRQ attach failed: %d\n", ret);
         return ret;
     }
 
-    up_enable_irq(RP2040_PIO1_IRQ_0);
+    up_enable_irq(PIOUSB_PIO1_IRQ_0);
 
     pid = kthread_create("piousb", CONFIG_RETRO_PIO_USB_PRIO,
                          CONFIG_RETRO_PIO_USB_POLL_STACK, kbd_task, NULL);

@@ -44,7 +44,7 @@ else
 fi
 
 step "build+unit retro_gpio"
-if $CC -Wall -Wextra $SAN -I "$STUBS" -I "$DRVINC" \
+if $CC -Wall -Wextra $SAN -I "$STUBS" -I "$DRVINC" -I "$ROOT/src/lvgl/fonts" \
       "$ROOT/tests/host/test_retro_gpio.c" "$DRVINC/retro_gpio.c" \
       -o "$OUT/test_gpio" 2>/tmp/ra2.log \
    && "$OUT/test_gpio" 2>&1 | grep -q '0 failed'; then
@@ -54,7 +54,7 @@ else
 fi
 
 step "build+unit cvbs_core"
-if $CC -Wall -Wextra $SAN -I "$STUBS" -I "$DRVINC" \
+if $CC -Wall -Wextra $SAN -I "$STUBS" -I "$DRVINC" -I "$ROOT/src/lvgl/fonts" \
       "$ROOT/tests/host/test_cvbs.c" "$DRVINC/cvbs_core.c" \
       -o "$OUT/test_cvbs" 2>/tmp/ra3.log \
    && "$OUT/test_cvbs" 2>&1 | grep -q '0 failed'; then
@@ -70,11 +70,13 @@ rm -rf /tmp/fontbridge
 mkdir -p /tmp/fontbridge/lvgl
 cp "$ROOT/firmware/retro-apps/fontbridge/lvgl/lvgl.h" /tmp/fontbridge/lvgl/
 if $CC -Wall -Wextra -g -fsanitize=address,undefined -I "$STUBS" \
-      -I "$DRVINC" -I /tmp/fontbridge \
+      -I "$DRVINC" -I "$ROOT/src/lvgl/fonts" -I /tmp/fontbridge \
       "$ROOT/tests/host/test_cvbs_console.c" \
       "$DRVINC/cvbs_console.c" "$DRVINC/cvbs_core.c" \
       "$DRVINC/lvgl_font_compat.c" \
       "$ROOT/src/lvgl/fonts/lv_font_notosans_sc_12.c" \
+      "$ROOT/src/lvgl/fonts/lv_font_ascii_6.c" \
+      "$ROOT/src/lvgl/fonts/lv_font_fullwidth.c" \
       -o "$OUT/test_con" 2>/tmp/ra3b.log \
    && "$OUT/test_con" 2>&1 | grep -q '0 failed'; then
     echo ">>> PASS"
@@ -83,7 +85,7 @@ else
 fi
 
 step "build+unit hid_ascii（USB/BLE 键盘桥映射，输入优先级原则）"
-if $CC -Wall -Wextra $SAN -I "$STUBS" -I "$DRVINC" \
+if $CC -Wall -Wextra $SAN -I "$STUBS" -I "$DRVINC" -I "$ROOT/src/lvgl/fonts" \
       "$ROOT/tests/host/test_hid_ascii.c" "$DRVINC/hid_ascii.c" \
       -o "$OUT/test_hidascii" 2>/tmp/ra3d.log \
    && "$OUT/test_hidascii" 2>&1 | grep -q '0 failed'; then
@@ -120,11 +122,13 @@ fi
 
 step "build+unit CCDOS 输入法（状态条/选字/回放/组合键）"
 if $CC -Wall -Wextra $SAN -DCONFIG_RETRO_PINYIN_CLI=1 \
-      -I "$STUBS" -I "$DRVINC" -I /tmp/fontbridge \
+      -I "$STUBS" -I "$DRVINC" -I "$ROOT/src/lvgl/fonts" -I /tmp/fontbridge \
       "$ROOT/tests/host/test_ime.c" \
       "$DRVINC/cvbs_ime.c" "$DRVINC/cvbs_console.c" "$DRVINC/cvbs_core.c" \
       "$DRVINC/lvgl_font_compat.c" "$DRVINC/drv_pinyin.c" \
       "$ROOT/src/lvgl/fonts/lv_font_notosans_sc_12.c" \
+      "$ROOT/src/lvgl/fonts/lv_font_ascii_6.c" \
+      "$ROOT/src/lvgl/fonts/lv_font_fullwidth.c" \
       -o "$OUT/test_ime" 2>/tmp/ra3e.log \
    && "$OUT/test_ime" 2>&1 | grep -q '0 failed'; then
     echo ">>> PASS"
@@ -177,7 +181,7 @@ else
 fi
 
 step "bench gate"
-if $CC -O2 -Wall -Wextra -Wno-unused-parameter -I "$STUBS" -I "$APPINC" -I "$DRVINC" \
+if $CC -O2 -Wall -Wextra -Wno-unused-parameter -I "$STUBS" -I "$APPINC" -I "$DRVINC" -I "$ROOT/src/lvgl/fonts" \
       -DPKG_INSTALL_PREFIX="\"$OUT/sd\"" -DPKG_DB_ROOT="\"$OUT/db\"" \
       "$ROOT/tests/host/bench_core.c" "$DRVINC/cvbs_core.c" \
       -o "$OUT/bench_core" 2>/tmp/ra6.log \

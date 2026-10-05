@@ -17,7 +17,9 @@
  *        / 测试 tests/host/test_cvbs_console.c
  * WHERE: retro-ws/src/nuttx/common/driver/cvbs_console.c
  * WHEN : 2026-10-04 新增；同日(晚)加 ANSI+字符设备+输入泵
- * HOW  : 字形 1bpp 行距 = ceil(box_w/8)；全角字 adv_w=12 对齐；
+ * HOW  : 字形 1bpp 行距 = ceil(box_w/8)；半格步进体系（2026-10-05
+ *        三次定稿 = 中文 Win3.2/95 宋体 9pt 半角/全角点阵）：
+ *        半角 ASCII 6px=1 半格、全角 CJK 12px=2 半格（1 汉字=2 字母宽）；
  *        direct luma 前景 255/背景 0；滚动 = 整屏 memmove；
  *        CSI 状态机：ESC→'['→参数→终字节(HfABCDJKsu 等)；
  *        写路径尾部 drv_cvbs_frame() 把 L8 帧缓冲推给硬件层
@@ -37,18 +39,24 @@
 #include "cvbs_console.h"
 #include "cvbs_ime.h"
 #include "lvgl_font_compat.h"
+#include "lv_font_ascii_6.h"
+#include "lv_font_fullwidth.h"
 
 /* 12px 字号配套网格（全系唯一字号，2026-10-05）：
- * 全角 adv=12、半角 adv=6；行高 14 = 12 + 2 行距
- * 320x240 -> 26 列 x 17 行；640x480 -> 53 列 x 34 行 */
-#define CELL_W        12
+ * 半格步进 = 中文 Win3.2/95 界面宋体 9pt 的半角/全角点阵体系：
+ * 半角 6px x14、全角 12px x14、行高 14 = 12 + 2 行距
+ * 320x240 -> 53 半格列 x 17 行；640x480 -> 106 半格列 x 34 行 */
+#define CELL_W        12      /* 全角字面宽（像素） */
+#define STEP_W        6       /* 半格步进单位（网格坐标系 x 单位） */
 #define CELL_H        14
+#define CON_COLS_MAX  128     /* 640/6=106 上限余量 */
+#define CON_ROWS_MAX  40      /* 480/14=34 上限余量 */
 
 /* 控制台状态 */
 static struct {
     int      w, h;          /* 帧缓冲像素尺寸 */
-    int      cols, rows;
-    int      cx, cy;        /* 单元格光标 */
+    int      cols, rows;    /* 半格列数（w/STEP_W）、文本行数 */
+    int      cx, cy;        /* 光标（x 单位 = 半格） */
     uint32_t u8_acc;        /* UTF-8 解码累积 */
     int      u8_rem;        /* 剩余续字节 */
     bool     inited;
@@ -63,6 +71,41 @@ static struct {
     char     status_text[48];  /* 条文本（UTF-8） */
 } g_con;
 
+/*
+ * 全角右半标记位图（g_cont）：
+ * 全角字占 2 半格，其右半格置位；\b 据此判断该退 2 还是 1，
+ * 光标下划线据此取 12px 或 6px 宽。按行独立字节布局
+ * （每行 (cols+7)/8 字节），滚动 = 整行 memmove 不受位对齐影响。
+ */
+static uint8_t g_cont[CON_ROWS_MAX * ((CON_COLS_MAX + 7) / 8)];
+
+static bool cont_get(int x, int y)
+{
+    if (x < 0 || y < 0 || x >= g_con.cols || y >= g_con.rows)
+        return false;
+    return (g_cont[(size_t)y * ((CON_COLS_MAX + 7) / 8) + (x >> 3)]
+            >> (x & 7)) & 1;
+}
+
+static void cont_set(int x, int y, bool v)
+{
+    if (x < 0 || y < 0 || x >= g_con.cols || y >= g_con.rows)
+        return;
+    uint8_t *b = &g_cont[(size_t)y * ((CON_COLS_MAX + 7) / 8) + (x >> 3)];
+
+    if (v)
+        *b |= (uint8_t)(1 << (x & 7));
+    else
+        *b &= (uint8_t)~(1 << (x & 7));
+}
+
+static void cont_clear_row(int y)
+{
+    if (y >= 0 && y < g_con.rows)
+        memset(&g_cont[(size_t)y * ((CON_COLS_MAX + 7) / 8)], 0,
+               (size_t)((CON_COLS_MAX + 7) / 8));
+}
+
 /*==========================
  *  帧缓冲原语
  *==========================*/
@@ -76,16 +119,16 @@ static void px(int x, int y, uint8_t v)
     fb[(size_t)y * g_con.w + x] = v;
 }
 
-static void fill_cell(int cell_x, int cell_y, uint8_t v)
+static void fill_cell(int cell_x, int cell_y, int ncells, uint8_t v)
 {
     uint8_t *fb = cvbs_core_fb();
 
     if (fb == NULL)
         return;
 
-    int x0 = cell_x * CELL_W;
+    int x0 = cell_x * STEP_W;
     int y0 = cell_y * CELL_H;
-    int x1 = x0 + CELL_W;
+    int x1 = x0 + ncells * STEP_W;
     int y1 = y0 + CELL_H;
 
     if (x1 > g_con.w) x1 = g_con.w;
@@ -123,16 +166,99 @@ static void redraw_cell(int cell_x, int cell_y)
 {
     /* 单元格内容（字形）不留副本——光标层用异或式恢复：
      * 下划线只占底部 2px，重画时先清整格再画字形即可 */
-    fill_cell(cell_x, cell_y, attr_bg());
+    fill_cell(cell_x, cell_y, 1, attr_bg());
+}
+
+/*
+ * WHAT : 码点占的半格数（半角 1 / 全角 2）
+ * WHY  : 半格步进体系（2026-10-05）——adv_w>STEP_W 即字面宽于
+ *        半角 6px，按全角 2 半格推进（与中文 Win3.2/95 宋体 9pt
+ *        半角/全角点阵一致；缺字形时保守按半角）
+ * HOW  : 半角区（<0x80）走 ascii6 专用表（等宽 6px）恒 1 半格，
+ *        不查 12px 比例字库的 adv_w——否则宽字母（A adv=7、
+ *        W adv=11）会被误判 2 半格，状态条与正文步进不一致
+ */
+static int glyph_cells(uint32_t cp)
+{
+    lv_font_glyph_dsc_t d;
+
+    if (cp < 0x80)
+        return 1;                      /* ascii6 表等宽半角 */
+    if (fullwidth_dsc(cp) != NULL)
+        return 2;                      /* 全角标点表满格 12px */
+    if (retro_compat_glyph_dsc(retro_compat_font(), &d, cp) &&
+        d.adv_w > STEP_W)
+        return 2;
+    return 1;
+}
+
+/*
+ * WHAT : 位图落格渲染（两套字形源共用）/ render bits into cell
+ * WHY  : 半角走 ascii6 专用表（宋体 9pt 半角形态，等宽 6px 不
+ *        溢出）、全角走 LVGL 全量表——两条路径仅数据源不同，
+ *        基线/裁剪逻辑一致（2026-10-05 基线规范）
+ * HOW  : bm - 位连续 1bpp（retro_compat_bit 取位）；
+ *        ofs_x - 半格/格内水平偏移（ascii6 居中，全量表多为 0）
+ */
+static void render_bits(const uint8_t *bm, int box_w, int box_h,
+                        int ofs_x, int ofs_y, int cell_x, int cell_y)
+{
+    int px0 = cell_x * STEP_W + ofs_x;
+    int py0 = cell_y * CELL_H;
+
+    /*
+     * 基线对齐（2026-10-05 修复标点悬浮 BUG + 双重 py0 BUG）：
+     * cell 基线取在底部光标线上方 2px；ofs_y 语义 = 字形底边在
+     * 基线上方 ofs_y（兼容层与 LVGL 一致）。gy0 为**绝对像素行号**
+     * （含 py0）。
+     */
+    int baseline = py0 + CELL_H - 3;          /* 底部留 2px 给光标 */
+    int gy0 = baseline - ofs_y - box_h + 1;
+    if (gy0 < py0)
+        gy0 = py0;
+    if (gy0 + box_h > py0 + CELL_H - 1)
+        gy0 = py0 + CELL_H - box_h;
+
+    uint8_t fg = attr_fg();
+
+    for (int gy = 0; gy < box_h; gy++) {
+        for (int gx = 0; gx < box_w; gx++) {
+            int bit = retro_compat_bit(bm, gy * box_w + gx);
+            px(px0 + gx, gy0 + gy, bit ? fg : attr_bg());
+        }
+    }
 }
 
 static void glyph_put(uint32_t cp, int cell_x, int cell_y)
 {
+    /* 半角拉丁专用点阵（Fusion 等宽 6px，逐像素设计无溢出） */
+    if (cp < 0x80) {
+        const struct ascii6_glyph_s *a = ascii6_dsc(cp);
+
+        if (a != NULL) {
+            if (a->w > 0)
+                render_bits(ascii6_bitmap(cp), a->w, a->h,
+                            a->ofs_x, a->ofs_y, cell_x, cell_y);
+            return;                          /* 空格 w=0 只占格 */
+        }
+    }
+
+    /* 全角标点/符号专用点阵（Fusion 12px：！满高、，。沉底；
+     * Noto 光栅化的全角标点墨迹仅 1-3px 分不清，2026-10-05） */
+    const struct fullwidth_glyph_s *fw = fullwidth_dsc(cp);
+
+    if (fw != NULL) {
+        if (fw->w > 0)
+            render_bits(fullwidth_bitmap(cp), fw->w, fw->h,
+                        fw->ofs_x, fw->ofs_y, cell_x, cell_y);
+        return;                              /* 全角空格 w=0 只占格 */
+    }
+
     const lv_font_t *font = retro_compat_font();
     lv_font_glyph_dsc_t d;
 
     if (!retro_compat_glyph_dsc(font, &d, cp) || d.box_w == 0) {
-        fill_cell(cell_x, cell_y, attr_fg());
+        fill_cell(cell_x, cell_y, 1, attr_fg());
         return;
     }
 
@@ -140,31 +266,8 @@ static void glyph_put(uint32_t cp, int cell_x, int cell_y)
     if (bm == NULL)
         return;
 
-    int px0 = cell_x * CELL_W;
-    int py0 = cell_y * CELL_H;
-
-    /*
-     * 基线对齐（2026-10-05 修复标点悬浮 BUG + 双重 py0 BUG）：
-     * 原实现把字形墨迹框垂直居中——逗号/句号/下划线的墨迹本来就在
-     * 基线附近及以下，居中后飘到行中间。正确做法：cell 基线取在底部
-     * 光标线上方 2px；ofs_y 语义 = 字形底边在基线上方 ofs_y（兼容层
-     * 与 LVGL 一致）。gy0 为**绝对像素行号**（含 py0），px 直接用。
-     */
-    int baseline = py0 + CELL_H - 3;          /* 底部留 2px 给光标 */
-    int gy0 = baseline - (int)d.ofs_y - (int)d.box_h + 1;
-    if (gy0 < py0)
-        gy0 = py0;
-    if (gy0 + (int)d.box_h > py0 + CELL_H - 1)
-        gy0 = py0 + CELL_H - (int)d.box_h;
-
-    uint8_t fg = attr_fg();
-
-    for (int gy = 0; gy < (int)d.box_h; gy++) {
-        for (int gx = 0; gx < (int)d.box_w; gx++) {
-            int bit = retro_compat_bit(bm, gy * (int)d.box_w + gx);
-            px(px0 + gx, gy0 + gy, bit ? fg : attr_bg());
-        }
-    }
+    render_bits(bm, (int)d.box_w, (int)d.box_h, (int)d.ofs_x,
+                (int)d.ofs_y, cell_x, cell_y);
 }
 
 static void draw_glyph(uint32_t cp, int cell_x, int cell_y)
@@ -182,9 +285,10 @@ static void cursor_draw(bool on)
     if (!g_con.inited)
         return;
 
-    int x0 = g_con.cx * CELL_W;
+    int x0 = g_con.cx * STEP_W;
     int y1 = g_con.cy * CELL_H + CELL_H - 2;
-    int x1 = x0 + CELL_W;
+    /* 光标宽度跟随光标处字形：全角左半（右半被标 CONT）12px，半角 6px */
+    int x1 = x0 + (cont_get(g_con.cx + 1, g_con.cy) ? CELL_W : STEP_W);
 
     if (x1 > g_con.w) x1 = g_con.w;
 
@@ -252,7 +356,7 @@ static void statusbar_redraw(void)
         }
 
         glyph_put(cp, cell, row);
-        cell += 1;                             /* 等宽网格一字一格（同正文） */
+        cell += glyph_cells(cp);   /* 半格步进与正文同源 */
         p += n;
     }
     g_con.attr = saved_attr;
@@ -276,14 +380,21 @@ static void scroll_one(void)
             block - (size_t)CELL_H * g_con.w);
     memset(fb + block - (size_t)CELL_H * g_con.w, 0,
            (size_t)CELL_H * g_con.w);
+
+    /* 全角右半标记随行滚动（行独立字节布局，整块搬移） */
+    memmove(g_cont, g_cont + (CON_COLS_MAX + 7) / 8,
+            (size_t)(text_rows - 1) * ((CON_COLS_MAX + 7) / 8));
+    memset(&g_cont[(size_t)(text_rows - 1) * ((CON_COLS_MAX + 7) / 8)],
+           0, (CON_COLS_MAX + 7) / 8);
 }
 
 static void newline(void)
 {
+    /* VT100 LF 语义：只移光标不清行；滚动路径新末行已由
+     * scroll_one 清像素并复位该行右半标记 */
     g_con.cx = 0;
     if (g_con.cy + 1 >= rows_eff()) {
         scroll_one();
-        fill_cell(0, rows_eff() - 1, 0);
         g_con.cy = rows_eff() - 1;
     } else {
         g_con.cy++;
@@ -300,22 +411,32 @@ static void erase_screen(int mode)
     /* 0=光标到尾 1=头到光标 2=全清 */
     if (mode == 2) {
         memset(fb, 0, (size_t)g_con.w * g_con.h);
+        memset(g_cont, 0, sizeof(g_cont));
         cursor_move(0, 0);
         return;
     }
 
     int row_bytes = g_con.w * CELL_H;
     if (mode == 0) {
-        for (int x = g_con.cx; x < g_con.cols; x++)
-            fill_cell(x, g_con.cy, 0);
-        if (g_con.cy + 1 < g_con.rows)
+        for (int x = g_con.cx; x < g_con.cols; x++) {
+            fill_cell(x, g_con.cy, 1, 0);
+            cont_set(x, g_con.cy, false);
+        }
+        if (g_con.cy + 1 < g_con.rows) {
             memset(fb + (size_t)(g_con.cy + 1) * row_bytes, 0,
                    (size_t)(g_con.rows - g_con.cy - 1) * row_bytes);
+            for (int y = g_con.cy + 1; y < g_con.rows; y++)
+                cont_clear_row(y);
+        }
     } else {
-        if (g_con.cy > 0)
+        if (g_con.cy > 0) {
             memset(fb, 0, (size_t)g_con.cy * row_bytes);
+            for (int y = 0; y < g_con.cy; y++)
+                cont_clear_row(y);
+        }
         memset(fb + (size_t)g_con.cy * row_bytes, 0,
                (size_t)g_con.w * CELL_H);
+        cont_clear_row(g_con.cy);
     }
 }
 
@@ -323,7 +444,8 @@ static void erase_line(int mode)
 {
     /* 0=光标到行尾 1=行头到光标 2=整行 */
     if (mode == 2) {
-        fill_cell(0, g_con.cy, 0);
+        fill_cell(0, g_con.cy, g_con.cols, 0);
+        cont_clear_row(g_con.cy);
         return;
     }
 
@@ -331,15 +453,17 @@ static void erase_line(int mode)
     if (fb == NULL)
         return;
 
-    int y0 = g_con.cy * CELL_H;
     if (mode == 0) {
-        for (int x = g_con.cx; x < g_con.cols; x++)
-            fill_cell(x, g_con.cy, 0);
+        for (int x = g_con.cx; x < g_con.cols; x++) {
+            fill_cell(x, g_con.cy, 1, 0);
+            cont_set(x, g_con.cy, false);
+        }
     } else {
-        for (int x = 0; x <= g_con.cx && x < g_con.cols; x++)
-            fill_cell(x, g_con.cy, 0);
+        for (int x = 0; x <= g_con.cx && x < g_con.cols; x++) {
+            fill_cell(x, g_con.cy, 1, 0);
+            cont_set(x, g_con.cy, false);
+        }
     }
-    (void)y0;
 }
 
 /*==========================
@@ -497,10 +621,11 @@ int cvbs_console_init(void)
     memset(&g_con, 0, sizeof(g_con));
     g_con.w = w;
     g_con.h = h;
-    g_con.cols = w / CELL_W;
+    g_con.cols = w / STEP_W;
     g_con.rows = h / CELL_H;
     g_con.inited = true;
     g_con.cursor_on = true;
+    memset(g_cont, 0, sizeof(g_cont));
 
     cvbs_core_set_direct_luma(true);
     memset(cvbs_core_fb(), 0, (size_t)w * h);
@@ -524,13 +649,18 @@ void cvbs_console_putc(char c)
             g_con.u8_acc = (g_con.u8_acc << 6) | ((uint8_t)c & 0x3F);
             if (--g_con.u8_rem == 0) {
                 cursor_draw(false);
-                draw_glyph(g_con.u8_acc, g_con.cx, g_con.cy);
 
-                /* 等宽网格一字一格：唯一字号 12px 与 CELL_W=12 同宽，
-                 * CJK 全角 adv=12 恰占满 1 格（AGENTS.md 7.3）。
-                 * 2026-10-05 修正：旧版按 wcwidth 语义让全角占 2 格
-                 * （步进 24px），中文之间多出整格空白，截图实测确认 */
-                g_con.cx += 1;
+                /* 半格步进：全角 adv=12 占 2 半格、半角占 1（中文
+                 * Win3.2/95 宋体 9pt 体系；2026-10-05 三次定稿——
+                 * 初版全角 2x12px 格、二版一字 12px 格均有偏差）。
+                 * 全角行末放不下则先折行再画，避免字形被右缘截半 */
+                int step = glyph_cells(g_con.u8_acc);
+
+                if (g_con.cx + step > g_con.cols)
+                    newline();
+                draw_glyph(g_con.u8_acc, g_con.cx, g_con.cy);
+                cont_set(g_con.cx + 1, g_con.cy, step == 2);
+                g_con.cx += step;
                 if (g_con.cx >= g_con.cols)
                     newline();
                 if (g_con.cursor_on)
@@ -557,15 +687,21 @@ void cvbs_console_putc(char c)
             return;
         case '\b':
             cursor_draw(false);
-            if (g_con.cx > 0)
-                g_con.cx--;
-            fill_cell(g_con.cx, g_con.cy, 0);
+            if (g_con.cx > 0) {
+                /* 前一位置是全角右半则连退 2 半格（12px 一并清掉） */
+                bool wide_tail = cont_get(g_con.cx - 1, g_con.cy);
+
+                g_con.cx -= wide_tail ? 2 : 1;
+                if (wide_tail)
+                    cont_set(g_con.cx + 1, g_con.cy, false);
+                fill_cell(g_con.cx, g_con.cy, wide_tail ? 2 : 1, 0);
+            }
             if (g_con.cursor_on)
                 cursor_draw(true);
             return;
         case '\t':
             cursor_draw(false);
-            g_con.cx = (g_con.cx + 4) & ~3;
+            g_con.cx = (g_con.cx + 8) & ~7;   /* 制表位 8 半格 = 48px */
             if (g_con.cx >= g_con.cols)
                 newline();
             if (g_con.cursor_on)
@@ -579,6 +715,7 @@ void cvbs_console_putc(char c)
 
         cursor_draw(false);
         draw_glyph((uint32_t)(uint8_t)c, g_con.cx, g_con.cy);
+        cont_set(g_con.cx + 1, g_con.cy, false);  /* 覆盖旧全角右半标记 */
         if (++g_con.cx >= g_con.cols)
             newline();
         if (g_con.cursor_on)
@@ -599,6 +736,7 @@ void cvbs_console_putc(char c)
         g_con.u8_rem = 3;
     } else {
         draw_glyph(0xFFFD, g_con.cx, g_con.cy);
+        cont_set(g_con.cx + 1, g_con.cy, false);
         if (++g_con.cx >= g_con.cols)
             newline();
     }

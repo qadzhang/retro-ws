@@ -22,7 +22,7 @@ FONT_DEFS="-DCONFIG_LVGL_FONT_10=1 -DCONFIG_LVGL_FONT_12=1 -DCONFIG_LVGL_FONT_14
  -DCONFIG_LVGL_FONT_24=1 -DCONFIG_LVGL_FONT_28=1 -DCONFIG_LVGL_FONT_32=1"
 LVGL_FLAGS="-I $ROOT/tests/host/stubs -I $ROOT/deps -DLV_CONF_INCLUDE_SIMPLE $FONT_DEFS -O1 -fPIC -Wno-unused-parameter"
 PROJ_FLAGS="-I $ROOT/deps -I $ROOT/tests/host/stubs -I $ROOT/src/nuttx/common \
- -I $ROOT/src/nuttx/common/driver -I $ROOT/src/lvgl -I $ROOT/src/lvgl/app \
+ -I $ROOT/src/nuttx/common/driver -I $ROOT/src/lvgl -I $ROOT/src/lvgl/fonts -I $ROOT/src/lvgl -I $ROOT/src/lvgl/fonts/app \
  -DLV_CONF_INCLUDE_SIMPLE $FONT_DEFS -DCONFIG_LVGL=1 \
  -DCONFIG_RETRO_DISPLAY_WIDTH=640 -DCONFIG_RETRO_DISPLAY_HEIGHT=480 \
  -DCONFIG_RETRO_DESKTOP_SHELL_WIN3=1 -DCONFIG_RETRO_FONT_CJK_FULL=1 \
@@ -51,6 +51,8 @@ gcc -Wall -Wextra -Wno-unused-parameter $PROJ_FLAGS -g \
     "$ROOT/src/lvgl/app/wmaker_shell.c" \
     "$ROOT/src/lvgl/i18n.c" \
     "$ROOT/src/lvgl/fonts/lv_font_notosans_sc_12.c" \
+    "$ROOT/src/lvgl/fonts/lv_font_ascii_6.c" \
+    "$ROOT/src/lvgl/fonts/lv_font_fullwidth.c" \
     "$ROOT/src/lvgl/retro_ui.c" \
     "$ROOT/src/lvgl/modules/retro_ui_js.c" \
     "$ROOT/src/lvgl/modules/retro_ui_bas.c" \
@@ -66,6 +68,8 @@ echo "[sim] building cvbs_pipeline..."
 gcc -Wall -Wextra -Wno-unused-parameter $PROJ_FLAGS -g \
     "$ROOT/tools/sim/cvbs_pipeline.c" \
     "$ROOT/src/lvgl/fonts/lv_font_notosans_sc_12.c" \
+    "$ROOT/src/lvgl/fonts/lv_font_ascii_6.c" \
+    "$ROOT/src/lvgl/fonts/lv_font_fullwidth.c" \
     "$ROOT/src/lvgl/lv_port_disp.c" \
     "$ROOT/src/nuttx/common/driver/drv_cvbs.c" \
     "$ROOT/src/nuttx/common/driver/cvbs_core.c" \
@@ -81,6 +85,8 @@ gcc -Wall -Wextra -Wno-unused-parameter $PROJ_FLAGS -g \
     "$ROOT/src/lvgl/app/wmaker_shell.c" \
     "$ROOT/src/lvgl/i18n.c" \
     "$ROOT/src/lvgl/fonts/lv_font_notosans_sc_12.c" \
+    "$ROOT/src/lvgl/fonts/lv_font_ascii_6.c" \
+    "$ROOT/src/lvgl/fonts/lv_font_fullwidth.c" \
     "$ROOT/src/lvgl/retro_ui.c" \
     "$ROOT/src/lvgl/modules/retro_ui_js.c" \
     "$ROOT/src/lvgl/modules/retro_ui_bas.c" \
@@ -95,7 +101,7 @@ echo "[sim] building console_sim..."
 gcc -Wall -Wextra -g -DCONFIG_RETRO_PINYIN_CLI=1 \
     -I "$ROOT/tests/host/stubs" \
     -I "$ROOT/src/nuttx/common" -I "$ROOT/src/nuttx/common/driver" \
-    -I /tmp/fontbridge \
+    -I "$ROOT/src/lvgl/fonts" -I /tmp/fontbridge \
     "$ROOT/tools/sim/console_sim.c" \
     "$ROOT/src/nuttx/common/driver/cvbs_console.c" \
     "$ROOT/src/nuttx/common/driver/cvbs_ime.c" \
@@ -103,6 +109,8 @@ gcc -Wall -Wextra -g -DCONFIG_RETRO_PINYIN_CLI=1 \
     "$ROOT/src/nuttx/common/driver/cvbs_core.c" \
     "$ROOT/src/nuttx/common/driver/lvgl_font_compat.c" \
     "$ROOT/src/lvgl/fonts/lv_font_notosans_sc_12.c" \
+    "$ROOT/src/lvgl/fonts/lv_font_ascii_6.c" \
+    "$ROOT/src/lvgl/fonts/lv_font_fullwidth.c" \
     -o /tmp/retro_sim/console_sim
 
 echo "[sim] OK: /tmp/retro_sim/{lvgl_sim,cvbs_pipeline,lvgl_sim_color,console_sim}"
