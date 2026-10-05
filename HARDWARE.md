@@ -1,11 +1,13 @@
-# ESP32 复古图形工作站 - 硬件规格参考文档
-# ESP32 Retro Graphics Workstation - Hardware Specification Reference
+# 复古工作站 Retro WS - 硬件规格参考文档
+# Retro Workstation (retro-ws) - Hardware Specification Reference
 
 > 本文档记录所有经过网上搜索和上游源码验证的硬件参数。
 > 当程序需要使用新的硬件特性时，**必须先更新本文档**，然后严格按照文档编程。
 >
-> **开发策略**：以 **ESP32-S3 (N16R8/N8R8)** 为开发模板（首选板），
-> ESP32-CAM 作为兼容目标顺带支持。所有驱动先按 S3 模板编写，再适配 CAM。
+> **开发策略**：共五个构建目标（s3 / s3n8 / cam / c3 / pico）。开发以
+> **ESP32-S3 (N16R8/N8R8)** 为模板（首选板），所有驱动先按 S3 模板编写，
+> 再向 ESP32-CAM / 合宙 ESP32-C3 / Raspberry Pi Pico 适配。
+> **AV/CVBS 视频输出全系标配**（含 CLI 档，见 3A.2A / 3B.2A / 13.1）。
 
 ---
 
@@ -15,14 +17,16 @@
 
 | 目标 | 定位 | 芯片模组 |
 |------|------|----------|
-| **esp32s3** | **首选板 / 开发模板** | ESP32-S3-WROOM-1 **N16R8** (16MB+8MB) 或 **N8R8** (8MB+8MB) |
+| **esp32s3 (s3)** | **首选板 / 开发模板** | ESP32-S3-WROOM-1 **N16R8** (16MB+8MB) |
+| esp32s3 (s3n8) | 同上（8MB Flash 档，独立构建目标） | ESP32-S3-WROOM-1 **N8R8** (8MB+8MB) |
 | esp32cam | 兼容目标（顺带支持） | ESP32-CAM (AI-Thinker)，ESP32 + OV2640 |
-| **esp32c3** | **低资源/低价格第三目标** | **合宙 ESP32-C3 核心板**（经典款 CH343 / 简约款原生 USB），RISC-V，CLI 工作站 |
+| **esp32c3** | **低资源/低价格 CLI 档** | **合宙 ESP32-C3 核心板**（经典款 CH343 / 简约款原生 USB），RISC-V |
+| **pico** | **最低成本本地教学终端（CLI，无网络）** | Raspberry Pi Pico（RP2040 双核 Cortex-M0+），见 3B 章 |
 
 > N16R8 与 N8R8 引脚完全一致，仅 Flash 容量不同（16MB / 8MB），
 > 均为 R8 八线 PSRAM（GPIO35/36/37 被占用，见 2.5 节）。
-> **esp32c3 为 RISC-V 架构，与 Xtensa 目标二进制不通用**——.rpk 包
-> 经 Arch 字段隔离（pkg_manager.c，取值 all/xtensa/riscv/esp32c3...）。
+> **esp32c3 为 RISC-V、pico 为 ARM 架构，与 Xtensa 目标二进制不通用**——
+> .rpk 包经 Arch 字段隔离（pkg_manager.c，取值 all/xtensa/riscv/esp32c3...）。
 
 ### 1.2 每板一个硬件档案文件
 
@@ -34,10 +38,14 @@
 | ESP32-S3-DevKitC-1 (N16R8/N8R8) | `src/nuttx/esp32s3/board/hw_esp32s3_devkitc.h` |
 | ESP32-CAM (AI-Thinker) | `src/nuttx/esp32/board/hw_esp32cam_aithinker.h` |
 | 合宙 ESP32-C3 核心板（两款） | `src/nuttx/esp32c3/board/hw_esp32c3_luatos.h` |
+| Raspberry Pi Pico (RP2040) | `src/nuttx/rp2040/board/hw_rp2040_pico.h` |
 
 > 新增开发板时：先在本文档核实并登记引脚，再新建 `hw_<板名>.h` 档案文件。
 
-### 1.3 双目标对比
+### 1.3 图形档双目标对比（S3 / CAM）
+
+> C3 / Pico 为 CLI 档（无 LVGL 桌面），规格与引脚见 3A / 3B 章；
+> C3 与其他目标的功能差异对照见 3A.4。
 
 | 特性 | ESP32-S3 (DevKitC-1 N16R8/N8R8) | ESP32-CAM (AI-Thinker) |
 |------|----------------------------------|------------------------|
@@ -503,7 +511,7 @@ typedef struct {
 
 ---
 
-## 3A. ESP32-C3（合宙核心板，第三目标）⭐ 2026-10-04 新增
+## 3A. ESP32-C3（合宙核心板，CLI 档）⭐ 2026-10-04 新增
 
 > 来源: [LuatOS wiki ESP32C3-CORE](https://wiki-zh.luatos.org) +
 > [ESP32-C3 datasheet](https://www.espressif.com/en/products/socs/esp32-c3)
@@ -579,7 +587,7 @@ DMA 供数速率 = 13.3333MHz/16 = 833.33k 半字/秒（GDMA 通道 0-2 任取�
 | 软 I2C (RTC) | GPIO3 (SCL) / GPIO0 (SDA) | 推荐接线（NuttX 暂无 esp32c3 硬件 I2C 驱动，retro_bus 走位摆回退，见 13.3） |
 | **教学 GPIO** | **GPIO10（首选）** | 唯一完全空闲的非 strapping 脚；GPIO2 可用但需注意启动电平 |
 
-### 3A.4 目标定位（与其他两目标差异）
+### 3A.4 目标定位（与图形档两目标差异）
 
 | 特性 | esp32c3 | esp32s3 / esp32cam |
 |------|---------|--------------------|
@@ -591,7 +599,7 @@ DMA 供数速率 = 13.3333MHz/16 = 833.33k 半字/秒（GDMA 通道 0-2 任取�
 
 ---
 
-## 3B. Raspberry Pi Pico（RP2040，第四目标）⭐ 2026-10-04 新增
+## 3B. Raspberry Pi Pico（RP2040，CLI 教学终端）⭐ 2026-10-04 新增
 
 ### 3B.1 定位与规格
 
@@ -713,7 +721,7 @@ ESP32 内置 2 通道 8-bit DAC（GPIO25/26），可通过 I2S0 DMA 直接输出
 ### 5.2 ESP32-S3 音频/视频方案
 
 ESP32-S3 无内置 DAC，需外部方案：
-- **CVBS 视频输出**：I2S -> GPIO2 + 预留 GPIO15/16/17 -> 电阻网络 -> CVBS 接口
+- **CVBS 视频输出**：LCD_CAM I80 并行口 + GDMA -> GPIO2/15/16/17 -> 4-bit R-2R 电阻梯 -> CVBS（2026-10-04 定稿，详见 6.5；原"I2S -> GPIO2"记载作废）
 - **音频输出**：I2S -> 外部 DAC 芯片（如 MAX98357A）-> 扬声器
 - **音频输入**：ADC -> GPIO1 -> 模拟麦克风（如 MAX9814）
 
@@ -788,6 +796,8 @@ Y = 0.299R + 0.587G + 0.114B
 |------|---------------|--------------|---------------|
 | ESP32-S3 | ✔ | ✔ | ⚠️ 实验性（GDMA + 外部电阻网络） |
 | ESP32-CAM | ✔ | ✔ | ✖（内置 DAC 带宽所限，上限即 640x480） |
+| ESP32-C3 | ✔（cvbs_console 字符控制台） | ✖（400KB SRAM，appconfig 定档 320x240） | ✖ |
+| Pico | ✔（cvbs_console 字符控制台） | ✖（264KB SRAM，appconfig 定档 320x240） | ✖ |
 
 **可行性说明（重要）**：
 - **320x240 (240p)**：复古游戏主机标准制式，所有电视/采集卡兼容，内存占用小（75KB@8bpp），控制台模式首选。
@@ -934,35 +944,26 @@ GDMA(通道) <- 环形描述符 <- 场信号缓冲（PSRAM，双场乒乓）
 
 ## 12. 硬件资源分配
 
-### 12.1 ESP32-S3 核间分工
+### 12.1 核间分工（双核板全局规范，2026-10-04 定稿）
 
-| 资源 | Core 0 | Core 1 |
-|------|--------|--------|
-| 职责 | 图形 + 音频 | 系统 + 网络 |
-| LVGL 渲染 | 是 | 否 |
-| CVBS 扫描 (I2S->GPIO2) | 是 | 否 |
-| I2S 音频 | 是 | 否 |
-| WiFi/TCP/IP | 否 | 是 |
-| NuttShell | 否 | 是 |
-| NTP/Cron | 否 | 是 |
-| SD 卡 | 否 | 是 |
-| USB HID 键鼠 | 否 | 是 |
-| WDT | TIMG0 | TIMG1 |
+**CPU0 = 程序核（NSH/脚本/系统任务），CPU1 = 媒体核（图形/视频/音频/文件 IO）**
+——kthread_create + sched_setaffinity 钉核实现
+（esp32s3_retro.c / esp32_retro.c / rp2040_retro.c 同一规范）。
 
-### 12.2 ESP32-CAM 核间分工
+| 资源 | CPU 0（程序核） | CPU 1（媒体核） |
+|------|----------------|----------------|
+| NuttShell / 脚本引擎 | ✔ | — |
+| LVGL 渲染 / CVBS 扫描 | — | ✔ |
+| I2S/DAC 音频 / FSK | — | ✔ |
+| SD 卡 / 文件 IO | — | ✔ |
+| WiFi / NTP / Cron 等系统任务 | ✔ | — |
+| 看门狗 | TIMG0 | TIMG1 |
 
-| 资源 | Core 0 | Core 1 |
-|------|--------|--------|
-| 职责 | 图形 + 音频 | 系统 + 网络 |
-| LVGL 渲染 | 是 | 否 |
-| CVBS 扫描 (DAC1->GPIO25) | 是 | 否 |
-| DAC 音频 (DAC2->GPIO26) | 是 | 否 |
-| WiFi/TCP/IP | 否 | 是 |
-| NuttShell | 否 | 是 |
-| NTP/Cron | 否 | 是 |
-| TF 卡 | 否 | 是 |
-| BLE 键盘鼠标 | 否 | 是 |
-| WDT | TIMG0 | TIMG1 |
+### 12.2 各板核间差异
+
+- **S3 / CAM**：按 12.1 全局规范（媒体核含 LVGL + CVBS + 音频）
+- **C3**：单核，无分工
+- **Pico**：Core0 = 程序，Core1 = 视频逐行生成（PIO）+ 文件 IO（见 3B.1）
 
 ### 12.3 ESP32-S3 内存分配（N16R8: 16MB Flash + 8MB PSRAM）
 
@@ -1083,6 +1084,7 @@ script <名字>   → 引擎从 Flash 指针直接执行（script_exec_buffer）
 
 | 日期 | 内容 |
 |------|------|
+| **2026-10-05** | **文档全面修正为 retro-ws 五板定位：标题/开发策略去 ESP32 单板前缀；1.1 目标表补 s3n8 与 pico；1.2 档案表补 hw_rp2040_pico.h；6.4 支持范围表补 C3/Pico（320x240 字符控制台档）；12.1/12.2 核间分工改为全局规范（CPU0=程序核 / CPU1=媒体核，与代码 sched_setaffinity 实现同步，原"Core0 图形/Core1 系统"旧表作废）** |
 | **2026-10-05** | **字号定稿（6.4）：全系唯一 12px（lv_font_notosans_sc_12，CLI/GUI 共用，嵌入式体积优先）；cvbs_console 网格 16x18→12x14（320x240→26x17、640x480→53x34）；16px 档废除；LVGL 默认字体 montserrat_12；glm53f 验收 640/240p 两档控制台+双桌面全 pass（240p 为可读下限，实机 CRT 抽验登记 NEXT_STEPS）** |
 | **2026-10-04(深夜)** | **硬件全真外设收口：WS2812 改 RMT 真外设驱动（ws2812_rmt.c + /dev/rmt0，2.8 节）；FSK TX 接 audio_play_pcm() I2S/DAC DMA（13.1）；Pico CVBS 移脚 GP12-15（GP23=SMPS 省电脚会把电源纹波耦合进 R-2R 基准 + PIO 只能连续映射，3B.2A）；合宙 C3 板载 LED 修正为 GPIO12/13 **高电平**点亮、Flash 占用修正为 11=VDD_SPI+14-17 总线（GPIO12/13 DIO 模式可用，3A.2/3A.3）；C3 GPIO10 释放为教学脚；CAM 补 GPIO17=PSRAM CLK 禁用；S3 CVBS 注释由"I2S bitbang"修正为 LCD_CAM I80（6.5 对齐驱动实现 OUT0-3 低 4 位）；新增"板上指示灯引脚避让"全局原则（13.1）** |
 | **2026-10-04(晚)** | **AV 输出全真硬件化定稿：S3=LCD_CAM I80 并行(6.5)、C3=I2S0 PDM raw 单脚(3A.2A)、Pico=PIO 4-bit 并行(3B.2A)、CAM 时钟改整除；每板采样时钟表(6.2)；新增 13 章真外设规范（nano 全系统一 / retro_bus / 板级脚本 ROM XIP）** |

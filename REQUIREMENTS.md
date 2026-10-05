@@ -1,24 +1,27 @@
-# ESP32 复古图形工作站 - 需求说明书 V4.0
-# ESP32 Retro Graphics Workstation - Requirements Specification V4.0
+# 复古工作站 Retro WS - 需求说明书 V4.4
+# Retro Workstation (retro-ws) - Requirements Specification V4.4
 
 > 本文档是中英文双语需求说明书。
 > This document is a bilingual (Chinese/English) requirements specification.
 
-> **多目标支持**：本项目支持 **ESP32-S3**（首选）、**ESP32-CAM**、**合宙 ESP32-C3**（CLI）三种硬件目标。
+> **多目标支持（五板）**：**ESP32-S3**（首选，构建目标 s3/s3n8）、**ESP32-CAM**、
+> **合宙 ESP32-C3**（CLI 档）、**Raspberry Pi Pico**（CLI 档，无网络）五种硬件构建目标，
+> 横跨 Xtensa / RISC-V / ARM 三架构。
 
 ## 1. 项目概述 / Project Overview
 
-- **项目名称 / Project Name**: ESP32 Retro WS (复古图形工作站)
+- **项目名称 / Project Name**: Retro WS 复古工作站（仓库 retro-ws，原 ESP32-S3 Retro WS）
 - **硬件平台**:
-  - **ESP32-S3 (DevKitC-1, N16R8/N8R8)【首选板 / 开发模板】**: 双核 LX7 240MHz, 8MB Octal PSRAM, 8/16MB Flash, USB OTG
+  - **ESP32-S3 (DevKitC-1, N16R8/N8R8)【首选板 / 开发模板】**: 双核 LX7 240MHz, 8MB Octal PSRAM, 8/16MB Flash, USB OTG（构建目标 s3 / s3n8）
   - ESP32-CAM (AI-Thinker)【兼容目标】: ESP32 双核 240MHz, 4MB PSRAM, 4MB Flash, 内置 DAC, BLE HID
-  - **合宙 ESP32-C3 核心板【低资源/低价格第三目标】**: RISC-V 单核 160MHz, 400KB SRAM（无 PSRAM）, 4MB Flash；经典款（CH343 串口）/ 简约款（原生 USB）均支持；**纯 CLI 工作站**（无 LVGL/CVBS），软件经 .rpk 包安装
+  - **合宙 ESP32-C3 核心板【低资源/低价格 CLI 档】**: RISC-V 单核 160MHz, 400KB SRAM（无 PSRAM）, 4MB Flash；经典款（CH343 串口）/ 简约款（原生 USB）均支持；**纯 CLI 工作站**（无 LVGL 桌面，**AV 视频字符控制台全系标配**），软件经 .rpk 包安装
+  - **Raspberry Pi Pico【最低成本本地教学终端】**: RP2040 双核 Cortex-M0+ @133MHz, 264KB SRAM, 2MB Flash；无网络；纯 CLI（AV 视频走 PIO+DMA）
 - **操作系统**: NuttX RTOS 12.12.0
-- **图形库**: LVGL v9.5.0（仅 esp32s3 / esp32cam）
-- **用户界面**: Windows 3.2 经典风格（esp32c3 为 CLI）
+- **图形库**: LVGL v9.5.0（仅 esp32s3 / esp32cam 图形档）
+- **用户界面**: Windows 3.2 经典风格（C3/Pico 为 AV 字符控制台 cvbs_console）
 - **开发语言**: C (NuttX/驱动), Python (工具)
-- **开发策略**: 驱动先按 ESP32-S3 模板编写，再适配 ESP32-CAM / ESP32-C3；每种开发板对应一个硬件档案文件（`hw_<板名>.h`）
-- **包架构隔离**: .rpk 包 Arch 字段取值 all/xtensa/riscv/esp32/esp32s3/esp32c3，Xtensa 与 RISC-V 二进制互不通用（pkg_manager 安装前校验）
+- **开发策略**: 驱动先按 ESP32-S3 模板编写，再向 ESP32-CAM / ESP32-C3 / Pico 适配；每种开发板对应一个硬件档案文件（`hw_<板名>.h`）
+- **包架构隔离**: .rpk 包 Arch 字段取值 all/xtensa/riscv/esp32/esp32s3/esp32c3（Pico 为 ARM 目标，同理隔离），Xtensa / RISC-V / ARM 二进制互不通用（pkg_manager 安装前校验）
 
 ## 2. 功能需求 / Functional Requirements
 
@@ -122,15 +125,17 @@
 ### 2.2 系统功能 / System Functions
 
 #### 2.2.1 显示驱动 / Display Driver
-- [x] CVBS 复合视频输出
-- **ESP32-S3**: I2S bitbang -> GPIO2 -> 电阻网络 -> CVBS
-- **ESP32-CAM**: I2S -> 内置 DAC1 (GPIO25) -> 电阻网络 -> CVBS
+- [x] CVBS 复合视频输出（**全系标配，含 CLI 档**）
+- **ESP32-S3**: LCD_CAM I80 并行口 + GDMA -> GPIO2/15/16/17 -> 4-bit R-2R -> CVBS
+- **ESP32-CAM**: I2S0 -> 内置 DAC1 (GPIO25) -> 电阻网络 -> CVBS
+- **ESP32-C3**: I2S0 PDM-TX 单脚 (GPIO1) + RC 滤波 -> CVBS（sigma-delta）
+- **Pico**: PIO SM0 + DMA 逐行 -> GP12-15 4-bit R-2R -> CVBS（Core1 生成）
 - [x] 8-bit 调色板模式 (256 色)
 - [x] ITU-R BT.601 标清
 - [x] 分辨率三档（2026-10-04 确定）:
   - **320x240 控制台模式**（240p 逐行，CLI/安全模式）
   - **640x480 常规模式**（480i 隔行，GUI 默认）
-  - **1024x768 最高模式**（实验性 overspec，仅 ESP32-S3；ESP32-CAM 上限 640x480）
+  - **1024x768 最高模式**（实验性 overspec，仅 ESP32-S3；ESP32-CAM 上限 640x480；C3/Pico 定档 320x240 字符控制台）
 - [x] 帧率: 30Hz
 
 #### 2.2.2 音频驱动 / Audio Driver
@@ -138,6 +143,7 @@
 - **ESP32-S3**: ADC 输入 (GPIO1) -> 模拟麦克风
 - **ESP32-CAM**: DAC 输出 (GPIO26) -> 内置 DAC -> 功放 -> 扬声器
 - **ESP32-CAM**: ADC 输入 (GPIO34) -> 模拟麦克风
+- **ESP32-C3 / Pico**: 无音频输出（CLI 档不配音频外设）
 - [x] 44100Hz 采样率
 - [x] WAV 播放支持
 
@@ -229,11 +235,11 @@
 
 | 引擎 | 扩展名 | Kconfig | 适用目标 | 说明 |
 |------|--------|---------|----------|------|
-| my-basic | .bas | `RETRO_SCRIPT_TINYBASIC` | 两者 | BASIC 解释器 |
-| Duktape | .js | `RETRO_SCRIPT_DUKTAPE` | 两者 | JavaScript ES5 |
-| Berry | .be | `RETRO_SCRIPT_BERRY` | 两者 | 类 Python 轻量语言（<40KB ROM），nuttx-apps 集成 |
+| my-basic | .bas | `RETRO_SCRIPT_TINYBASIC` | 全系五板 | BASIC 解释器 |
+| Duktape | .js | `RETRO_SCRIPT_DUKTAPE` | s3 / s3n8 / cam / c3 | JavaScript ES5（Pico 档未编） |
+| Berry | .be | `RETRO_SCRIPT_BERRY` | 全系五板 | 类 Python 轻量语言（<40KB ROM），nuttx-apps 集成 |
 | CPython | .py | `RETRO_SCRIPT_PYTHON` | **仅 S3 N16R8** | 完整 Python 3，nuttx-apps interpreters/python |
-| jslogo | .lgo | `RETRO_LOGO_JSLOGO` | 两者 | UCBLogo 子集（Apache-2.0），跑在 Duktape 上 |
+| jslogo | .lgo | `RETRO_LOGO_JSLOGO` | 图形档 s3 / cam | UCBLogo 子集（Apache-2.0），跑在 Duktape 上 |
 
 - [x] 五引擎按需加载切换（`script engine basic|js|berry|py|logo`）
 - [x] 按扩展名自动选择引擎（`script run xxx.{bas,js,be,py,lgo}`）
@@ -318,12 +324,13 @@ const char *retro_ui_get_lang(void);       // 获取当前语言
 
 ### 3.2 资源限制 / Resource Constraints
 
-| 资源 | ESP32-S3 | ESP32-CAM |
-|------|----------|-----------|
-| PSRAM | 8MB (OSPI) | 4MB (QSPI) |
-| Flash | 16MB (OSPI) | 4MB (QSPI) |
-| CPU | Xtensa LX7 双核 @ 240MHz | Xtensa LX6 双核 @ 240MHz |
-| LVGL 堆 | 128KB | 128KB（优化后） |
+| 资源 | ESP32-S3 | ESP32-CAM | ESP32-C3 | Pico |
+|------|----------|-----------|----------|------|
+| PSRAM | 8MB (OSPI) | 4MB (QSPI) | 无 | 无 |
+| SRAM | 512KB | 520KB (396KB 可用) | 400KB | 264KB |
+| Flash | 16/8MB | 4MB (QSPI) | 4MB | 2MB |
+| CPU | Xtensa LX7 双核 @ 240MHz | Xtensa LX6 双核 @ 240MHz | RISC-V 单核 @ 160MHz | Cortex-M0+ 双核 @ 133MHz |
+| LVGL 堆 | 128KB | 128KB（优化后） | 无 LVGL | 无 LVGL |
 
 ### 3.3 代码规范 / Coding Standards
 - 所有注释: **中英双语**
@@ -348,7 +355,7 @@ const char *retro_ui_get_lang(void);       // 获取当前语言
 ## 5. 文件结构 / File Structure
 
 ```
-/home/user/retro-ws/
+retro-ws/                            # 项目根目录（任意位置克隆均可）
 +-- README.md                    # 项目说明
 +-- CODING_STANDARD.md          # 编码规范
 +-- REQUIREMENTS.md             # 需求说明书 (本文档)
@@ -371,10 +378,14 @@ const char *retro_ui_get_lang(void);       // 获取当前语言
 |   +-- verify.sh               # 项目验证（共享）
 |   +-- convert_font.sh         # 字体转换（共享）
 |   +-- setup_env.sh            # 系统依赖安装（共享）
-|   +-- esp32s3/                # ESP32-S3 编译脚本
+|   +-- firmware/               # 五板统一构建入口（build_firmware.sh）
+|   +-- esp32s3/                # ESP32-S3 编译脚本（旧入口）
 |   |   +-- build.sh
 |   |   +-- nuttx_build.sh
-|   +-- esp32cam/               # ESP32-CAM 编译脚本
+|   +-- esp32cam/               # ESP32-CAM 编译脚本（旧入口）
+|   |   +-- build.sh
+|   |   +-- nuttx_build.sh
+|   +-- esp32c3/                # ESP32-C3 编译脚本（旧入口）
 |       +-- build.sh
 |       +-- nuttx_build.sh
 +-- examples/                   # 示例脚本
@@ -393,7 +404,7 @@ const char *retro_ui_get_lang(void);       // 获取当前语言
 |   |   +-- esp32s3/            # ESP32-S3 目标
 |   |   |   +-- esp32s3_retro.c # 双核主入口
 |   |   |   +-- driver/         # ESP32-S3 专用驱动
-|   |   |   |   +-- cvbs/drv_cvbs.c      # I2S CVBS
+|   |   |   |   +-- cvbs/drv_cvbs.c      # LCD_CAM CVBS
 |   |   |   |   +-- audio/drv_audio.c    # I2S 音频
 |   |   |   |   +-- ble_hid.c            # BLE HID (NimBLE)
 |   |   |   |   +-- ble_hid.h            # BLE HID 头文件
@@ -403,19 +414,27 @@ const char *retro_ui_get_lang(void);       // 获取当前语言
 |   |   |   +-- chip/           # ESP32-S3 芯片定义
 |   |   |   +-- include/        # 覆盖头文件
 |   |   +-- esp32/              # ESP32-CAM 目标
-|   |       +-- esp32_retro.c   # 双核主入口
-|   |       +-- driver/         # ESP32-CAM 专用驱动
-|   |       |   +-- cvbs/drv_cvbs_dac.c  # DAC CVBS
-|   |       |   +-- audio/drv_audio_dac.c # DAC 音频
-|   |       |   +-- ble_hid.c             # BLE HID (NimBLE)
-|   |       |   +-- ble_hid.h             # BLE HID 头文件
-|   |       |   +-- ble_storage.c         # BLE Bond 存储
-|   |       |   +-- ble_nsh.c             # BLE NSH 命令
-|   |       |   +-- ble_pair_ui.c         # BLE 配对 UI
-|   |       |   +-- fsk/drv_fsk.c         # FSK
-|   |       +-- board/          # ESP32-CAM 板级
-|   |       +-- chip/           # ESP32 芯片定义
-|   |       +-- include/        # 覆盖头文件
+|   |   |   +-- esp32_retro.c   # 双核主入口
+|   |   |   +-- driver/         # ESP32-CAM 专用驱动
+|   |   |   |   +-- cvbs/drv_cvbs_dac.c  # DAC CVBS
+|   |   |   |   +-- audio/drv_audio_dac.c # DAC 音频
+|   |   |   |   +-- ble_hid.c             # BLE HID (NimBLE)
+|   |   |   |   +-- ble_hid.h             # BLE HID 头文件
+|   |   |   |   +-- ble_storage.c         # BLE Bond 存储
+|   |   |   |   +-- ble_nsh.c             # BLE NSH 命令
+|   |   |   |   +-- ble_pair_ui.c         # BLE 配对 UI
+|   |   |   |   +-- fsk/drv_fsk.c         # FSK
+|   |   |   +-- board/          # ESP32-CAM 板级
+|   |   |   +-- chip/           # ESP32 芯片定义
+|   |   |   +-- include/        # 覆盖头文件
+|   |   +-- esp32c3/            # 合宙 ESP32-C3 目标（CLI，RISC-V）
+|   |   |   +-- esp32c3_retro.c # 单核主入口
+|   |   |   +-- driver/cvbs/    # PDM CVBS（drv_cvbs_pdm.c）
+|   |   |   +-- board/          # 合宙核心板板级（hw_esp32c3_luatos.h）
+|   |   +-- rp2040/             # Raspberry Pi Pico 目标（CLI，ARM）
+|   |       +-- rp2040_retro.c  # 双核主入口（Core0=程序/Core1=媒体）
+|   |       +-- driver/cvbs/    # PIO CVBS（drv_cvbs_pio.c）
+|   |       +-- board/          # Pico 板级（hw_rp2040_pico.h）
 |   +-- lvgl/                   # LVGL 驱动和应用
 |   |   +-- i18n.[c|h]          # 多语种框架
 |   |   +-- retro_ui.c          # UI 胶水层
@@ -435,41 +454,37 @@ const char *retro_ui_get_lang(void);       // 获取当前语言
 ## 6. 编译说明 / Build Instructions
 
 ```bash
-# 1. 下载依赖 / Download dependencies
-cd /home/user/retro-ws
+# 1. 下载依赖 / Download dependencies —— 进入克隆出的项目目录
+cd retro-ws
 ./scripts/download_deps.sh
 
-# 2. 激活 ESP-IDF 环境 / Activate ESP-IDF
+# 2. 激活工具链环境（Xtensa + RISC-V + ARM 三套）
 source scripts/setup_tools.sh
 
-# ========== ESP32-S3 目标 ==========
-# 3a. 编译 ESP32-S3 固件
-cd scripts/esp32s3 && ./build.sh nuttx
+# 3. 五板固件统一构建（产物 dist/firmware/<板>/）
+./scripts/build_firmware.sh all          # 或 s3 / s3n8 / cam / c3 / pico
 
-# 4a. 烧录 ESP32-S3
-./build.sh flash
+# 4. 烧录（ESP32 系 esptool / C3 从 0x0 / Pico UF2，详见 AGENTS.md 9.2）
 
-# ========== ESP32-CAM 目标 ==========
-# 3b. 编译 ESP32-CAM 固件
-cd scripts/esp32cam && ./build.sh nuttx
-
-# 4b. 烧录 ESP32-CAM
-./build.sh flash
+# 旧三板单独入口（s3 / cam / c3）
+cd scripts/esp32s3 && ./build.sh nuttx && ./build.sh flash
 ```
 
 ## 7. 待完成事项 / TODO
 
-- [ ] ESP32-S3 硬件驱动完整实现
-- [x] ESP32-CAM 硬件驱动完整实现（BLE HID、DAC 驱动、SPI SD 卡）
-- [ ] 拼音输入法完整集成到桌面
-- [ ] CLI 模式 `ime` 命令接入（纯 CLI 启动可唤起行内拼音，2026-10-04 需求）
-- [ ] Berry / CPython / jslogo 编译验证（依赖下载后）
-- [ ] LVGL 图标资源加载
-- [ ] 硬件测试与调试
+- [ ] QEMU 模拟验证（仅 S3）
+- [ ] 开发板烧录 + 实机测试（五板固件均已编译通过，唯一未开始项）
+- [ ] CPython 编译验证（仅 S3 N16R8，ROMFS 标准库镜像）
+- [x] Berry 编译验证（2026-10-04 五板默认入 ROM）
+- [x] CLI 模式 `ime` 命令接入（2026-10-05，CCDOS 式输入条）
+- [ ] GUI 输入法系统服务化 + 词组整词上屏
+- [ ] SSH 客户端 libssh2 集成
+- [ ] HTTPS / 断点续传（curl/wget 完善）
 
 ---
 
 **版本历史 / Version History**:
+- V4.4: 项目更名 retro-ws；五板多架构定位（S3/S3N8/CAM/C3/Pico）；修正 C3 "无 CVBS" 误载（AV 输出全系标配）；资源表/文件结构/编译说明补 C3 与 Pico
 - V4.3: 五种脚本引擎全部可配置编译（新增 Berry/CPython/jslogo）；输入法全环境需求（GUI 系统级服务 + CLI `ime` 命令）
 - V4.2: 首选板定为 ESP32-S3 N16R8/N8R8（开发模板），CAM 为兼容目标；每板新增硬件档案文件；修正 GPIO 错误；分辨率定档 320x240/640x480/1024x768
 - V4.1: 完成 BLE HID 驱动（NimBLE）、Bond 存储、NSH 命令、配对 UI
@@ -479,4 +494,4 @@ cd scripts/esp32cam && ./build.sh nuttx
 - V3.2: 添加终端、浏览器、记事本应用
 - V3.1: 基础桌面系统、窗口管理、任务栏
 
-**最后更新 / Last Updated**: 2026-10-04
+**最后更新 / Last Updated**: 2026-10-05

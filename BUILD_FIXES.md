@@ -1,8 +1,36 @@
-# ESP32 Retro WS - 构建修复日志
+# 复古工作站 Retro WS - 构建修复日志
 
 ## 更新日期
 
-2026-10-04（深夜：五板全栈 ROM——GUI + 全解释器 + AV 控制台 + CLI 全家桶）
+2026-10-05（可移植性修复：清理写死的 /home/user 绝对路径；控制台字形排版 + 输入法落地修复；此前 10-04 深夜：五板全栈 ROM——GUI + 全解释器 + AV 控制台 + CLI 全家桶）
+
+---
+
+## 2026-10-05（续3）：清理写死的绝对路径（可移植性）
+
+### 问题
+他人克隆仓库到任意目录后，多处写死 `/home/user/...` 的路径失效：
+`cd /home/user/retro-ws`（README/REQUIREMENTS）、目录树根（SYSTEM/REQUIREMENTS）、
+`bin/esptool.py` 包装器、`scripts/esp32cam/build.sh` 的 genromfs 检测、
+两个宿主测试脚本的 REPO 默认值、`convert_font.sh` 的 npx 扫描（`find /home ...`）
+与 `-o` 绝对输出路径（导致生成字库头注释嵌入开发机路径）、两个 defconfig 的
+`CONFIG_BASE_DEFCONFIG` 绝对值。
+
+### 修复
+- 文档改为 `cd retro-ws` / 目录树根 `retro-ws/`
+- esptool 包装器：PATH → `$HOME/.local/bin` → `python3 -m esptool` 三级回退
+- genromfs 检测改 `$HOME/bin/genromfs`
+- 测试脚本 REPO 默认值改由 `__file__` 向上三级推导（REPO 环境变量仍可覆盖）
+- convert_font.sh：npx 先查 PATH 再扫 `$HOME/.nvm /usr/local /opt`；`-o` 改相对路径
+- `CONFIG_BASE_DEFCONFIG` 行删除（仓库内其余 defconfig 本就无此行，符合惯例）
+- setup_tools.sh 同日重写为三工具链版：PATH 改实际目录 `{xtensa,riscv,arm}/bin`
+  （原引用不存在的 `xtensa-esp-elf/` 旧目录名），新增 RISC-V/ARM 自检与按板提示；
+  README"下载依赖"步骤相应改为三套工具链说明（Xtensa/RISC-V 随脚本下载，
+  ARM 走 apt `gcc-arm-none-eabi` 或自备放入 `deps/esp-idf-tools/arm/`）
+
+### 验证
+`bash -n` 三个脚本语法通过；`check_cli_utf8.py` 以新 ROOT 推导运行通过；
+全仓 grep（排除 deps/与本文历史条目）无 `/home/user` 残留。
 
 ---
 

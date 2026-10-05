@@ -1,6 +1,7 @@
-# ESP32-S3 Retro WS - Agent Control File
+# Retro WS（复古工作站）- Agent Control File
 # AI Agent 工作配置文件
 # 本文件是唯一的 AI 工作标准文件（CLAUDE.md / .clinerules 已于 2026-10-04 废除）
+# 项目已更名 retro-ws（2026-10）：五板多架构（Xtensa/RISC-V/ARM），不再是 ESP32 单板项目
 
 ## 1. 文件基础规范 / File Foundation
 
@@ -13,10 +14,12 @@
 每个源文件必须包含以下头部：/ Every source file must include:
 ```c
 /*
- * SPDX-FileCopyrightText: 2026 ESP32-S3 Retro Project
+ * SPDX-FileCopyrightText: 2026 Retro WS Project
  * SPDX-License-Identifier: Apache-2.0
  */
 ```
+> 存量源文件中的旧版权串（`ESP32-S3 Retro Project` / `ESP32 Retro Project` 等）
+> 不做批量替换，改到哪个文件时顺带换新（与 4.0 节函数注释渐进迁移同策略）。
 
 ---
 
@@ -25,9 +28,9 @@
 ### 2.1 命名规范 / Naming Conventions
 | 类型 | 风格 | 示例 |
 |------|------|------|
-| 函数 | snake_case | `esp32_xxx_init()` |
+| 函数 | snake_case | `retro_xxx_init()` |
 | 变量 | snake_case | `g_initialized` |
-| 常量 | UPPER_SNAKE | `CONFIG_ESP32_XXX` |
+| 常量 | UPPER_SNAKE | `CONFIG_RETRO_XXX` |
 | 结构体 | snake_case_t | `xxx_config_s` |
 | 枚举成员 | UPPER_SNAKE | `MODE_NORMAL` |
 | 宏定义 | UPPER_SNAKE | `#define XXX_MAX_SIZE 1024` |
@@ -131,7 +134,7 @@ int module_init(FAR struct module_config_s *config)
  *
  * WHAT : 该文件/模块是什么、做什么
  * WHY  : 为什么存在，解决什么问题，谁依赖它
- * WHO  : 维护者（ESP32-S3 Retro Project Team，详见 git log）
+ * WHO  : 维护者（Retro WS Project Team，详见 git log）
  * WHERE: 所在路径及上下游模块（如 "retro-ws/src/...，上层见 SYSTEM.md"）
  * WHEN : 初版日期与最近标准化/重大修改日期
  * HOW  : 实现机制一句话（关键数据结构/外设/算法/调用链）
@@ -167,12 +170,12 @@ int module_init(FAR struct module_config_s *config)
 
 ```c
 /*
- * SPDX-FileCopyrightText: 2026 ESP32-S3 Retro Project
+ * SPDX-FileCopyrightText: 2026 Retro WS Project
  * SPDX-License-Identifier: Apache-2.0
  *
  * 文件: module_name.c
  * 描述: 模块功能描述
- * 作者: ESP32-S3 Retro Project Team
+ * 作者: Retro WS Project Team
  * 版本: 0.1.0
  * 日期: 2026-03-29
  */
@@ -282,8 +285,13 @@ void my_keypad_read(lv_indev_t *indev, lv_indev_data_t *data)
 | 优先级 | 路径 |
 |--------|------|
 | 1 | `/mnt/sd0/lang.conf` |
-| 2 | `/etc/lang.conf` |
-| 3 | 编译默认值 |
+| 2 | `/mnt/spiffs0/lang.conf` |
+| 3 | `/mnt/data/lang.conf` |
+| 4 | `/flash/lang.conf` |
+| 5 | `/etc/lang.conf` |
+| 6 | 编译默认值 |
+
+> 与 `src/lvgl/i18n.c` 的读取顺序一致（首个存在者生效）。
 
 ### 7.4 CLI 文本编辑器 / CLI Text Editor（2026-10-04 增）
 - 所有开发板 CLI 文本编辑器统一 **GNU nano 8.4**（deps/nano 真源码移植 + src/nuttx/common/nano_port 垫片）
@@ -329,21 +337,31 @@ int retro_gpio_release(int pin);
 - Python 3.10+
 - CMake 3.20+
 - Ninja Build
-- GCC 交叉编译器（ESP32-S3 Xtensa 工具链）
+- GCC 交叉编译器三套（`deps/esp-idf-tools/{xtensa,riscv,arm}`）：
+  Xtensa（S3/CAM）+ RISC-V（合宙 C3）+ ARM Cortex-M0+（Pico）
 
-### 9.2 固件烧录 / Firmware Flashing
+### 9.2 固件构建与烧录 / Build & Flashing
 ```bash
-# ESP32-S3 / ESP32-CAM（Xtensa）
+# 五板统一构建入口（s3/s3n8/cam/c3/pico/all）
+./scripts/build_firmware.sh all        # 产物 dist/firmware/<板>/nuttx.bin
+
+# 烧录 - ESP32-S3 / ESP32-CAM（Xtensa）
 esptool.py --chip esp32s3 --port /dev/ttyUSB0 write_flash \
     0x1000 bootchain/esp32s3.bin \
     0x8000 partitions.csv \
     0x10000 nuttx.bin
 
-# ESP32-C3（合宙核心板，RISC-V，从 0x0 引导；简约款原生 USB 常为 /dev/ttyACM0）
+# 烧录 - ESP32-C3（合宙核心板，RISC-V，从 0x0 引导；简约款原生 USB 常为 /dev/ttyACM0）
 esptool.py --chip esp32c3 --port /dev/ttyUSB0 write_flash 0x0 nuttx.bin
+
+# 烧录 - Raspberry Pi Pico（ARM，UF2）
+# BOOTSEL 按住上电进 UF2 模式，拖入 nuttx.uf2（构建时由 scripts/make_uf2.py 生成）；
+# 或 openocd -f interface/raspberrypi-swd.cfg SWD 烧 ELF
 ```
 
-编译输出：`deps/nuttx/nuttx.bin`；编译日志：项目根目录 `build.log`。
+五板统一构建产物：`dist/firmware/<板>/nuttx.bin`；旧三板入口
+（`scripts/esp32xx/build.sh`）产物仍在 `deps/nuttx/nuttx.bin`；
+编译日志：项目根目录 `build.log`。
 
 ---
 
@@ -452,4 +470,4 @@ EXTRAFLAGS += -I$(TOPDIR)/../src/nuttx/esp32s3/chip
 
 ---
 
-_最后更新: 2026-10-04_
+_最后更新: 2026-10-05（项目更名 retro-ws：五板多架构定位全面修订）_

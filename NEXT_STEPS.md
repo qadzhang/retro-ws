@@ -1,22 +1,24 @@
 /*
- * SPDX-FileCopyrightText: 2026 ESP32 Retro Project
+ * SPDX-FileCopyrightText: 2026 Retro WS Project
  * SPDX-License-Identifier: Apache-2.0
  */
 
 /*
- * ESP32 复古联网图形工作站 - 下一步工作计划
- * ESP32 Retro WS - Next Steps
+ * 复古工作站 Retro WS - 下一步工作计划
+ * Retro Workstation (retro-ws) - Next Steps
  */
 
 ## 更新日期 / Update Date
 
-2026-10-04
+2026-10-05
 
 ---
 
 ## 当前阶段
 
-**首选板已确定：ESP32-S3 DevKitC-1 (N16R8/N8R8)，ESP32-CAM 为兼容目标**
+**五板固件全部编译通过（2026-10-05），待实机烧录验证**：
+s3 / s3n8（首选板 ESP32-S3 DevKitC-1 N16R8/N8R8）、cam（兼容目标）、
+c3（合宙核心板 CLI 档）、pico（本地教学终端 CLI 档）。
 
 2026-10-04 完成硬件规格核查与修正（详见 HARDWARE.md 变更记录）：
 - 每板新增硬件档案文件（`hw_esp32s3_devkitc.h` / `hw_esp32cam_aithinker.h`）
@@ -27,13 +29,15 @@
 - 依赖版本核查（结论：维持 NuttX 12.12.0 + ESP-IDF v5.5.x + LVGL 9.5.0，见 DEPENDENCIES.md）
 
 源代码结构：
-- `src/nuttx/common/` - 共享代码（14个文件）
-- `src/nuttx/esp32s3/` - ESP32-S3 目标代码（开发模板）
+- `src/nuttx/common/` - 共享代码（驱动/脚本引擎/包管理器/cvbs_console/nano 移植层）
+- `src/nuttx/esp32s3/` - ESP32-S3 目标代码（开发模板，s3/s3n8 共用）
 - `src/nuttx/esp32/` - ESP32-CAM (ESP32) 目标代码（兼容）
+- `src/nuttx/esp32c3/` - 合宙 ESP32-C3 目标代码（CLI 档，RISC-V）
+- `src/nuttx/rp2040/` - Raspberry Pi Pico 目标代码（CLI 档，ARM）
 
 编译脚本：
-- `scripts/esp32s3/` - ESP32-S3 编译脚本
-- `scripts/esp32cam/` - ESP32-CAM 编译脚本
+- `scripts/firmware/build_firmware.sh` - 五板统一构建入口（s3/s3n8/cam/c3/pico/all）
+- `scripts/esp32s3/` / `scripts/esp32cam/` / `scripts/esp32c3/` - 旧三板单独入口
 - `scripts/` - 共享脚本（download_deps.sh, setup_tools.sh, verify.sh, convert_font.sh）
 
 ---
@@ -52,16 +56,16 @@
 | 4 | Kconfig 板本/容量选项 | esp32s3 | 新增 `CONFIG_RETRO_DEVKITC_V10`（LED 引脚选择）与 `CONFIG_RETRO_FLASH_8MB`（N8R8 分区表） |
 | 5 | QEMU 模拟运行 | esp32s3 | Espressif 专用 QEMU |
 | 6 | ESP32-S3 开发板烧录（N16R8/N8R8） | esp32s3 | I2S 驱动实机验证 |
-| 7 | 验证串口输出和 NSH | 两者 | 115200 8N1，S3 用 UART0 GPIO43/44（JTAG 已让渡给音频） |
-| 8 | 验证 GUI 启动 | 两者 | CVBS 输出到显示器 |
-| 9 | 验证双核分工 | 两者 | Core 0 图形 / Core 1 网络 |
+| 7 | 验证串口输出和 NSH | 全板 | 115200 8N1，S3 用 UART0 GPIO43/44（JTAG 已让渡给音频） |
+| 8 | 验证 GUI 启动 | s3/cam | CVBS 输出到显示器 |
+| 9 | 验证双核分工 | s3/cam/pico | 全局规范：CPU0=程序核 / CPU1=媒体核（图形/视频/音频/文件IO） |
 | 10 | S3 多电平 CVBS 电阻网络验证 | esp32s3 | GPIO2 + 预留 GPIO15/16/17 组成 R-2R ladder（见 HARDWARE.md 6.5 节） |
 
 ### 中优先级（功能完善）
 
 | 序号 | 任务 | 说明 |
 |------|------|------|
-| 11 | 320x240 控制台模式实现 | 240p 逐行，CLI/安全模式专用分辨率 |
+| ~~11~~ | ~~320x240 控制台模式实现~~ 已完成(2026-10-04 晚) | cvbs_console 240p 逐行上 AV 屏（12x14 网格），glm53f 验收 pass；剩实机 CRT 抽验 |
 | 12 | 1024x768 实验模式评估 | 非标准 overspec 时序，先在采集卡上验证可行性 |
 | 13 | CAM 摄像头模式（可选功能） | OV2640 与 CVBS/音频互斥，按需切换启用 |
 | 14 | Berry 编译验证 | `RETRO_SCRIPT_BERRY=y`：核对 be_getindex/be_loadfile 与 nuttx-apps 固定 berry 版本的 API 一致性 |
@@ -106,7 +110,7 @@
 | 45 | C3/Pico CVBS 硬件钩子 | **已完成（2026-10-04 晚）**：C3=I2S0 PDM raw 单脚 sigma-delta、Pico=PIO 4-bit + DMA 逐行（Core1 生成） |
 | 46 | NSH 全输出上屏 | **已完成（2026-10-04 晚）**：/dev/cvbscon + UART 键盘泵 + NSH_ALTCONDEV（C3/Pico） |
 | 47 | C3 网络 + ping/telnetd | C3 有 WiFi（未开 NET 栈）；开启后加 ping/telnetd/w3m |
-| 48 | 浏览器（w3m/links） | nuttx-apps 无现成浏览器；需移植（webclient 库已有）|
+| 48 | 浏览器（Links 2.30 移植） | nuttx-apps 无现成浏览器；需移植（webclient 库已有；w3m 弃议）|
 | 49 | GPIO 兼容层扩总线 | **已完成（2026-10-04 晚）**：retro_bus（硬后端探测 + 软总线回退 + 三引擎绑定） |
 | 50 | 脚本 XIP（ROM 直跑） | **已完成（2026-10-04 晚）**：mkromfs.py + /rom/scripts + script 命令（长度型接口直吃 Flash 指针）|
 
@@ -132,7 +136,7 @@
 ### ESP32-S3 专用
 - [ ] USB HID 键鼠识别
 - [ ] BLE HID 键鼠识别
-- [ ] I2S bitbang CVBS 输出到显示器（GPIO2）
+- [ ] LCD_CAM CVBS 输出到显示器（GPIO2/15/16/17 4-bit R-2R）
 - [ ] I2S 外部 DAC 音频输出（GPIO40/41/42）
 - [ ] ADC 音频输入（GPIO1）
 - [ ] SPI SD 卡识别
@@ -256,7 +260,7 @@ cd scripts/esp32cam
 
 ## 开发板测试计划
 
-### 第一阶段：最小系统验证（两个目标）
+### 第一阶段：最小系统验证（五板）
 1. 烧录空白 NuttX 固件
 2. 验证串口输出
 3. 验证 NSH 命令
@@ -267,9 +271,9 @@ cd scripts/esp32cam
 2. 验证 GPIO 输入（按键）
 3. 验证 I2C 总线（RTC）
 4. 验证 SD 卡识别
-5. 验证 WiFi 连接
+5. 验证 WiFi 连接（S3/CAM/C3；Pico 无网络）
 
-### 第三阶段：图形界面
+### 第三阶段：图形界面（图形档 S3/CAM；CLI 档验证 cvbs_console 上屏）
 1. 验证 CVBS 输出
 2. 验证 LVGL 渲染
 3. 验证显示分辨率切换

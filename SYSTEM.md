@@ -1,87 +1,80 @@
 /*
- * SPDX-FileCopyrightText: 2026 ESP32 Retro Project
+ * SPDX-FileCopyrightText: 2026 Retro WS Project
  * SPDX-License-Identifier: Apache-2.0
  */
 
 /*
- * ESP32 复古联网图形工作站 - 系统说明
- * ESP32 Retro WS - System Documentation
+ * 复古工作站 Retro WS - 系统说明
+ * Retro Workstation (retro-ws) - System Documentation
  */
 
 ## 文档信息 / Document Info
 
 | 项目 | 内容 |
 |------|------|
-| 版本 | v0.3.0 |
-| 目标芯片 | **ESP32-S3** (LX7) / **ESP32-CAM** (LX6) / **ESP32-C3** (RISC-V, 合宙核心板) |
+| 版本 | v0.3.1 |
+| 目标芯片 | **ESP32-S3** (LX7) / **ESP32** (CAM, LX6) / **ESP32-C3** (RISC-V, 合宙核心板) / **RP2040** (Pico, Cortex-M0+) |
 | 操作系统 | Apache NuttX RTOS 12.12.0 |
-| 图形引擎 | LVGL 9.5.0 |
-| 文本浏览器 | Links 2.30 |
-| 状态 | **多目标支持已完成** |
+| 图形引擎 | LVGL 9.5.0（仅图形档 S3/CAM） |
+| 文本浏览器 | Links 2.30（下载脚本已支持；板端移植待办，见 NEXT_STEPS 48） |
+| 状态 | **五板多目标支持已完成** |
 
 ### 多目标支持
 
 > 开发模板为 **ESP32-S3 (N16R8/N8R8 首选板)**，ESP32-CAM 为兼容目标，
-> **合宙 ESP32-C3 核心板为低资源第三目标（RISC-V，纯 CLI）**。
+> **合宙 ESP32-C3 核心板为低资源 CLI 档（RISC-V）**，
+> **Raspberry Pi Pico 为最低成本本地教学终端（RP2040，CLI，无网络）**。
 > 每板对应一个硬件档案文件：`src/nuttx/esp32s3/board/hw_esp32s3_devkitc.h`、
 > `src/nuttx/esp32/board/hw_esp32cam_aithinker.h`、
-> `src/nuttx/esp32c3/board/hw_esp32c3_luatos.h`（引脚唯一事实来源）。
+> `src/nuttx/esp32c3/board/hw_esp32c3_luatos.h`、
+> `src/nuttx/rp2040/board/hw_rp2040_pico.h`（引脚唯一事实来源）。
 
 | 目标 | 架构 | 芯片 | Flash | PSRAM | 显示 | 定位 |
 |------|------|------|-------|-------|------|------|
-| esp32s3 | Xtensa LX7 | ESP32-S3 | 8/16MB | 8MB (Octal) | CVBS 320x240/640x480/1024x768(实验) | 首选板/开发模板，构建 `cd scripts/esp32s3 && ./build.sh nuttx` |
-| esp32cam | Xtensa LX6 | ESP32 | 4MB | 4MB (QSPI) | CVBS 320x240/640x480 | 兼容目标，构建 `cd scripts/esp32cam && ./build.sh nuttx` |
-| esp32c3 | **RISC-V RV32IMC** | ESP32-C3 (合宙) | 4MB | 无 | **无（CLI-only）** | 低资源/低价格，构建 `cd scripts/esp32c3 && ./build.sh nuttx` |
+| s3 / s3n8 | Xtensa LX7 | ESP32-S3 (N16R8/N8R8) | 16/8MB | 8MB (Octal) | CVBS 320x240/640x480/1024x768(实验) | 首选板/开发模板，统一构建 `./scripts/build_firmware.sh s3` |
+| cam | Xtensa LX6 | ESP32 (CAM) | 4MB | 4MB (QSPI) | CVBS 320x240/640x480 | 兼容目标，`./scripts/build_firmware.sh cam` |
+| c3 | **RISC-V RV32IMC** | ESP32-C3 (合宙) | 4MB | 无 | AV 字符控制台 320x240 | 低资源/低价格 CLI 档，`./scripts/build_firmware.sh c3` |
+| pico | **ARM Cortex-M0+** | RP2040 (Pico) | 2MB | 无（264KB SRAM） | AV 字符控制台 320x240 | 最低成本本地教学终端，`./scripts/build_firmware.sh pico` |
 
 ---
 
 ## 系统架构
 
-### 双核分工（两个目标通用）
+### 双核分工（全局规范：CPU0=程序核 / CPU1=媒体核）
+
+> 2026-10-04 定稿并落地到代码（sched_setaffinity 钉核）；
+> C3 单核无分工，Pico 双核同此规范（Core1 兼顾视频逐行生成与文件 IO）。
 
 ```
 +------------------------------------------------------+
-|                    ESP32 / ESP32-S3                   |
+|            S3 / CAM / Pico 双核板                     |
 |                                                      |
 |  +------------------+    +------------------------+  |
-|  |     Core 0       |    |      Core 1            |  |
-|  |  (图形 + 音频)   |    |  (系统 + 网络)          |  |
+|  |  CPU0 程序核      |    |  CPU1 媒体核            |  |
 |  |                  |    |                        |  |
-|  |  * LVGL 图形引擎  |    |  * NuttShell (NSH)     |  |
-|  |  * CVBS 显示驱动  |    |  * WiFi / TCP/IP       |  |
-|  |  * 音频播放       |    |  * NTP 时间同步        |  |
-|  |  * FSK 磁带录制   |    |  * Cron 定时任务       |  |
-|  |  * 看门狗 (WDT0)  |    |  * SD 卡文件系统        |  |
-|  |  负载 <= 60%      |    |  * RTC 驱动             |  |
-|  |                  |    |  * 看门狗 (WDT1)        |  |
-|  +------------------+    |  * 负载 <= 70%           |  |
-|                          +------------------------+  |
+|  |  * NuttShell     |    |  * LVGL 图形引擎        |  |
+|  |  * 脚本引擎       |    |  * CVBS 显示驱动        |  |
+|  |  * WiFi/TCP/IP   |    |  * 音频播放/FSK 磁带     |  |
+|  |  * NTP / Cron    |    |  * SD 卡文件 IO          |  |
+|  |  * 看门狗 (WDT0)  |    |  * 看门狗 (WDT1)         |  |
+|  +------------------+    +------------------------+  |
 +------------------------------------------------------+
 ```
 
-### ESP32-S3 内存布局
+### ESP32-S3 内存布局（区域示意，精确地址见 ESP32-S3 TRM）
 
 ```
-0x3C00_0000 +---------------------+
-             |      PSRAM (8MB)    | 图形帧缓冲 / LVGL 堆 / 字库缓存
-             |                     |
-0x3F80_0000 +---------------------+
-             |    SRAM (512KB)     |  内核 / 栈 / 全局变量
-0x4000_0000 +---------------------+
-             |   Flash (16MB)      |  代码 + 只读数据
-             +---------------------+
+PSRAM 8MB (Octal)   图形帧缓冲 / LVGL 堆 / 字库缓存
+SRAM 512KB          内核 / 栈 / 全局变量 / DMA 描述符
+Flash 8/16MB        代码 + 只读数据（含 ROMFS 板级脚本）
 ```
 
-### ESP32-CAM 内存布局
+### ESP32-CAM 内存布局（区域示意）
 
 ```
-0x3F80_0000 +---------------------+
-             |    SRAM (512KB)     |  内核 / 栈 / 全局变量 (396KB 可用)
-0x3F80_0000 +---------------------+
-             |   Flash (4MB)       |  代码 + 只读数据
-0x3F80_0000 +---------------------+
-             |    PSRAM (4MB)      |  图形帧缓冲 / LVGL 堆 / 字库缓存
-             +---------------------+
+SRAM 520KB (396KB 可用)  内核 / 栈 / 全局变量
+PSRAM 4MB (QSPI)         图形帧缓冲 / LVGL 堆 / 字库缓存
+Flash 4MB                代码 + 只读数据
 ```
 
 ---
@@ -89,7 +82,7 @@
 ## 源代码结构
 
 ```
-/home/user/retro-ws/
+retro-ws/                        # 项目根目录（任意位置克隆均可）
 +-- README.md
 +-- SYSTEM.md                    # 本文件
 +-- CODING_STANDARD.md           # 编码规范
@@ -101,12 +94,16 @@
 |   +-- verify.sh                # 项目验证（共享）
 |   +-- convert_font.sh          # 字体转换（共享）
 |   +-- setup_env.sh             # 系统依赖安装（共享）
-|   +-- esp32s3/                 # ESP32-S3 编译脚本
+|   +-- firmware/                # 五板固件统一构建（s3/s3n8/cam/c3/pico/all）
+|   +-- esp32s3/                 # ESP32-S3 编译脚本（旧入口）
 |   |   +-- build.sh             # 编译和烧录
 |   |   +-- nuttx_build.sh       # NuttX 专用编译
-|   +-- esp32cam/                # ESP32-CAM 编译脚本
-|       +-- build.sh             # 编译和烧录
-|       +-- nuttx_build.sh       # NuttX 专用编译
+|   +-- esp32cam/                # ESP32-CAM 编译脚本（旧入口）
+|   |   +-- build.sh             # 编译和烧录
+|   |   +-- nuttx_build.sh       # NuttX 专用编译
+|   +-- esp32c3/                 # ESP32-C3 编译脚本（旧入口）
+|       +-- build.sh
+|       +-- nuttx_build.sh
 |
 +-- configs/
 |   +-- nuttx-defconfig          # NuttX 内核完整配置
@@ -114,9 +111,10 @@
 |
 +-- src/
 |   +-- nuttx/
-|   |   +-- common/              # 共享代码（14个文件）
+|   |   +-- common/              # 共享代码（驱动/脚本引擎/包管理器/nano 移植层）
 |   |   |   +-- bootmenu.c       # 启动菜单
 |   |   |   +-- script_engines.c # 脚本引擎集成
+|   |   |   +-- script_rom.c     # 板级脚本 ROM（/rom/scripts XIP）
 |   |   |   +-- network_utils.c  # curl/wget 网络工具
 |   |   |   +-- apps/system/
 |   |   |   |   +-- nsh_cmds.c     # NSH 自定义命令（pkg 薄分发）
@@ -155,8 +153,8 @@
 |   |   |   |   +-- ble_hid.c    # BLE HID 键盘驱动
 |   |   |   |   +-- ble_hid.h    # BLE HID 头文件
 |   |   |   |   +-- usb_hid.c    # USB HID 键盘驱动
-|   |   |   |   +-- watchdog.c   # 看门狗
-|   |   |   |   +-- cvbs/drv_cvbs.c       # CVBS I2S 显示驱动
+|   |   |   |   +-- ws2812_rmt.c # WS2812 状态灯 RMT 驱动
+|   |   |   |   +-- cvbs/drv_cvbs.c       # CVBS LCD_CAM 显示驱动
 |   |   |   |   +-- fsk/drv_fsk.c         # FSK 磁带调制解调
 |   |   |   |   +-- audio/drv_audio.c     # I2S 音频驱动
 |   |   |   +-- include/         # deps/ bug 的覆盖头文件
@@ -172,7 +170,6 @@
 |   |       +-- driver/          # ESP32-CAM 专用驱动
 |   |       |   +-- ble_hid.c    # BLE HID 键盘驱动
 |   |       |   +-- ble_hid.h    # BLE HID 头文件
-|   |       |   +-- watchdog.c   # 看门狗
 |   |       |   +-- cvbs/drv_cvbs_dac.c   # CVBS DAC 显示驱动
 |   |       |   +-- fsk/drv_fsk.c         # FSK 磁带调制解调
 |   |       |   +-- audio/drv_audio_dac.c # DAC 音频驱动
@@ -181,9 +178,20 @@
 |   |   +-- esp32c3_retro.c  # 主入口（单核，无 SMP 分工）
 |   |   +-- Kconfig.esp32c3  # menuconfig（RETRO_ARCH=riscv-esp32c3）
 |   |   +-- board/
-|   |       +-- board.h      # GPIO/外设定义（引入硬件档案）
-|   |       +-- hw_esp32c3_luatos.h  # 硬件档案：合宙两款核心板
-|   |       +-- board.c      # 板级初始化（骨架）
+|   |   |   +-- board.h      # GPIO/外设定义（引入硬件档案）
+|   |   |   +-- hw_esp32c3_luatos.h  # 硬件档案：合宙两款核心板
+|   |   |   +-- board.c      # 板级初始化（骨架）
+|   |   +-- driver/
+|   |       +-- cvbs/drv_cvbs_pdm.c  # CVBS PDM-TX（I2S0 raw + GDMA）
+|   +-- rp2040/              # Raspberry Pi Pico 目标（RP2040，CLI 教学终端）
+|       +-- rp2040_retro.c   # 主入口（Core0=程序 / Core1=文件IO+视频）
+|       +-- Kconfig.rp2040   # menuconfig
+|       +-- board/
+|       |   +-- board.h      # GPIO/外设定义（引入硬件档案）
+|       |   +-- hw_rp2040_pico.h    # 硬件档案：Pico 40-pin
+|       |   +-- board.c      # 板级初始化
+|       +-- driver/
+|           +-- cvbs/drv_cvbs_pio.c # CVBS PIO+DMA 逐行（GP12-15）
 |   +-- lvgl/
 |   |   +-- retro_ui.c               # 脚本 UI 胶水层
 |   |   +-- lvgl_app.c               # LVGL 应用框架
@@ -243,11 +251,12 @@
 
 | 驱动 | 文件 | 说明 |
 |------|------|------|
-| CVBS 显示 | cvbs/drv_cvbs.c | I2S bitbang -> GPIO2 |
+| CVBS 显示 | cvbs/drv_cvbs.c | LCD_CAM I80 + GDMA -> GPIO2/15/16/17（4-bit R-2R） |
 | 音频 | audio/drv_audio.c | I2S -> 外部 DAC |
 | FSK 磁带 | fsk/drv_fsk.c | FSK 调制解调 |
 | USB HID | usb_hid.c | USB OTG 键盘鼠标 |
-| 看门狗 | watchdog.c | 硬件看门狗 |
+| WS2812 状态灯 | ws2812_rmt.c | RMT 硬件驱动（/dev/rmt0） |
+| 看门狗 | esp32s3_retro.c（寄存器级）+ common/driver/watchdog.c（共享接口） | 硬件看门狗 |
 
 ### ESP32-CAM 专用驱动（src/nuttx/esp32/driver/）
 
@@ -287,14 +296,13 @@ nsh> ble status   # 显示连接状态
 **GPIO 使用**：
 - 状态 LED: GPIO4 (Flash LED)
 - 状态: 快闪=扫描中, 慢闪=已连接, 灭=未连接
-| 看门狗 | watchdog.c | 硬件看门狗 |
 
 ### 看门狗 (watchdog.c)
 
 | 看门狗 | 所属 | 超时 | 用途 |
 |--------|------|------|------|
-| WDT_CORE0 | Core 0 | 10s | 监控图形任务 |
-| WDT_CORE1 | Core 1 | 10s | 监控系统任务 |
+| WDT_CORE0 | CPU0（程序核） | 10s | 监控 NSH/脚本/系统任务 |
+| WDT_CORE1 | CPU1（媒体核） | 10s | 监控图形/视频/音频/文件 IO 任务 |
 | WDT_TASK | 调度器 | 15s | 监控任务调度 |
 
 **功能：**
@@ -498,13 +506,12 @@ WiFi 802.11 b/g/n (2.4GHz)
 
 | 模块 | 优先级 | 说明 |
 |------|--------|------|
-| ESP32-CAM 适配编译 | 高 | BLE HID、DAC 驱动、SPI SD 卡 |
-| ESP32-S3 适配编译 | 高 | USB HID、I2S 驱动、SPI SD 卡、BLE HID |
-| ESP32-C3 适配编译 | 高 | 合宙核心板：RISC-V 工具链、双款控制台、defconfig 校准 |
-| LVGL PC 模拟器 | 高 | PC 上开发 UI（需 NuttX + LVGL 交叉编译）|
-| curl/wget 优化 | 中 | 完善 HTTP 客户端，支持 HTTPS |
-| LVGL 桌面 UI 完善 | 中 | 窗口/图标/任务栏细节 |
-| 实机测试 | 高 | 需开发板 |
+| QEMU 模拟运行 | 高 | Espressif 专用 QEMU（仅 S3） |
+| 开发板烧录 + 实机测试 | 高 | 五板固件均已编译通过，待上板（唯一未开始项） |
+| CPython 编译验证 | 中 | `RETRO_SCRIPT_PYTHON=y`（仅 S3 N16R8），ROMFS 标准库镜像 |
+| GUI 输入法系统服务化 | 中 | 焦点自动唤起 + 词组整词上屏（见 NEXT_STEPS） |
+| curl/wget 优化 | 中 | 完善 HTTP 客户端，支持 HTTPS、断点续传 |
+| SSH 客户端 libssh2 | 低 | 需交叉编译 libssh2 |
 
 ---
 
@@ -513,11 +520,11 @@ WiFi 802.11 b/g/n (2.4GHz)
 ### 编译
 
 ```bash
-# ESP32-S3 目标
-cd scripts/esp32s3 && ./build.sh nuttx
+# 五板统一入口（推荐）
+./scripts/build_firmware.sh all       # 产物 dist/firmware/<板>/
 
-# ESP32-CAM 目标
-cd scripts/esp32cam && ./build.sh nuttx
+# 单板旧入口
+cd scripts/esp32s3 && ./build.sh nuttx     # 或 esp32cam / esp32c3
 ```
 
 ### 串口输出
@@ -570,7 +577,13 @@ cd scripts/esp32cam && ./build.sh nuttx
 | FSK 驱动 | esp32/driver/fsk/drv_fsk.c | ~400 | 完成 |
 | 音频驱动 (DAC) | esp32/driver/audio/drv_audio_dac.c | ~500 | 完成 |
 | BLE HID | esp32/driver/ble_hid.c | ~200 | 完成 |
-| 看门狗 | esp32/driver/watchdog.c | ~300 | 完成 |
+| 看门狗 | common/driver/watchdog.c（共享接口，寄存器级在各板主入口） | - | 完成 |
+| **ESP32-C3 专用** | | | |
+| 主入口 | esp32c3/esp32c3_retro.c | - | 完成（单核，CLI） |
+| CVBS 驱动 (PDM) | esp32c3/driver/cvbs/drv_cvbs_pdm.c | - | 完成（I2S0 PDM-TX + GDMA） |
+| **RP2040 (Pico) 专用** | | | |
+| 主入口 | rp2040/rp2040_retro.c | - | 完成（Core0=程序/Core1=媒体） |
+| CVBS 驱动 (PIO) | rp2040/driver/cvbs/drv_cvbs_pio.c | - | 完成（PIO SM0 + DMA，GP12-15） |
 | **LVGL 应用** | | | |
 | 桌面管理器 | lvgl/app/desktop.c | 1280 | 完成（含外壳切换/app 派发） |
 | WindowMaker 外壳 | lvgl/app/wmaker_shell.c | 430 | 完成（可选 RETRO_DESKTOP_SHELL_WMAKER） |
@@ -593,8 +606,8 @@ cd scripts/esp32cam && ./build.sh nuttx
 | CPython 脚本 UI | lvgl/modules/retro_ui_py.c | 300 | 完成（可选，仅 S3） |
 | jslogo 加载器 | lvgl/modules/logo_jslogo.c | 330 | 完成（可选 CONFIG_RETRO_LOGO_JSLOGO） |
 | CPU 信息接口 | arch/xtensa/xtensa_cpuinfo.c | 229 | 完成 |
-| **总计** | | **~42,300**（2026-10-04 含五脚本引擎/包管理器/双外壳/retro_gpio） | **完成** |
+| **总计** | | **~42,400**（2026-10-05 含五脚本引擎/包管理器/双外壳/retro_gpio/五板目标） | **完成** |
 
 ---
 
-_最后更新: 2026-10-04_
+_最后更新: 2026-10-05（项目更名 retro-ws：五板多架构定位全面修订）_

@@ -1,10 +1,10 @@
 /*
- * SPDX-FileCopyrightText: 2026 ESP32 Retro Project
+ * SPDX-FileCopyrightText: 2026 Retro WS Project
  * SPDX-License-Identifier: Apache-2.0
  */
 
-# ESP32 复古图形工作站 - 编码规范
-# ESP32 Retro Graphics Workstation - Coding Standards
+# 复古工作站 Retro WS - 编码规范
+# Retro Workstation (retro-ws) - Coding Standards
 
 ---
 
@@ -53,14 +53,14 @@
 # 1. 下载所有依赖
 ./scripts/download_deps.sh
 
-# 2. 激活工具链
+# 2. 激活工具链（三套：Xtensa / RISC-V / ARM，一次全激活）
 source scripts/setup_tools.sh
 
-# 3a. 编译 ESP32-S3
-cd scripts/esp32s3 && ./build.sh nuttx
+# 3. 五板固件统一构建（s3/s3n8/cam/c3/pico/all）
+./scripts/build_firmware.sh all
 
-# 3b. 编译 ESP32-CAM
-cd scripts/esp32cam && ./build.sh nuttx
+# 或旧三板单独入口（s3 / cam / c3）
+cd scripts/esp32s3 && ./build.sh nuttx
 ```
 
 ---
@@ -70,21 +70,20 @@ cd scripts/esp32cam && ./build.sh nuttx
 ### 3.1 编译 NuttX
 
 ```bash
-# ESP32-S3 目标
-cd scripts/esp32s3 && ./nuttx_build.sh build
+# 五板统一入口（推荐）
+./scripts/build_firmware.sh all      # 或 s3 / s3n8 / cam / c3 / pico
 
-# ESP32-CAM 目标
-cd scripts/esp32cam && ./nuttx_build.sh build
+# 旧三板单独入口
+cd scripts/esp32s3 && ./nuttx_build.sh build    # 或 esp32cam / esp32c3
 ```
 
 ### 3.2 烧录固件 / Flashing
 
 ```bash
-# ESP32-S3
-cd scripts/esp32s3 && ./build.sh flash
+# ESP32 系（Xtensa / RISC-V）
+cd scripts/esp32s3 && ./build.sh flash    # 或 esp32cam / esp32c3
 
-# ESP32-CAM
-cd scripts/esp32cam && ./build.sh flash
+# Pico：BOOTSEL + UF2（nuttx.uf2 构建时自动生成，详见 AGENTS.md 9.2）
 ```
 
 ---
@@ -95,7 +94,7 @@ cd scripts/esp32cam && ./build.sh flash
 
 ```
 src/nuttx/
-+-- common/              # 共享代码（14个文件）
++-- common/              # 共享代码（驱动/脚本引擎/包管理器/cvbs_console/nano 移植层）
 |   +-- bootmenu.c       # 启动菜单
 |   +-- script_engines.c # 脚本引擎集成
 |   +-- network_utils.c  # curl/wget
@@ -103,35 +102,46 @@ src/nuttx/
 |   +-- driver/          # 共享驱动
 |       +-- network.c, ntp.c, cron.c, firewall.c, memmon.c
 |       +-- drv_rtc.c, drv_pinyin.c, drv_player.c, drv_recorder.c, drv_sqlite.c
-|       +-- audio/, cvbs/, fsk/, hid/  # 目标特定（占位目录）
-+-- esp32s3/             # ESP32-S3 目标
-|   +-- esp32s3_retro.c  # 主入口
+|       +-- cvbs_core.c, cvbs_console.c, drv_cvbs.c  # CVBS 核心/字符控制台
+|       +-- retro_gpio.c, retro_bus.c                # 脚本 GPIO/总线
++-- esp32s3/             # ESP32-S3 目标（s3 / s3n8）
+|   +-- esp32s3_retro.c  # 主入口（CPU0=程序核 / CPU1=媒体核）
 |   +-- driver/          # 专用驱动
-|   |   +-- cvbs/drv_cvbs.c       # I2S CVBS
+|   |   +-- cvbs/drv_cvbs.c       # LCD_CAM CVBS（4-bit R-2R）
 |   |   +-- audio/drv_audio.c     # I2S 音频
 |   |   +-- usb_hid.c             # USB HID
+|   |   +-- ws2812_rmt.c          # WS2812 RMT 状态灯
 |   |   +-- fsk/drv_fsk.c         # FSK
-|   |   +-- watchdog.c            # 看门狗
 |   +-- board/, chip/, include/
 +-- esp32/               # ESP32-CAM 目标
-    +-- esp32_retro.c    # 主入口
-    +-- driver/          # 专用驱动
-    |   +-- cvbs/drv_cvbs_dac.c    # DAC CVBS
-    |   +-- audio/drv_audio_dac.c  # DAC 音频
-    |   +-- ble_hid.c              # BLE HID
-    |   +-- fsk/drv_fsk.c          # FSK
-    |   +-- watchdog.c             # 看门狗
-    +-- board/, chip/, include/
+|   +-- esp32_retro.c    # 主入口
+|   +-- driver/          # 专用驱动
+|   |   +-- cvbs/drv_cvbs_dac.c    # DAC CVBS
+|   |   +-- audio/drv_audio_dac.c  # DAC 音频
+|   |   +-- ble_hid.c              # BLE HID
+|   |   +-- fsk/drv_fsk.c          # FSK
+|   |   +-- watchdog.c             # 看门狗
+|   +-- board/, chip/, include/
++-- esp32c3/             # 合宙 ESP32-C3 目标（CLI，RISC-V）
+|   +-- esp32c3_retro.c  # 单核主入口
+|   +-- driver/cvbs/drv_cvbs_pdm.c # PDM CVBS
+|   +-- board/           # 含 hw_esp32c3_luatos.h 硬件档案
++-- rp2040/              # Raspberry Pi Pico 目标（CLI，ARM）
+    +-- rp2040_retro.c   # 主入口（Core0=程序 / Core1=媒体）
+    +-- driver/cvbs/drv_cvbs_pio.c # PIO CVBS（GP12-15）
+    +-- board/           # 含 hw_rp2040_pico.h 硬件档案
 ```
 
 ### 4.2 目标差异
 
-| 特性 | ESP32-S3 | ESP32-CAM |
-|------|----------|-----------|
-| CVBS 输出 | I2S bitbang -> GPIO2 | 内置 DAC -> GPIO25 |
-| 音频输出 | I2S -> GPIO40/41/42 | 内置 DAC -> GPIO26 |
-| 音频输入 | ADC -> GPIO1 | ADC -> GPIO34 |
-| 键鼠输入 | USB HID + BLE HID | BLE HID |
+| 特性 | ESP32-S3 | ESP32-CAM | ESP32-C3 | Pico |
+|------|----------|-----------|----------|------|
+| CVBS 输出 | LCD_CAM -> GPIO2/15/16/17 R-2R | 内置 DAC -> GPIO25 | I2S PDM -> GPIO1 | PIO -> GP12-15 R-2R |
+| 音频输出 | I2S -> GPIO40/41/42 | 内置 DAC -> GPIO26 | 无 | 无 |
+| 音频输入 | ADC -> GPIO1 | ADC -> GPIO34 | 无 | 无 |
+| 键鼠输入 | USB HID + BLE HID | BLE HID | UART 键盘泵 | UART / USB CDC |
+| GUI 桌面 | LVGL | LVGL | 无（cvbs_console） | 无（cvbs_console） |
+| 架构 | Xtensa LX7 | Xtensa LX6 | RISC-V | ARM Cortex-M0+ |
 | 蓝牙 LED | WS2812 RGB（v1.1=GPIO38 / v1.0=GPIO48，需 RMT 驱动） | GPIO4 |
 | SD 卡 | SPI | SPI |
 
@@ -143,12 +153,12 @@ src/nuttx/
 
 ```c
 /*
- * SPDX-FileCopyrightText: 2026 ESP32 Retro Project
+ * SPDX-FileCopyrightText: 2026 Retro WS Project
  * SPDX-License-Identifier: Apache-2.0
  *
  * 文件: driver_xxx.c
  * 描述: XXX 驱动
- * 作者: ESP32 Retro Project Team
+ * 作者: Retro WS Project Team
  * 版本: 0.1.0
  * 日期: 2026-03-29
  */
@@ -158,7 +168,7 @@ src/nuttx/
 #include <string.h>
 
 /* === 全局变量 === */
-static const char *g_driver_name = "esp32-xxx";
+static const char *g_driver_name = "retro-xxx";
 static bool g_initialized = false;
 
 /* === 函数声明 === */
@@ -176,7 +186,7 @@ FAR struct file_operations_vtable g_xxx_fops = {
 };
 
 /* === 公开函数 === */
-int esp32_xxx_init(void)
+int retro_xxx_init(void)
 {
     /* 初始化代码 */
     g_initialized = true;
@@ -188,9 +198,9 @@ int esp32_xxx_init(void)
 
 | 类型 | 风格 | 示例 |
 |------|------|------|
-| 函数 | snake_case | `esp32_xxx_init()` |
+| 函数 | snake_case | `retro_xxx_init()` |
 | 变量 | snake_case | `g_initialized` |
-| 常量 | UPPER_SNAKE | `CONFIG_ESP32_XXX` |
+| 常量 | UPPER_SNAKE | `CONFIG_RETRO_XXX` |
 | 结构体 | snake_case_t | `xxx_config_s` |
 | 枚举成员 | UPPER_SNAKE | `MODE_NORMAL` |
 | 宏 | UPPER_SNAKE | `#define XXX_MAX_SIZE 1024` |
@@ -214,9 +224,9 @@ struct xxx_config_s {
 };
 
 /* === 公开函数 === */
-int esp32_xxx_init(void);
-int esp32_xxx_deinit(void);
-int esp32_xxx_write(FAR const uint8_t *buf, size_t len);
+int retro_xxx_init(void);
+int retro_xxx_deinit(void);
+int retro_xxx_write(FAR const uint8_t *buf, size_t len);
 
 #endif /* __DRIVER_XXX_H */
 ```
@@ -260,7 +270,7 @@ int module_function(int param)
  *
  * WHAT : 该文件/模块是什么、做什么
  * WHY  : 为什么存在，解决什么问题，谁依赖它
- * WHO  : 维护者（ESP32-S3 Retro Project Team，详见 git log）
+ * WHO  : 维护者（Retro WS Project Team，详见 git log）
  * WHERE: 所在路径及上下游模块（上层文档 SYSTEM.md）
  * WHEN : 初版日期与最近标准化/重大修改日期
  * HOW  : 实现机制一句话（关键数据结构/外设/算法/调用链）
@@ -314,7 +324,7 @@ static inline uint32_t xxx_calc_divider(uint32_t freq)
 ### 5.7 错误处理 / Error Handling
 
 ```c
-int esp32_xxx_init(void)
+int retro_xxx_init(void)
 {
     int ret;
 
@@ -323,7 +333,7 @@ int esp32_xxx_init(void)
         return -EINVAL;
 
     /* 资源申请 */
-    ret = esp32_gpio_config(&config->gpio);
+    ret = retro_gpio_config(&config->gpio);
     if (ret < 0)
         return ret;
 
@@ -342,13 +352,13 @@ int esp32_xxx_init(void)
 
 ### 6.1 显示驱动模板 / Display Driver Template
 
-**ESP32-S3 (I2S bitbang):**
+**ESP32-S3 (LCD_CAM I80 + GDMA):**
 ```c
 void my_disp_flush(lv_display_t *disp, const lv_area_t *area,
                    uint8_t *px_map)
 {
-    /* I2S DMA 发送图像数据到 CVBS (GPIO2) */
-    esp32s3_i2s_cvbs_transmit(px_map, size);
+    /* GDMA 环形链发送场缓冲到 LCD_CAM -> 4-bit R-2R CVBS (GPIO2/15/16/17) */
+    retro_cvbs_submit_frame(px_map, size);
     lv_display_flush_ready(disp);
 }
 ```
@@ -467,7 +477,7 @@ build_nuttx() {
 
 ```c
 /*
- * SPDX-FileCopyrightText: 2026 ESP32 Retro Project
+ * SPDX-FileCopyrightText: 2026 Retro WS Project
  * SPDX-License-Identifier: Apache-2.0
  */
 ```
@@ -499,4 +509,4 @@ build_nuttx() {
 
 ---
 
-_最后更新: 2026-04-02_
+_最后更新: 2026-10-05（项目更名 retro-ws：五板多架构定位全面修订）_

@@ -1,4 +1,4 @@
-# ESP32 Retro WS - 依赖说明
+# 复古工作站 Retro WS - 依赖说明
 
 ## 依赖版本
 
@@ -6,7 +6,7 @@
 |------|------|----------|------|
 | Apache NuttX | 12.12.0 | https://mirrors.bfsu.edu.cn/apache/nuttx/12.12.0/ | 实时操作系统 |
 | Apache NuttX Apps | 12.12.0 | https://mirrors.bfsu.edu.cn/apache/nuttx/12.12.0/ | 应用程序 |
-| ESP-IDF | v5.5.4 | https://github.com/espressif/esp-idf | 开发框架（ESP32 + ESP32-S3） |
+| ESP-IDF | v5.5.4 | https://github.com/espressif/esp-idf | HAL 子集（ESP32/ESP32-S3/ESP32-C3；Pico 走 NuttX 树内 RP2040 支持，不用 ESP-IDF） |
 | LVGL | v9.5.0 | https://github.com/lvgl/lvgl | 图形库 |
 | Duktape | v2.7.0 | https://github.com/svaarala/duktape | JavaScript 引擎 |
 | my_basic | master | https://github.com/paladin-t/my_basic | BASIC 解释器 |
@@ -14,6 +14,7 @@
 | CPython（可选，仅 S3） | nuttx-apps 固定 | nuttx-apps `interpreters/python` | 完整 Python 3，需 ROMFS 标准库镜像 |
 | jslogo（可选） | master | https://github.com/inexorabletash/jslogo | UCBLogo 子集，Apache-2.0，跑在 Duktape 上 |
 | UCBLogo（独立 ELF，不入 ROM） | 6.2.2 | https://sourceforge.net/projects/ucblogo | **GPL-2.0+**，mere aggregation 交付，见下节 |
+| GNU nano | 8.4 | https://www.nano-editor.org/dist/v8/nano-8.4.tar.xz | **GPL-3.0**，CLI 编辑器真源码移植；适配层 `src/nuttx/common/nano_port`（上游不改），sha256 前 16 位 5ad29222bbd55624 |
 
 ## GPL 独立程序包策略（2026-10-04）⭐
 
@@ -34,8 +35,9 @@
 - 现实约束：活跃 GPL 解释器中仅 **UCBLogo** 可移植（FMSLogo 需 Win32、
   KTurtle 需 Qt/X11，均无法运行于 NuttX）
 
-> **多目标支持**：ESP-IDF 同时支持 ESP32 和 ESP32-S3 芯片，NuttX 和 LVGL 也可配置为不同目标。
-> **开发模板**为 ESP32-S3 (N16R8/N8R8)，ESP32-CAM 为兼容目标。
+> **多目标支持（五板）**：ESP-IDF HAL 覆盖 ESP32 / ESP32-S3 / ESP32-C3；
+> Raspberry Pi Pico（RP2040）由 NuttX 树内 ARM 支持编译，不依赖 ESP-IDF。
+> **开发模板**为 ESP32-S3 (N16R8/N8R8)，其余目标适配。
 > **脚本引擎全部可选**：Berry/CPython/jslogo 由 menuconfig 的 `RETRO_SCRIPTS` 菜单独立勾选，
 > Berry/CPython 由 nuttx-apps 构建系统拉取固定版本，jslogo 由 `download_deps.sh` 下载到
 > `deps/jslogo` 并在运行时从 SD 卡 `/sdcard/scripts/logo/lib/` 加载。
@@ -79,23 +81,25 @@
 
 | 工具 | 版本 | 下载地址 | 支持目标 |
 |------|------|----------|----------|
-| crosstool-NG | esp-15.2.0_20251204 | https://github.com/espressif/crosstool-NG/releases | ESP32 + ESP32-S3 |
+| crosstool-NG | esp-15.2.0_20251204 | https://github.com/espressif/crosstool-NG/releases | ESP32 + ESP32-S3（xtensa-esp-elf） |
 | binutils-gdb | esp-gdb-v16.3_20250913 | https://github.com/espressif/binutils-gdb/releases | ESP32 + ESP32-S3 |
 | esp32ulp-elf | 2.38_20240113 | https://github.com/espressif/binutils-gdb/releases | ESP32 |
 | openocd-esp32 | v0.12.0 | https://github.com/espressif/openocd-esp32/releases | ESP32 + ESP32-S3 |
 | llvm | esp-16.0.0-20230516 | https://github.com/espressif/llvm-project/releases | ESP32-S3 |
 | qemu | esp-develop-9.0.0-20240606 | https://github.com/espressif/qemu/releases | ESP32-S3 |
+| riscv32-esp-elf | 随 crosstool-NG 同源 | 同 crosstool-NG releases | **ESP32-C3（合宙，RISC-V）** |
+| arm-none-eabi | 任一主流 GCC-ARM 发行版（实测 xPack 13.2.1） | https://developer.arm.com/downloads/-/gnu-rm 或 `sudo apt-get install gcc-arm-none-eabi` | **Raspberry Pi Pico（RP2040，ARM）**：预期位于 `deps/esp-idf-tools/arm/bin`；该目录缺失时构建回退系统 PATH（apt 安装即可），下载脚本暂未集成 |
 
 > **注意**：QEMU 仅支持 ESP32-S3 模拟，不支持 ESP32-CAM (ESP32)。
-> **RISC-V 工具链**：`riscv32-esp-elf` 由同一脚本下载安装，供第三目标
-> 合宙 ESP32-C3 核心板（`scripts/esp32c3/`）使用——Xtensa 与 RISC-V
-> 二进制不通用，.rpk 包经 Arch 字段隔离。
+> **RISC-V / ARM 工具链**：riscv32-esp-elf 供合宙 C3 目标使用（`download_deps.sh` 一并下载）；Pico 用
+> arm-none-eabi（`deps/esp-idf-tools/arm/bin`，apt 可装）——Xtensa / RISC-V / ARM 三套由
+> `setup_tools.sh` 一次激活并自检；二进制互不通用，.rpk 包经 Arch 字段隔离。
 > **调试注意**：本项目 ESP32-S3 目标将 GPIO39-42 用作 I2S 音频（硬件 JTAG 失效）、
 > GPIO19/20 用作 USB HID（USB-JTAG 失效），调试统一走 UART0（GPIO43/44）。
 
 ## 下载脚本
 
-使用 `scripts/download_deps.sh` 下载所有依赖（两个目标共享）：
+使用 `scripts/download_deps.sh` 下载所有依赖（五板共享）：
 
 ```bash
 # 下载全部依赖
@@ -122,10 +126,10 @@ deps/
 +-- duktape/        # Duktape JavaScript 引擎
 +-- my_basic/       # my_basic 解释器
 +-- jslogo/         # jslogo (UCBLogo 子集, Apache-2.0, 可选)
-+-- esp-idf-tools/  # ESP-IDF 工具链
-    +-- xtensa-esp-elf/      # Xtensa 交叉编译器（ESP32 + ESP32-S3）
-    +-- riscv32-esp-elf/     # RISC-V 交叉编译器
-    +-- esp32ulp-elf/         # ESP32 ULP 协处理器工具
++-- esp-idf-tools/  # 工具链（实际布局，与 build_firmware.sh 一致）
+    +-- xtensa/bin            # Xtensa 交叉编译器（ESP32 + ESP32-S3）
+    +-- riscv/bin             # RISC-V 交叉编译器（ESP32-C3）
+    +-- arm/bin               # ARM 交叉编译器（Pico；apt 安装或自备解压）
     +-- openocd-esp32/        # OpenOCD 调试器
     +-- qemu/                 # QEMU 模拟器（仅 ESP32-S3）
     +-- dist/                 # 下载的工具包
@@ -146,7 +150,7 @@ axel -n 20 https://mirrors.bfsu.edu.cn/apache/nuttx/12.12.0/apache-nuttx-12.12.0
 
 ## 编译脚本
 
-两个目标共享下载脚本，编译脚本独立：
+下载脚本五板共享，编译脚本分统一入口与旧三板入口：
 
 ```
 scripts/
@@ -155,15 +159,19 @@ scripts/
 +-- verify.sh           # 项目验证（共享）
 +-- convert_font.sh     # 字体转换（共享）
 +-- setup_env.sh        # 系统依赖安装（共享）
-+-- esp32s3/            # ESP32-S3 编译脚本（首选板/开发模板）
++-- firmware/           # 五板统一构建入口
+|   +-- build_firmware.sh   # <s3|s3n8|cam|c3|pico|all>
++-- esp32s3/            # ESP32-S3 编译脚本（旧入口）
 |   +-- build.sh
 |   +-- nuttx_build.sh
-+-- esp32cam/           # ESP32-CAM 编译脚本（兼容目标）
++-- esp32cam/           # ESP32-CAM 编译脚本（旧入口）
+|   +-- build.sh
+|   +-- nuttx_build.sh
++-- esp32c3/            # ESP32-C3 编译脚本（旧入口）
     +-- build.sh
     +-- nuttx_build.sh
 ```
 
 ---
 
-_最后更新: 2026-10-04（版本核查 + 首选板 N16R8/N8R8）_
-| nano | GNU nano 8.4（文本编辑器） | GPL-3.0 | https://www.nano-editor.org/dist/v8/nano-8.4.tar.xz | 5ad29222bbd55624 | 2026-10-04 | 真源码移植；适配层在 src/nuttx/common/nano_port（上游不改） |
+_最后更新: 2026-10-05（项目更名 retro-ws：五板多架构定位全面修订；nano 行并入依赖表）_

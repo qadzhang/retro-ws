@@ -3,7 +3,8 @@
 ### 五板全栈 ROM（2026-10-04 深夜）
 - S3/S3N8/CAM：LVGL GUI + Win3/WMaker 双外壳 + 8 图形程序 + jslogo +
   BASIC/Berry/JS 四解释器 + AV 控制台 + 全量 UTF-8 字库（10%/21%/42%）
-- C3：CLI 全家桶（vi/cle/hexed/dd/tee + 三解释器 + AV 控制台，35%）
+- C3：CLI 全家桶（cle/hexed/dd/tee + 三解释器 + AV 控制台，35%；vi 当晚即按
+  AGENTS.md 7.4 定稿移除，编辑器统一 nano）
 - Pico：Berry+BASIC+AV 控制台（60%）
 - RAM 双达标：LVGL 堆/帧缓冲入 SPIRAM（CAM dram0 111%→40%）
 - 栈尺寸按板可配（C3/Pico 小栈防爆 SRAM）
@@ -61,18 +62,18 @@
 - tools/sim/：LVGL 无头模拟器 + CVBS 全链路管线（glm 视觉审查通过）
 - deps：NuttX 12.12/nuttx-apps/LVGL 9.5/Duktape 2.7/my-basic 就位
 
- * SPDX-FileCopyrightText: 2026 ESP32 Retro Project
+ * SPDX-FileCopyrightText: 2026 Retro WS Project
  * SPDX-License-Identifier: Apache-2.0
  */
 
 /*
- * ESP32 复古联网图形工作站 - 已完成需求
- * ESP32 Retro WS - Completed Features
+ * 复古工作站 Retro WS - 已完成需求
+ * Retro Workstation (retro-ws) - Completed Features
  */
 
 ## 更新日期 / Update Date
 
-2026-10-04
+2026-10-05
 
 ---
 
@@ -82,16 +83,17 @@
 
 | 需求 | 实现 | 状态 |
 |------|------|------|
-| 支持 ESP32-S3 / ESP32-CAM / 合宙 ESP32-C3 三目标 | `src/nuttx/common/` + `src/nuttx/esp32s3/` + `src/nuttx/esp32/` + `src/nuttx/esp32c3/` | 完成 |
-| 共享代码提取（14个文件） | `src/nuttx/common/` | 完成 |
-| 目标专用编译脚本 | `scripts/esp32s3/` + `scripts/esp32cam/` | 完成 |
+| 支持五板目标：S3 / S3N8 / CAM / 合宙 C3 / Pico | `src/nuttx/common/` + `src/nuttx/{esp32s3,esp32,esp32c3,rp2040}/` | 完成（五板固件 2026-10-05 全部编译通过） |
+| 共享代码提取 | `src/nuttx/common/`（驱动/脚本引擎/包管理器/cvbs_console/nano 移植层） | 完成 |
+| 五板统一构建入口 | `scripts/firmware/build_firmware.sh <s3|s3n8|cam|c3|pico|all>` | 完成 |
+| 旧三板编译脚本保留 | `scripts/esp32s3/` + `scripts/esp32cam/` + `scripts/esp32c3/` | 完成 |
 | 共享脚本保留 | `scripts/download_deps.sh`, `setup_tools.sh`, `verify.sh`, `convert_font.sh` | 完成 |
 
 ### 2. 系统架构
 
 | 需求 | 实现文件 | 状态 |
 |------|---------|------|
-| 双核 SMP（Core 0 图形+音频 / Core 1 系统+网络） | `esp32s3_retro.c` / `esp32_retro.c` | 完成 |
+| 双核分工全局规范（CPU0=程序核 / CPU1=媒体核：图形/视频/音频/文件IO） | `esp32s3_retro.c` / `esp32_retro.c` / `rp2040_retro.c`（sched_setaffinity 钉核） | 完成 |
 | NuttX RTOS 12.x POSIX 兼容 | `nuttx/` | 完成 |
 | 类 Unix 架构、硬实时 | `nuttx/` | 完成 |
 | 系统程序固化片上 Flash，核心文件用户不可修改 | `board.c` | 完成 |
@@ -106,12 +108,12 @@
 | Core 0 专属图形+音频，Core 1 专属系统+网络 | `esp32s3_retro.c` | 完成 |
 | 5 档分辨率（640x480 / 800x600 / 1024x600 / 720x576 / 1024x768） | `esp32s3/driver/cvbs/drv_cvbs.c` | 修订为三档（见 9 节）|
 | 256 色调色板（8bit palette） | `esp32s3/driver/cvbs/drv_cvbs.c` | 完成 |
-| I2S bitbang CVBS 输出 (GPIO2) | `esp32s3/driver/cvbs/drv_cvbs.c` | 完成 |
+| LCD_CAM I80 CVBS 输出 (GPIO2/15/16/17 4-bit R-2R，2026-10-04 前误记 I2S bitbang) | `esp32s3/driver/cvbs/drv_cvbs.c` | 完成 |
 | I2S 音频输出（GPIO40/41/42） | `esp32s3/driver/audio/drv_audio.c` | 完成 |
 | ADC 音频输入（GPIO1） | `esp32s3/driver/audio/drv_audio.c` | 完成 |
 | BLE HID 键鼠 | `esp32s3/driver/ble_hid.c` | 完成 |
 | USB HID 键鼠 | `esp32s3/driver/usb_hid.c` | 完成 |
-| 蓝牙状态 LED（WS2812 RGB，v1.1=GPIO38 / v1.0=GPIO48；RMT 驱动待实现） | `esp32s3/driver/ble_hid.c` | 完成 |
+| 蓝牙状态 LED（WS2812 RGB，v1.1=GPIO38 / v1.0=GPIO48；RMT 驱动已实现——ws2812_rmt.c，2026-10-04 深夜） | `esp32s3/driver/ws2812_rmt.c` | 完成 |
 | SPI SD 卡 | `esp32s3/board.c` | 完成 |
 
 #### 3.2 ESP32-CAM 目标
@@ -152,7 +154,7 @@
 | wget 文件下载 | `common/network_utils.c` | 完成 |
 | ping / netstat / ifconfig | `common/driver/network.c` | 完成 |
 | SSH 客户端（libssh2） | - | 待集成 |
-| w3m 文本浏览器 | - | 待实现 |
+| 文本浏览器 | - | 待移植（定为 Links 2.30，下载脚本已支持；w3m 弃议，见 NEXT_STEPS 48） |
 | 防火墙默认封禁外部入站 | `common/driver/firewall.c` | 完成 |
 | 允许所有出站 | `common/driver/firewall.c` | 完成 |
 | 禁止外部 ping | `common/driver/firewall.c` | 完成 |
@@ -219,17 +221,17 @@
 |------|------|------|
 | 所有内嵌脚本语言可配置编译 | Kconfig `RETRO_SCRIPTS`：TINYBASIC/DUKTAPE/BERRY/PYTHON + `RETRO_LOGO_JSLOGO` | 完成 |
 | 五引擎统一调度（按需加载/扩展名识别） | `common/script_engines.c` 重写（含宏名不一致修复） | 完成 |
-| Berry 绑定（retro_ui_* 全局函数） | `lvgl/modules/retro_ui_berry.c` | 完成（待编译验证） |
+| Berry 绑定（retro_ui_* 全局函数） | `lvgl/modules/retro_ui_berry.c` | 完成（2026-10-04 晚起五板入 ROM） |
 | CPython 绑定（import retro_ui） | `lvgl/modules/retro_ui_py.c`（仅 S3 N16R8） | 完成（待编译验证） |
 | jslogo 集成（UCBLogo 子集） | `lvgl/modules/logo_jslogo.c`（Duktape + LVGL canvas shim）；`download_deps.sh` 增 jslogo | 完成（待实机验证） |
 | 示例脚本 | `examples/hello.be` / `hello.py` / `spiral.lgo` | 完成 |
-| 输入法全环境需求（GUI 系统服务 + CLI `ime` 命令） | `REQUIREMENTS.md` 2.1.3（实现待办见 NEXT_STEPS） | 需求登记 |
+| 输入法全环境需求（GUI 系统服务 + CLI `ime` 命令） | CLI `ime` 已完成（2026-10-05，§24）；GUI 输入条已落地，系统服务化待办（NEXT_STEPS 21） | 部分完成 |
 
 ### 11. WindowMaker/NeXT 风格外壳（2026-10-04）
 
 | 需求 | 实现 | 状态 |
 |------|------|------|
-| 可切换桌面外壳（Win3.2 <-> WindowMaker） | `desktop.c` `retro_desktop_set_shell()` + `desktop_api.h` | 完成（待编译验证） |
+| 可切换桌面外壳（Win3.2 <-> WindowMaker） | `desktop.c` `retro_desktop_set_shell()` + `desktop_api.h` | 完成（2026-10-04 晚起随五板 ROM 编译；无头模拟渲染验证 pass） |
 | 右侧 Dock 栏（凹陷槽位 + 时钟槽） | `wmaker_shell.c` `wm_dock_create()` | 完成 |
 | 桌面应用图标（双击启动） | `wmaker_shell.c` `wm_icons_create()` | 完成 |
 | NeXT 式根菜单（桌面点击弹出） | `wmaker_shell.c` `wm_menu_open()`（黑底标题条 + 分节 + 应用项） | 完成 |
@@ -242,7 +244,7 @@
 
 | 需求 | 实现 | 状态 |
 |------|------|------|
-| GPL 组件与固件许可证隔离（mere aggregation） | `apps-extra/ucblogo/`（README/Kconfig/Makefile） | 完成（待编译验证） |
+| GPL 组件与固件许可证隔离（mere aggregation） | `apps-extra/ucblogo/`（README/Kconfig/Makefile） | 完成（打包链路就绪；binfmt 实机验证待办，NEXT_STEPS 17） |
 | **deb 风格包管理器（.rpk）** | `pkg_manager.[ch]`：ustar 流式解析/CRC32/路径防护/Arch 检查/Depends | 完成（格式契约已经主机端模拟验证） |
 | 安装数据库（仿 /var/lib/dpkg） | `/sdcard/var/lib/rpkg/`（control 快照+manifest+info 脚本） | 完成 |
 | 维护脚本 | preinst/postinst/prerm/postrm（NSH 脚本，system("sh")） | 完成 |
@@ -258,9 +260,9 @@
 
 | 需求 | 实现 | 状态 |
 |------|------|------|
-| 新增合宙 ESP32-C3 核心板目标（低资源/低价格，RISC-V） | `src/nuttx/esp32c3/`（retro 主入口/board/Kconfig） | 完成（骨架，待编译验证） |
+| 新增合宙 ESP32-C3 核心板目标（低资源/低价格，RISC-V） | `src/nuttx/esp32c3/`（retro 主入口/board/Kconfig） | 完成（2026-10-04 晚起五板 ROM 编译通过） |
 | 两款板支持（经典款 CH343 / 简约款原生 USB） | `hw_esp32c3_luatos.h` + Kconfig `RETRO_LUATOS_C3_{UARTBRIDGE,NATIVEUSB}` | 完成 |
-| .rpk 包架构隔离（Xtensa vs RISC-V） | `pkg_manager.c` `arch_match()`：all/架构族/芯片名 三级匹配，三目标 Kconfig 定义 `RETRO_ARCH` | 完成 |
+| .rpk 包架构隔离（Xtensa vs RISC-V vs ARM） | `pkg_manager.c` `arch_match()`：all/架构族/芯片名 三级匹配，四目标 Kconfig 定义 `RETRO_ARCH`（esp32s3/esp32/esp32c3/rp2040） | 完成 |
 | CLI-only 定位（无 LVGL，包管理器为主通道） | `configs/nuttx-defconfig-esp32c3` 最小配置 + `RETRO_PKG_MANAGER` | 完成（待校准） |
 | C3 编译脚本 | `scripts/esp32c3/{build,nuttx_build}.sh`（riscv32-esp-elf 工具链） | 完成 |
 | CLI 目标命令桩 | nsh_cmds.c：cmd_shell 在无 LVGL 目标返回 ENOSYS | 完成 |
@@ -269,14 +271,14 @@
 
 | 需求 | 实现 | 状态 |
 |------|------|------|
-| retro_gpio 统一接口（config/write/read/adc/pwm/release） | `common/driver/retro_gpio.[ch]`（策略层+设备后端） | 完成（待编译验证） |
-| 系统占用引脚拦截（报"已占用"返回 -EBUSY） | `gpio_is_blocked()` + 各板占用表（hw 档案宏 -> board.c 实例化） | 完成（三目标全覆盖） |
+| retro_gpio 统一接口（config/write/read/adc/pwm/release） | `common/driver/retro_gpio.[ch]`（策略层+设备后端） | 完成（五板编译通过 + 宿主占用拦截测试；/dev 后端实机验证待办） |
+| 系统占用引脚拦截（报"已占用"返回 -EBUSY） | `gpio_is_blocked()` + 各板占用表（hw 档案宏 -> board.c 实例化） | 完成（全板覆盖，2026-10-04 起含 Pico） |
 | BASIC 绑定 | `retro_gpio_bas.c`（mb_register_func） | 完成 |
 | JS 绑定 | `retro_gpio_js.c`（retro_gpio.* 对象） | 完成 |
 | Berry 绑定 | `retro_gpio_berry.c`（全局函数，C3 CLI 可用） | 完成 |
 | Python 绑定 | `retro_gpio_py.c`（import retro_gpio） | 完成 |
 | script_engines 接线 | 四引擎 init 注册（含修复 retro_ui_bas_register 缺调、LVGL 目标守卫） | 完成 |
-| Kconfig 开关 | `RETRO_GPIO_SCRIPT`（三目标，默认 y） | 完成 |
+| Kconfig 开关 | `RETRO_GPIO_SCRIPT`（全板，默认 y） | 完成 |
 | 统一接口入规范 | AGENTS.md 8.1 扩展 retro_gpio_* | 完成 |
 
 ---
@@ -286,7 +288,7 @@
 ### 15. AV 输出全真硬件化（2026-10-04 晚）⭐
 - **S3/S3N8**：LCD_CAM I80 并行口 + NuttX GDMA API 环形描述符链，PLL160M÷12=13.3333MHz 整数分频，4-bit R-2R（GPIO2/15/16/17），帧环 625×853 样本 PSRAM（HARDWARE.md 6.5）
 - **C3**：I2S0 PDM-TX raw 模式 + GDMA，一阶 sigma-delta 1-bit@13.3333MHz 单脚 GPIO1 + RC 滤波，313 行场环 32.6KB SRAM（HARDWARE.md 3A.2A）
-- **Pico**：PIO SM0 `out pins,4` + DMA DREQ 节流逐行，GP20-23 4-bit R-2R，Core1 视频生成任务（双核分工规范落地）（HARDWARE.md 3B.2A）
+- **Pico**：PIO SM0 `out pins,4` + DMA DREQ 节流逐行，GP20-23 4-bit R-2R，Core1 视频生成任务（双核分工规范落地）（HARDWARE.md 3B.2A；**当晚已移脚 GP12-15**——GP23 为 SMPS 省电脚会污染 3V3 基准，见同日"硬件全真外设收口"条）
 - **CAM**：内置 DAC1(GPIO25) I2S0 DMA 整帧环，时钟改整数 ÷6 + 853 样本行（消小数分频抖动），描述符补 owner 位
 - **cvbs_core**：行长运行时可配（cvbs_core_set_line_layout）+ 单行生成 API（cvbs_core_field_line/line_kind）供逐行架构；每板采样时钟表入 HARDWARE.md 6.2
 
@@ -372,10 +374,11 @@
 | 共享驱动模块 | 11 个 | ~7,000 行 |
 | ESP32-S3 专用 | 8 个 | ~3,200 行 |
 | ESP32-CAM 专用 | 7 个 | ~2,200 行 |
+| ESP32-C3 / RP2040 专用 | 2 个 CVBS 发射器 + 板级 | ~1,000 行 |
 | LVGL 应用 | 12+ 个 | ~8,000 行 |
 | 系统集成 | 多个 | ~1,100 行 |
 | 架构相关 | 1 个 | ~229 行 |
-| **总计** | **约 60+ 个模块** | **~42,300 行**（2026-10-04） |
+| **总计** | **约 60+ 个模块** | **~42,400 行**（2026-10-05） |
 
 ---
 
@@ -438,7 +441,27 @@ src/nuttx/esp32/                     # ESP32-CAM 目标
 |   +-- audio/drv_audio_dac.c       # DAC 音频驱动
 +-- include/                         # 覆盖头文件
 
-src/lvgl/                            # LVGL 应用（两个目标共享）
+src/nuttx/esp32c3/                   # 合宙 ESP32-C3 目标（CLI，RISC-V）
++-- esp32c3_retro.c                  # 单核主入口
++-- Kconfig.esp32c3                  # menuconfig
++-- board/
+|   +-- board.c                      # 板级初始化
+|   +-- board.h                      # GPIO/外设定义
+|   +-- hw_esp32c3_luatos.h          # 硬件档案（合宙两款核心板）
++-- driver/
+    +-- cvbs/drv_cvbs_pdm.c          # PDM CVBS（I2S0 raw + GDMA）
+
+src/nuttx/rp2040/                    # Raspberry Pi Pico 目标（CLI，ARM）
++-- rp2040_retro.c                   # 双核主入口（Core0=程序/Core1=媒体）
++-- Kconfig.rp2040                   # menuconfig
++-- board/
+|   +-- board.c                      # 板级初始化
+|   +-- board.h                      # GPIO/外设定义
+|   +-- hw_rp2040_pico.h             # 硬件档案（Pico 40-pin）
++-- driver/
+    +-- cvbs/drv_cvbs_pio.c          # PIO CVBS（SM0 + DMA，GP12-15）
+
+src/lvgl/                            # LVGL 应用（图形档目标共享）
 +-- i18n.c                           # 多语种框架
 +-- i18n.h                           # 多语种头文件
 +-- retro_ui.c                       # UI 胶水层
@@ -469,8 +492,9 @@ src/arch/xtensa/src/common/
 +-- xtensa_cpuinfo.c                # CPU 信息
 
 tools/fonts/
-+-- lv_font_notosans_sc_16.c        # 16px 中文字体
 +-- NotoSansSC-Medium.otf           # 字体源文件
+# 全系唯一 12px 点阵字库（src/lvgl/fonts/lv_font_notosans_sc_12.c）由
+# scripts/convert_font.sh 从上表源文件生成；16px 档已于 2026-10-05 废除
 ```
 
 ---
@@ -479,7 +503,7 @@ tools/fonts/
 
 | 需求文档章节 | 实现章节 | 状态 |
 |-------------|---------|------|
-| 2.1 核心主控 | 系统架构（三目标） | 完成 |
+| 2.1 核心主控 | 系统架构（五板目标） | 完成 |
 | 2.2 RTC 时钟 | common/drv_rtc.c | 完成 |
 | 2.3 显示模块 | cvbs 驱动（各目标） | 完成 |
 | 2.4 音频模块 | audio 驱动（各目标） + fsk | 完成 |
@@ -500,4 +524,4 @@ tools/fonts/
 
 ---
 
-_最后更新: 2026-04-02_
+_最后更新: 2026-10-05（项目更名 retro-ws：五板多架构定位全面修订）_

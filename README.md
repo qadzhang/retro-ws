@@ -119,16 +119,28 @@ cvbs_console（12px 点阵、12x14 网格）渲染（320x240，240p）。
 cd retro-ws
 ./scripts/download_deps.sh
 
-# 2. 下载 ESP-IDF 工具链（使用 axel 多线程下载）
+# 2. 下载交叉工具链（axel 多线程；含 Xtensa 与 RISC-V 两套）
 ./scripts/download_deps.sh --tools-only
 ./scripts/download_deps.sh --install-tools
 
-# 3. 安装系统依赖
-sudo apt-get install cmake ninja-build
+# 3. 安装系统依赖 + 第三套 ARM 工具链（Pico 目标用）
+sudo apt-get install cmake ninja-build gcc-arm-none-eabi
+#    （ARM 也可用自备工具链：解压到 deps/esp-idf-tools/arm/ 即可）
 
-# 4. 激活工具链环境
+# 4. 激活工具链环境（一次激活全部三套并自检）
 source scripts/setup_tools.sh
 ```
+
+> **三套工具链，按板取用**：
+>
+> | 工具链 | 服务板 | 位置 / 来源 |
+> |--------|--------|-------------|
+> | Xtensa (`xtensa-esp-elf-gcc`) | s3 / s3n8 / cam | `deps/esp-idf-tools/xtensa/`（步骤 2 下载） |
+> | RISC-V (`riscv32-esp-elf-gcc`) | c3 | `deps/esp-idf-tools/riscv/`（步骤 2 下载） |
+> | ARM (`arm-none-eabi-gcc`) | pico | `deps/esp-idf-tools/arm/`（步骤 3 apt 安装或自备） |
+>
+> 五板统一构建 `scripts/firmware/build_firmware.sh` 自带按板 PATH，可不 source；
+> `setup_tools.sh` 主要服务旧三板入口（`scripts/esp32xx/`）与交互式终端。
 
 ### 一键整体构建（推荐）
 
@@ -225,7 +237,7 @@ cd scripts/esp32s3 && ./nuttx_build.sh defconfig && ./build.sh nuttx && ./build.
 
 | 功能 / Feature | 模块 / Module | 行数 / Lines | 状态 / Status |
 |------|------|------|------|
-| 双核 SMP | esp32s3_retro.c / esp32_retro.c | ~750 | 完成 |
+| 双核分工（CPU0=程序核 / CPU1=媒体核） | esp32s3_retro.c / esp32_retro.c / rp2040_retro.c | ~750 | 完成 |
 | **WindowMaker/NeXT 外壳（可切换）** | wmaker_shell.c + desktop_api.h | ~430 | 完成（可选） |
 | 看门狗 WDT | watchdog.c | ~860 | 完成 |
 | 防火墙 Firewall | firewall.c | 623 | 完成 |
@@ -233,12 +245,12 @@ cd scripts/esp32s3 && ./nuttx_build.sh defconfig && ./build.sh nuttx && ./build.
 | WiFi 连接 | network.c | 432 | 完成 |
 | NTP 对时 | ntp.c | 444 | 完成 |
 | Cron 定时任务 | cron.c | 739 | 完成 |
-| CVBS 显示驱动 | drv_cvbs.c / drv_cvbs_dac.c | ~855 | 完成 |
+| CVBS 显示驱动（四板发射器） | drv_cvbs.c (LCD_CAM) / drv_cvbs_dac.c / drv_cvbs_pdm.c / drv_cvbs_pio.c | ~855+ | 完成 |
 | FSK 磁带机 | drv_fsk.c | ~886 | 完成 |
 | I2S/DAC 音频 | drv_audio.c / drv_audio_dac.c | ~1234 | 完成 |
 | RTC 时钟 | drv_rtc.c | 538 | 完成 |
 | USB HID 键鼠 | usb_hid.c (S3) | 424 | 完成 |
-| BLE HID 驱动 | ble_hid.c (CAM) | 1001 | 完成 |
+| BLE HID 驱动 | ble_hid.c (S3/CAM，封存于 IDF 栈选项) | 1001 | 完成 |
 | BLE Bond 存储 | ble_storage.c | 391 | 完成 |
 | BLE NSH 命令 | ble_nsh.c | 289 | 完成 |
 | BLE 配对 UI | ble_pair_ui.c | 252 | 完成 |
@@ -329,22 +341,35 @@ cd scripts/esp32s3 && ./nuttx_build.sh defconfig && ./build.sh nuttx && ./build.
 ## 软件架构
 
 ```
-+-------------------------------------+
-|    LVGL 9.x 图形引擎（仅 S3/CAM）     |
-|  Windows 3.2 / WindowMaker 复古桌面  |
-+-------------------------------------+
-|    NuttShell (NSH) CLI（五板全系）    |
-|   my_basic / Duktape / Berry + nano |
-|   cvbs_console 字符控制台（C3/Pico）  |
-+-------------------------------------+
-|      Apache NuttX RTOS (POSIX)       |
-|  双核调度 / 文件系统 / 网络协议栈     |
-+-------------------------------------+
-|        板级 HAL（NuttX 树内驱动）      |
-| ESP-IDF HAL：S3/CAM/C3（WiFi/I2S/    |
-| LCD_CAM/DAC/GPIO）；RP2040：Pico     |
-+-------------------------------------+
++-------------------------------------------+
+|     LVGL 9.x 图形引擎（仅图形档 S3/CAM）     |
+|    Windows 3.2 / WindowMaker 复古桌面      |
++-------------------------------------------+
+|       NuttShell (NSH) CLI（五板全系）       |
+|      my_basic / Duktape / Berry + nano     |
++-------------------------------------------+
+|     AV 视频管线（全系标配，CLI/GUI 共用）     |
+|  GUI 路径: lv_port_disp -> drv_cvbs        |
+|  CLI 路径: cvbs_console 字符控制台          |
+|   (/dev/cvbscon, 12px 点阵渲染; 经          |
+|    lvgl_font_compat 复用同一字库,           |
+|    不依赖 LVGL)                            |
+|  共用时序核心 cvbs_core -> 板级发射器:       |
+|   S3=LCD_CAM+GDMA / CAM=内置DAC /          |
+|   C3=I2S PDM / Pico=PIO+DMA -> 75Ω CVBS    |
++-------------------------------------------+
+|          Apache NuttX RTOS (POSIX)         |
+|       双核调度 / 文件系统 / 网络协议栈       |
++-------------------------------------------+
+|          板级 HAL（NuttX 树内驱动）          |
+|    ESP-IDF HAL：S3/CAM/C3；RP2040：Pico    |
++-------------------------------------------+
 ```
+
+> **CLI 的 AV 输出不经过 LVGL**：NSH 的输出写到字符设备 `/dev/cvbscon`，
+> 由 cvbs_console 用 12px 点阵直接渲染进 CVBS 场缓冲（C3/Pico 经
+> `CONFIG_NSH_ALTCONDEV` 让 NSH 整个跑在 AV 屏上；S3/CAM 的 AV 控制台
+> 用于安全模式/控制台档）。GUI 与 CLI 在 cvbs_core 处汇合，以下管线全板一致。
 
 ## 目录结构
 
@@ -408,7 +433,7 @@ retro-ws/
     |   |                   # cvbs_core/cvbs_console、retro_gpio/retro_bus、
     |   |                   # nano 移植层、共享驱动）
     |   +-- esp32s3/        # ESP32-S3 目标（S3/S3N8 共用）
-    |   |   +-- driver/     # CVBS LCD_CAM、音频 I2S、USB HID、FSK、WS2812
+    |   |   +-- driver/     # CVBS LCD_CAM、音频 I2S、USB HID、BLE HID、FSK、WS2812
     |   |   +-- board/      # ESP32-S3-DevKitC-1 板级（hw_esp32s3_devkitc.h）
     |   |   +-- chip/       # ESP32-S3 寄存器定义
     |   |   +-- include/    # 覆盖头文件
