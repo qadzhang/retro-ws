@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2026 ESP32 Retro Project
+ * SPDX-FileCopyrightText: 2026 Retro WS Project
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -19,17 +19,21 @@
 
 ---
 
-# ESP32 复古联网图形工作站 / ESP32 Retro Graphics Workstation
+# 复古工作站 Retro WS / Retro Workstation
 
-基于 ESP32 双核 Xtensa + Apache NuttX RTOS + LVGL 的纯嵌入式复古图形工作站。
+基于 Apache NuttX RTOS + LVGL 的纯嵌入式复古图形工作站（原 ESP32-S3 Retro WS，
+2026-10 更名 retro-ws）。一套代码支持五种开发板构建目标，横跨 Xtensa / RISC-V /
+ARM 三种架构——项目早已不只是"ESP32 项目"。
 
 > **多目标支持（五板）**：开发以 **ESP32-S3** (DevKitC-1, **N16R8/N8R8 首选板**) 为模板，兼容 **ESP32-CAM** (AI-Thinker)、**合宙 ESP32-C3 核心板**（CLI）与 **Raspberry Pi Pico**（CLI，本地教学终端）。
-> - **ESP32-S3** (首选/开发模板)：8MB Octal PSRAM + 8/16MB Flash，USB HID 键鼠 + BLE HID，I2S -> 电阻网络 CVBS 输出，显示最高 1024x768（实验）
+> - **ESP32-S3** (首选/开发模板，构建目标 s3=N16R8 / s3n8=N8R8)：8MB Octal PSRAM + 8/16MB Flash，USB HID 键鼠 + BLE HID，LCD_CAM 并行口 -> 4-bit R-2R 电阻梯 CVBS 输出，显示最高 1024x768（实验）
 > - **ESP32-CAM** (兼容目标)：4MB Flash + 4MB PSRAM，内置 DAC (GPIO25/26)，BLE HID 键鼠，板载 OV2640 摄像头（可选，与 CVBS/音频互斥），显示上限 640x480
-> - **合宙 ESP32-C3 核心板** (低资源/低价格第三目标)：RISC-V 单核 160MHz + 4MB Flash + 400KB SRAM（无 PSRAM），**纯 CLI 工作站**——软件经 .rpk 包管理器安装；经典款（CH343 串口）/ 简约款（原生 USB）均支持
+> - **合宙 ESP32-C3 核心板** (低资源/低价格)：RISC-V 单核 160MHz + 4MB Flash + 400KB SRAM（无 PSRAM），**纯 CLI 工作站**——软件经 .rpk 包管理器安装；经典款（CH343 串口）/ 简约款（原生 USB）均支持；AV 视频走 I2S PDM 单脚输出
+> - **Raspberry Pi Pico** (最低成本本地教学终端)：RP2040 双核 Cortex-M0+ @133MHz + 264KB SRAM + 2MB Flash，无网络；**纯 CLI**，AV 视频走 PIO + DMA 逐行输出（Core1 生成）
 >
-> 显示分辨率三档：**320x240 控制台（240p）/ 640x480 常规（480i）/ 1024x768 最高（实验性）**
-> 包架构隔离：Xtensa（S3/CAM）与 RISC-V（C3）二进制不通用，.rpk 包经 Arch 字段校验
+> 显示分辨率三档：**320x240 控制台（240p）/ 640x480 常规（480i）/ 1024x768 最高（实验性）**；
+> C3/Pico 为 320x240 字符控制台档（cvbs_console 点阵渲染，AV 输出全系标配）
+> 包架构隔离：Xtensa（S3/CAM）/ RISC-V（C3）/ ARM（Pico）二进制互不通用，.rpk 包经 Arch 字段校验
 
 ## 项目状态 / Project Status
 
@@ -111,8 +115,8 @@ cvbs_console（12px 点阵、12x14 网格）渲染（320x240，240p）。
 ### 下载依赖
 
 ```bash
-# 1. 下载所有依赖（源码）
-cd /home/user/retro-ws
+# 1. 下载所有依赖（源码）——进入克隆出的项目目录
+cd retro-ws
 ./scripts/download_deps.sh
 
 # 2. 下载 ESP-IDF 工具链（使用 axel 多线程下载）
@@ -129,9 +133,12 @@ source scripts/setup_tools.sh
 ### 一键整体构建（推荐）
 
 ```bash
-# 固件（Apache-2.0，零 GPL）+ 可选安装包（GPL 组件为独立 ELF）
-./scripts/build_all.sh esp32s3          # 或 esp32cam / all / --no-packages
+# 五板固件统一入口（s3/s3n8/cam/c3/pico/all）
+./scripts/build_firmware.sh all
+# 产物：dist/firmware/<板>/nuttx.bin（Pico 额外生成 nuttx.uf2）
 
+# 固件（Apache-2.0，零 GPL）+ 可选安装包（GPL 组件为独立 ELF）
+./scripts/build_all.sh esp32s3          # 或 esp32cam / esp32c3 / all / --no-packages
 # 产物：deps/nuttx/nuttx.bin（固件） + dist/sdcard/（SD 安装目录）
 # 安装：dist/sdcard 整体拷入 SD 卡，固件侧 pkg list 验证
 ```
@@ -185,43 +192,33 @@ nsh> pkg remove ucblogo                              # 卸载（执行 prerm/pos
 nsh> /sdcard/apps/ucblogo                            # 运行（binfmt 独立进程）
 ```
 
-### ESP32-S3 目标编译
+### 五板固件编译（统一入口）
 
 ```bash
-# 配置
-cd scripts/esp32s3 && ./nuttx_build.sh defconfig
-
-# 编译
-./build.sh nuttx
-
-# 烧录
-./build.sh flash
+# 用法: build_firmware.sh <s3|s3n8|cam|c3|pico|all>；产物 dist/firmware/<板>/
+./scripts/build_firmware.sh s3
+./scripts/build_firmware.sh all
 ```
 
-### ESP32-CAM 目标编译
+### 烧录
 
 ```bash
-# 配置
-cd scripts/esp32cam && ./nuttx_build.sh defconfig
+# ESP32 系（Xtensa）：esptool（地址表见 AGENTS.md 9.2）
+esptool.py --chip esp32s3 --port /dev/ttyUSB0 write_flash ...
 
-# 编译
-./build.sh nuttx
+# 合宙 C3（RISC-V，从 0x0 引导；经典款 /dev/ttyUSB0，简约款原生 USB 常为 /dev/ttyACM0）
+esptool.py --chip esp32c3 --port /dev/ttyUSB0 write_flash 0x0 nuttx.bin
 
-# 烧录
-./build.sh flash
+# Pico（UF2）：BOOTSEL 按住上电进 UF2 模式，拖入 nuttx.uf2
+#（build_firmware.sh 已用 scripts/make_uf2.py 自动生成）
 ```
 
-### ESP32-C3 目标编译（合宙核心板，RISC-V CLI 工作站）
+### 旧三板单独编译（scripts/esp32xx/，保留入口）
 
 ```bash
-# 配置
-cd scripts/esp32c3 && ./nuttx_build.sh defconfig
-
-# 编译
-./build.sh nuttx
-
-# 烧录（经典款 /dev/ttyUSB0，简约款原生 USB 通常为 /dev/ttyACM0）
-./build.sh flash
+# 配置 + 编译 + 烧录（s3 / cam / c3 三板各有独立目录）
+cd scripts/esp32s3 && ./nuttx_build.sh defconfig && ./build.sh nuttx && ./build.sh flash
+# 同理：scripts/esp32cam/、scripts/esp32c3/（Pico 无旧入口，走统一入口）
 ```
 
 ## 已实现功能 / Implemented Features
@@ -278,6 +275,8 @@ cd scripts/esp32c3 && ./nuttx_build.sh defconfig
 
 ## 硬件规格对比
 
+### 图形档（S3 / CAM，LVGL 桌面）
+
 | 项目 | ESP32-S3 (DevKitC-1 N16R8/N8R8) | ESP32-CAM (AI-Thinker) |
 |------|---------------------|----------------------|
 | 定位 | **首选板 / 开发模板** | 兼容目标（顺带支持） |
@@ -294,6 +293,22 @@ cd scripts/esp32c3 && ./nuttx_build.sh defconfig
 | RTC | 软件模拟 I2C（GPIO5/6） | 软件模拟 I2C（GPIO21/22） |
 | 按键 | GPIO0/7/8 | GPIO0（GPIO33 为状态 LED） |
 
+### CLI 档（C3 / Pico，无 LVGL 桌面）
+
+| 项目 | 合宙 ESP32-C3 核心板 | Raspberry Pi Pico |
+|------|----------------------|-------------------|
+| 定位 | 低资源/低价格 CLI 工作站 | 最低成本本地教学终端（无网络） |
+| 主控 | ESP32-C3（RISC-V 单核 160MHz，400KB SRAM，4MB Flash，无 PSRAM） | RP2040（双核 Cortex-M0+ @133MHz，264KB SRAM，2MB Flash） |
+| CVBS 输出 | I2S0 PDM-TX 单脚 GPIO1 + RC 滤波（真外设 + DMA） | PIO SM0 + DMA 逐行，GP12-15 4-bit R-2R（Core1 生成） |
+| 控制台 | /dev/cvbscon 上 AV 屏（320x240）+ UART 键盘泵 | 同左（UART0 / 原生 USB CDC 键盘） |
+| 状态 LED | GPIO12/13（高电平点亮） | GP25 板载 LED |
+| SD 卡 | SPI（GPIO7 CS/6 MOSI/5 MISO/4 CLK） | SPI0（GP17 CS/19 MOSI/16 MISO/18 SCK） |
+| 网络 | WiFi 2.4GHz + BLE 5 | 无（需网络请用 S3/CAM/C3） |
+| 教学脚 | GPIO10（首选）等 | GP2-GP11、GP20-22、GP26-28 |
+
+> CLI 档与图形档共享同一套 common 层（脚本引擎、.rpk 包管理器、cvbs_console、
+> retro_gpio / retro_bus、nano 编辑器）；RAM 放不下 LVGL 帧缓冲，故无 GUI 桌面。
+
 ### 为什么以 ESP32-S3 为开发模板？
 
 **ESP32-S3（首选板）的优势：**
@@ -307,24 +322,27 @@ cd scripts/esp32c3 && ./nuttx_build.sh defconfig
 - 板载 OV2640 摄像头，可选拍照功能（与 CVBS/音频互斥）
 - 价格低廉，货源充足
 
-> **结论**：驱动一律先按 ESP32-S3 模板编写，再向 ESP32-CAM 适配。
-> ESP32-CAM 的内置 DAC 使其成为低成本 CVBS 方案的补充选择。
+> **结论**：驱动一律先按 ESP32-S3 模板编写，再向 CAM / C3 / Pico 适配；
+> 板间差异全部收敛在硬件档案（hw_<板名>.h）与各板 CVBS/音频发射器里，
+> 其余走 common 共享层。ESP32-CAM 的内置 DAC 使其成为低成本 CVBS 方案的补充选择。
 
 ## 软件架构
 
 ```
 +-------------------------------------+
-|           LVGL 9.x 图形引擎           |
-|     (Windows 3.2 风格复古桌面)        |
+|    LVGL 9.x 图形引擎（仅 S3/CAM）     |
+|  Windows 3.2 / WindowMaker 复古桌面  |
 +-------------------------------------+
-|         NuttShell (NSH) CLI          |
-|        my_basic / Duktape         |
+|    NuttShell (NSH) CLI（五板全系）    |
+|   my_basic / Duktape / Berry + nano |
+|   cvbs_console 字符控制台（C3/Pico）  |
 +-------------------------------------+
-|    Apache NuttX RTOS (POSIX)         |
+|      Apache NuttX RTOS (POSIX)       |
 |  双核调度 / 文件系统 / 网络协议栈     |
 +-------------------------------------+
-|         ESP-IDF 驱动层               |
-|   WiFi / SDIO/SPI / I2S/DAC / GPIO  |
+|        板级 HAL（NuttX 树内驱动）      |
+| ESP-IDF HAL：S3/CAM/C3（WiFi/I2S/    |
+| LCD_CAM/DAC/GPIO）；RP2040：Pico     |
 +-------------------------------------+
 ```
 
@@ -348,20 +366,33 @@ retro-ws/
 |   +-- verify.sh          # 项目验证（共享）
 |   +-- convert_font.sh    # 字体转换（共享）
 |   +-- setup_env.sh       # 系统依赖安装（共享）
-|   +-- esp32s3/           # ESP32-S3 编译脚本
+|   +-- build_all.sh       # 固件 + GPL 安装包一键构建
+|   +-- build_packages.sh / make_package.sh   # .rpk 打包
+|   +-- sync_src_to_apps.sh / make_uf2.py     # 源同步 / UF2 生成
+|   +-- firmware/          # 五板固件统一构建入口
+|   |   +-- build_firmware.sh   # <s3|s3n8|cam|c3|pico|all>
+|   |   +-- prepare_esp_hal.sh  # NuttX esp-hal 准备
+|   +-- esp32s3/           # ESP32-S3 编译脚本（旧入口）
 |   |   +-- build.sh
 |   |   +-- nuttx_build.sh
-|   +-- esp32cam/          # ESP32-CAM 编译脚本
+|   +-- esp32cam/          # ESP32-CAM 编译脚本（旧入口）
+|   |   +-- build.sh
+|   |   +-- nuttx_build.sh
+|   +-- esp32c3/           # ESP32-C3（合宙核心板）编译脚本（旧入口）
 |       +-- build.sh
 |       +-- nuttx_build.sh
-|   +-- esp32c3/           # ESP32-C3（合宙核心板）编译脚本
-|       +-- build.sh
-|       +-- nuttx_build.sh
++-- firmware/              # 五板构建配置与板级脚本
+|   +-- s3.appconfig / s3n8.appconfig / cam.appconfig
+|   +-- c3.appconfig / pico.appconfig
+|   +-- scripts/<板名>/    # 板级演示/教学脚本（打包 ROMFS 入固件）
++-- eda/                   # 五板立创EDA 载板工程（gen_eda.py 自动布线）
 +-- tools/                 # 工具和字体资源
 |   +-- fonts/            # 字体文件
+|   +-- sim/              # LVGL 无头模拟器 + CVBS 全链路管线
 +-- configs/               # 配置文件
 |   +-- nuttx-defconfig           # NuttX 内核配置
 |   +-- nuttx-defconfig-combined  # 组合配置
+|   +-- nuttx-defconfig-esp32s3 / -esp32cam / -esp32c3  # 各板 defconfig
 |   +-- nuttx-minimal.defconfig   # 最小配置
 |   +-- lv_conf.h                # LVGL 配置
 +-- examples/              # 示例脚本程序
@@ -373,23 +404,31 @@ retro-ws/
 +-- deps/                  # 第三方依赖（不纳入版本控制）
 +-- src/                   # 源代码
     +-- nuttx/
-    |   +-- common/         # 共享代码（启动菜单、脚本引擎、共享驱动）
-    |   +-- esp32s3/        # ESP32-S3 目标
-    |   |   +-- driver/     # CVBS I2S、音频 I2S、BLE HID、USB HID、FSK
-    |   |   +-- board/      # ESP32-S3-DevKitC-1 板级
+    |   +-- common/         # 共享代码（启动菜单、脚本引擎、包管理器、
+    |   |                   # cvbs_core/cvbs_console、retro_gpio/retro_bus、
+    |   |                   # nano 移植层、共享驱动）
+    |   +-- esp32s3/        # ESP32-S3 目标（S3/S3N8 共用）
+    |   |   +-- driver/     # CVBS LCD_CAM、音频 I2S、USB HID、FSK、WS2812
+    |   |   +-- board/      # ESP32-S3-DevKitC-1 板级（hw_esp32s3_devkitc.h）
     |   |   +-- chip/       # ESP32-S3 寄存器定义
     |   |   +-- include/    # 覆盖头文件
     |   +-- esp32/          # ESP32-CAM 目标
-    |       +-- driver/     # CVBS DAC、音频 DAC、BLE HID、FSK
-    |       +-- board/      # ESP32-CAM AI-Thinker 板级
-    |       +-- chip/       # ESP32 寄存器定义
-    |       +-- include/    # 覆盖头文件
+    |   |   +-- driver/     # CVBS DAC、音频 DAC、BLE HID、FSK
+    |   |   +-- board/      # ESP32-CAM AI-Thinker 板级（hw_esp32cam_aithinker.h）
+    |   |   +-- chip/       # ESP32 寄存器定义
+    |   |   +-- include/    # 覆盖头文件
+    |   +-- esp32c3/        # 合宙 ESP32-C3 目标（CLI）
+    |   |   +-- driver/     # CVBS PDM（drv_cvbs_pdm.c）
+    |   |   +-- board/      # 合宙核心板板级（hw_esp32c3_luatos.h）
+    |   +-- rp2040/         # Raspberry Pi Pico 目标（CLI）
+    |       +-- driver/     # CVBS PIO（drv_cvbs_pio.c）
+    |       +-- board/      # Pico 板级（hw_rp2040_pico.h）
     +-- lvgl/              # LVGL 驱动和应用
     |   +-- app/           # GUI 应用程序
     |   |   +-- logo/      # Logo 海龟画图
     |   +-- assets/icons/  # 图标资源
     |   +-- audio/         # 音频解码
-    |   +-- fonts/         # 字体
+    |   +-- fonts/         # 字体（全系唯一 12px 中文字库）
     |   +-- modules/       # 脚本模块适配
     +-- arch/xtensa/       # 架构相关代码
 ```
@@ -400,7 +439,7 @@ retro-ws/
 |------|------|------|--------|
 | Apache NuttX | 12.12.0 | RTOS 内核 / RTOS kernel | Apache 2.0 |
 | LVGL | 9.5.0 | 图形引擎 / Graphics library | MIT |
-| ESP-IDF | v5.5.4 | 乐鑫 ESP32 SDK | Apache 2.0 |
+| ESP-IDF | v5.5.4 | 乐鑫 HAL（S3/CAM/C3；Pico 用 NuttX 树内 RP2040 支持） | Apache 2.0 |
 | littlefs | v2.5.1 | 文件系统 / Filesystem | BSD-3-Clause |
 | SQLite | 3.45.1 | 数据库引擎 / Database engine | Public Domain |
 | curl | 8.0+ | HTTP 客户端 / HTTP client | MIT |
@@ -445,7 +484,9 @@ nsh> script status
 
 ## 中文字体 / Chinese Font
 
-项目使用 NotoSansSC 子集字体，支持 GBK 中文、ASCII、标点符号和常用表情。
+项目使用 Noto Sans SC 点阵字体（`lv_font_notosans_sc_12.c`，1bpp，UTF-8
+全量字符集约 2.1 万字形，Unicode 码点索引）。**全系唯一字号 12px**
+（CLI/GUI 共用，见 AGENTS.md 7.3 铁律），不再有第二套字型/字号/字符集转换表。
 
 ### 字体转换工具
 
@@ -479,14 +520,14 @@ CALL retro_ui_status("处理中")
 ## 测试
 
 ```bash
-# ESP32-S3 编译
+# 五板全编译（统一入口）
+./scripts/build_firmware.sh all
+
+# 单板（旧入口，s3 / cam / c3 三板）
 cd scripts/esp32s3 && ./build.sh nuttx
 
-# ESP32-CAM 编译
-cd scripts/esp32cam && ./build.sh nuttx
-
-# ESP32-C3 编译
-cd scripts/esp32c3 && ./build.sh nuttx
+# 宿主测试套件（单元/蜕变/差分/PBT/模糊/双变异门）
+bash tests/host/run_all.sh
 ```
 
 ### 串口连接
@@ -507,7 +548,7 @@ minicom -D /dev/ttyUSB0 -b 115200
 
 ---
 
-_最后更新: 2026-04-02_
+_最后更新: 2026-10-05（项目更名 retro-ws，文档全面修正为五板多架构定位）_
 
 ## 2026-10-04（晚）全真硬件化升级
 
