@@ -86,6 +86,8 @@ CSRCS += src/common/driver/drv_cvbs.c
 endif
 CSRCS += src/common/driver/cvbs_console.c
 CSRCS += src/common/driver/lvgl_font_compat.c
+# HID 键码 -> ASCII（USB/BLE 键盘桥共用纯函数件，输入优先级原则 2026-10-05）
+CSRCS += src/common/driver/hid_ascii.c
 # 唯一字体 12px（全系 CLI+GUI 单字号，AGENTS.md 7.3 / HARDWARE.md 6.4）
 CSRCS += src/lvgl/fonts/lv_font_notosans_sc_12.c
 endif

@@ -82,6 +82,16 @@ else
     echo ">>> FAIL (see /tmp/ra3b.log)"; FAIL=1
 fi
 
+step "build+unit hid_ascii（USB/BLE 键盘桥映射，输入优先级原则）"
+if $CC -Wall -Wextra $SAN -I "$STUBS" -I "$DRVINC" \
+      "$ROOT/tests/host/test_hid_ascii.c" "$DRVINC/hid_ascii.c" \
+      -o "$OUT/test_hidascii" 2>/tmp/ra3d.log \
+   && "$OUT/test_hidascii" 2>&1 | grep -q '0 failed'; then
+    echo ">>> PASS"
+else
+    echo ">>> FAIL (see /tmp/ra3d.log)"; FAIL=1
+fi
+
 step "build+unit ws2812_rmt 编码（契约+蜕变+差分+PBT+模糊）"
 S3DRV="$ROOT/src/nuttx/esp32s3/driver"
 if $CC -Wall -Wextra $SAN -I "$STUBS" -I "$S3DRV" \

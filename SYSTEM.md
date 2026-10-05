@@ -382,6 +382,11 @@ DENY  inbound ICMP (ping)
 ### 2B. /dev/cvbscon 字符控制台（2026-10-04 晚）
 - common/driver/cvbs_console.c：UTF-8 点阵渲染 + ANSI/CSI 子集 + 可见光标 + 输入环 + poll 等待队列 + TIOCGWINSZ
 - UART 键盘泵（avkbin 任务）→ NSH 经 CONFIG_NSH_CONDEV=/dev/cvbscon 跑 AV 屏（C3/Pico）
+- **输入多源化（2026-10-05，输入优先级原则 USB > 蓝牙 > 串口）**：
+  `cvbs_console_feed_keys()` 公开 API——外部 HID 源（S3 的 usb_hid.c 桥、
+  未来 BLE HID）经 common hid_ascii.c（HID 键码→ASCII 纯函数，按下沿差分）
+  直喂输入环，与 UART 泵共用同一道 IME 门控；串口泵在 C3 为 BLE 就绪前
+  的过渡、在 Pico 为唯一路线（无蓝牙/无 USB 主机）
 
 ### 2C. 总线兼容层 / 脚本 ROM（2026-10-04 晚）
 - common/driver/retro_bus.[ch]：I2C/SPI/UART machine 风格（硬后端探测 + 位摆软回退）+ retro_bus_{bas,berry,js}.c

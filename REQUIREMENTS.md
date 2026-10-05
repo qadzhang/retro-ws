@@ -154,12 +154,15 @@
 
 > 注意"有 USB"指 **USB 主机（OTG host）** 能力，不是有无 USB 口：
 > - **ESP32-S3**：有 OTG 主机 —— USB HID **已实现**（usb_hid.c）；另有 BLE HID
->   （ble_hid.c 已写、封存待 NimBLE 解封，NEXT_STEPS 36）+ UART 控制台，三路齐备
+>   （ble_hid.c 已写、封存待 NimBLE 解封，NEXT_STEPS 36）+ UART 控制台，三路齐备。
+>   2026-10-05 落地 AV 控制台键流桥：common hid_ascii.c（HID 键码→ASCII 纯函数，
+>   按下沿差分）+ cvbs_console_feed_keys()，USB 键盘可直打 AV 屏终端
 > - **ESP32-CAM**：芯片无 USB 外设 —— 走 **BLE HID（已实现）** + 串口
 > - **ESP32-C3**：芯片 USB 为**设备模式**（内置 USB-Serial-JTAG，仅烧录/调试），
 >   **硬件上接不了普通 USB 键盘**；芯片有 BLE 5 —— 按原则应走 **BLE HID
->   （待 NimBLE 移植，NEXT_STEPS 36）**；现有实现为 UART 键盘泵（avkbin，
->   cvbs_console 内嵌，CH343 串口/原生 USB-CDC -> /dev/cvbscon），BLE 就绪后与之并存
+>   （待 NimBLE 移植，NEXT_STEPS 36，HID→ASCII 复用 hid_ascii.c）**；现有实现为
+>   UART 键盘泵（avkbin，cvbs_console 内嵌，CH343 串口/原生 USB-CDC ->
+>   /dev/cvbscon），BLE 就绪后与之并存
 > - **Pico**：**无蓝牙射频**、USB 块仅设备模式（NuttX 树内也只有 rp2040_usbdev
 >   设备驱动）—— 按"没有 USB 和蓝牙才走串口"，**UART 键盘泵即正确且唯一路线**
 >   （UART0/USB-CDC；PIO-USB 软件主机属远期评估，NuttX 无现成驱动）

@@ -339,6 +339,20 @@
 - 板卡几何经官方 DXF/wiki 核实（DevKitC 22.86mm/CAM 22.86/合宙 21.0
   非 2.54 网格/Pico 17.78）
 
+### 25. 输入优先级原则落地（2026-10-05）⭐
+- **原则定稿（REQUIREMENTS 2.2.3）**：USB 键盘（OTG 主机）> 蓝牙 HID > 串口键盘泵；
+  芯片具备哪种能力就必须支持哪种（用户 2026-10-05 指示）
+- **逐板对照芯片事实**：S3=OTG 主机+BLE+UART 三路；CAM=无 USB 走 BLE（已实现）；
+  C3=USB 仅设备模式（接不了普通 USB 键盘）→ BLE 是其唯一 HID 路线（待 NimBLE）；
+  Pico=无蓝牙射频+USB 仅设备模式 → 串口泵即正确且唯一
+- **common hid_ascii.[ch]**：HID 键码→ASCII 纯函数（base/shift 两档表 + 字母
+  大写 + 控制键约定 Enter=CR/BS=0x08/Tab/Esc + 按下沿差分抑制长按重发），
+  USB 与未来 BLE 桥共用；宿主 test_hid_ascii 39 检查全绿（ASan/UBSan）
+- **cvbs_console_feed_keys()**：HID 源直喂 /dev/cvbscon 输入环，与 UART 泵
+  共用同一道 IME 门控；usb_hid.c（S3）键盘报告双路分发（LVGL 回调 + 控制台桥）
+- avkbin UART 泵定位修正：C3 为 BLE 就绪前的过渡方案，Pico 为唯一路线
+  （SYSTEM 2B / HARDWARE 13.1 同步）
+
 ### 24. 拼音输入法两形态落地（2026-10-05）⭐
 - **GUI Win95 式**：app_pinyin 输入条（拼音行 / 1.你 2.您 候选按钮 / 中英钮）——
   全 label 补 12px 中文字体、面板三行重排 72px、词库 GB2312 码**原地重写为

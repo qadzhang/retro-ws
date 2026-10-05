@@ -6,7 +6,7 @@
 /**
  * cvbs_console.h - AV 视频字符控制台 / CVBS text console
  *
- * WHAT : 把 UTF-8 文本以 16px 点阵渲染到 CVBS 帧缓冲（全系标配，
+ * WHAT : 把 UTF-8 文本以 12px 点阵渲染到 CVBS 帧缓冲（全系标配，
  *        含 C3/Pico CLI 档——"字符输出也必须走 AV 视频输出"）
  * WHY  : AGENTS.md 7.3：所有板必须能经 AV 输出显示中文；CLI 档
  *        无 LVGL，由本模块 + lvgl_font_compat 直接驱动字体位图
@@ -66,6 +66,15 @@ int cvbs_console_cursor_y(void);
  * WHEN : retro_boot 在 cvbs_console_init() 成功后调用（CLI 档）
  */
 int cvbs_console_device_start(const char *input_dev);
+
+/*
+ * WHAT : 外部 HID 源（USB/BLE 键盘桥）向 /dev/cvbscon 输入环喂 ASCII 键流
+ * WHY  : 输入优先级原则（REQUIREMENTS 2.2.3，2026-10-05）：USB > 蓝牙 >
+ *        串口——HID 源与 UART 泵共用同一入环路径（含同一道 IME 门控）
+ * WHO  : usb_hid.c（S3 USB 键盘）、未来 BLE HID 桥（NimBLE）
+ * 返回 : 实际入环字节数 / -EINVAL
+ */
+int cvbs_console_feed_keys(const char *buf, size_t len);
 #endif
 
 #endif /* __CVBS_CONSOLE_H */

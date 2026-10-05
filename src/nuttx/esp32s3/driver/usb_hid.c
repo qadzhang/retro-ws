@@ -1,16 +1,19 @@
 /*
- * SPDX-FileCopyrightText: 2026 ESP32-S3 Retro Project
+ * SPDX-FileCopyrightText: 2026 Retro WS Project
  * SPDX-License-Identifier: Apache-2.0
  */
 /*
  * usb_hid.c - USB HID 驱动
  *
  * WHAT : USB HID 驱动
- * WHY  : USB OTG 键鼠输入（GPIO19/20）
- * WHO  : ESP32-S3 Retro Project Team
+ * WHY  : USB OTG 键鼠输入（GPIO19/20）——输入优先级原则下 USB 为
+ *        最高优先源（REQUIREMENTS 2.2.3：USB > 蓝牙 > 串口）
+ * WHO  : Retro WS Project Team
  * WHERE: retro-ws/src/nuttx/esp32s3/driver/usb_hid.c
- * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
- * HOW  : USB 主机栈 HID 报告解析
+ * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化；2026-10-05 接入
+ *        AV 控制台键流桥（hid_ascii + cvbs_console_feed_keys）
+ * HOW  : USB 主机栈 HID 报告解析；键盘报告双路分发：GUI 档走 LVGL
+ *        回调，AV 控制台档经 hid_ascii 换算直喂 /dev/cvbscon 输入环
  */
 
 #include <nuttx/config.h>
@@ -28,6 +31,11 @@
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>
+
+#ifdef CONFIG_RETRO_AV_CONSOLE
+#  include "hid_ascii.h"
+#  include "cvbs_console.h"
+#endif
 
 /*==========================
  *  配置
@@ -213,10 +221,30 @@ void usb_hid_mouse_register_callback(void (*callback)(const struct hid_mouse_eve
  */
 void usb_hid_kbd_report(const uint8_t *report, int len)
 {
+    struct hid_keyboard_event event;
+
+#ifdef CONFIG_RETRO_AV_CONSOLE
+    /* 输入优先级原则（USB > 蓝牙 > 串口，REQUIREMENTS 2.2.3）：
+     * AV 控制台档下 USB 键盘直喂 /dev/cvbscon 输入环——经 hid_ascii
+     * 换算 + 按下沿差分（长按重发不重复出键）。GUI 档 LVGL 键盘
+     * 路径走下方回调（lvgl_kbd_read） */
+    {
+        static uint8_t prev_report[8];
+        char ascii[6];
+        int n;
+
+        if (len >= 8) {
+            n = hid_ascii_report(prev_report, report, ascii, sizeof(ascii));
+            if (n > 0)
+                cvbs_console_feed_keys(ascii, (size_t)n);
+            memcpy(prev_report, report, 8);
+        }
+    }
+#endif
+
     if (len < 8 || !g_kbd_callback)
         return;
 
-    struct hid_keyboard_event event;
     event.modifiers = report[0];
     memcpy(event.keycodes, &report[2], 6);
 

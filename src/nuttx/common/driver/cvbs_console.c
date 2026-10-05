@@ -912,6 +912,34 @@ static int cvbs_input_task(int argc, char *argv[])
 }
 
 /*
+ * WHAT : 外部 HID 源（USB/BLE 键盘桥）喂 ASCII 键流入环
+ * WHY  : 输入优先级原则（REQUIREMENTS 2.2.3）：HID 与 UART 泵同路径，
+ *        保证 IME 门控/唤醒语义完全一致（声明见 cvbs_console.h）
+ * WHEN : 2026-10-05 新增
+ * 返回 : 实际入环字节数 / -EINVAL
+ */
+int cvbs_console_feed_keys(const char *buf, size_t len)
+{
+    size_t fed = 0;
+
+    if (buf == NULL)
+        return -EINVAL;
+
+    for (size_t i = 0; i < len; i++) {
+        unsigned char ch = (unsigned char)buf[i];
+
+        /* 与 UART 泵同一道 IME 门：激活时键先喂输入法 */
+        if (cvbs_ime_active() && cvbs_ime_feed(ch))
+            continue;
+
+        in_ring_push(ch);
+        fed++;
+    }
+
+    return (int)fed;
+}
+
+/*
  * WHAT : 注册 /dev/cvbscon 并启动键盘输入泵
  * WHEN : retro_boot 在 cvbs_console_init 成功后调用
  * 返回 : OK / 负错误码

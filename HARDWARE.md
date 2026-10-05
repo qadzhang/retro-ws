@@ -1013,9 +1013,9 @@ GDMA(通道) <- 环形描述符 <- 场信号缓冲（PSRAM，双场乒乓）
 | RTC I2C | C3 | 位摆软总线（NuttX 无 esp32c3 i2c 驱动，retro_bus 回退） | 登记于 NEXT_STEPS |
 | PWM | S3/CAM/C3 | NuttX PWM 驱动（ESP32 系=LEDC 硬件定时器）-> /dev/pwmN | 已走硬件（retro_gpio_pwm_set） |
 | NSH 字符 IO | C3/Pico | /dev/cvbscon（AV 屏）+ UART 输入泵 | 本日定稿 |
-| **键鼠 HID 输入**（优先级：USB > 蓝牙 > 串口，2026-10-05 定） | S3 | USB OTG 主机（usb_hid.c）+ BLE HID（封存待 NimBLE）+ UART | USB 已实现 |
+| **键鼠 HID 输入**（优先级：USB > 蓝牙 > 串口，2026-10-05 定） | S3 | USB OTG 主机（usb_hid.c）+ BLE HID（封存待 NimBLE）+ UART；2026-10-05 接入 AV 控制台键流桥（hid_ascii.c + cvbs_console_feed_keys） | USB 已实现 |
 | **键鼠 HID 输入** | CAM | BLE HID（已实现；芯片无 USB） | 已实现 |
-| **键鼠 HID 输入** | C3 | BLE HID（芯片有 BLE 5、**USB 仅设备模式接不了 USB 键盘**；NimBLE 待移植 NEXT_STEPS 36）；现有 UART 键盘泵过渡 | 待办 |
+| **键鼠 HID 输入** | C3 | BLE HID（芯片有 BLE 5、**USB 仅设备模式接不了 USB 键盘**；NimBLE 待移植 NEXT_STEPS 36，HID→ASCII 复用 hid_ascii.c）；现有 UART 键盘泵过渡 | 待办 |
 | **键鼠 HID 输入** | Pico | **无蓝牙射频、USB 仅设备模式**——UART 键盘泵（avkbin）为唯一路线；PIO-USB 软件主机远期评估 | 定稿 |
 | 脚本 GPIO/总线 | 全系 | /dev/gpioN、/dev/i2cN、/dev/spiN、/dev/ttySN（缺驱动板回退软总线） | 本日定稿 |
 
