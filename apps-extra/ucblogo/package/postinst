@@ -6,7 +6,7 @@
 # WHEN : 2026-10-04 新增
 # HOW  : NSH echo 命令输出提示信息
 
-echo "UCBLogo 已安装到 /sdcard/apps/ucblogo"
+echo "UCBLogo 已安装到 /opt/bin/ucblogo（Root: system，片上可写分区）"
 echo "许可证: GPL-2.0-or-later（独立程序，未链入固件，mere aggregation）"
 echo "源码副本: SD 卡 pkg-src/ 目录（GPL 分发义务随包提供）"
-echo "运行: /sdcard/apps/ucblogo"
+echo "运行: /opt/bin/ucblogo"

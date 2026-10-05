@@ -2,7 +2,42 @@
 
 ## 更新日期
 
-2026-10-05（可移植性修复：清理写死的 /home/user 绝对路径；控制台字形排版 + 输入法落地修复；此前 10-04 深夜：五板全栈 ROM——GUI + 全解释器 + AV 控制台 + CLI 全家桶）
+2026-10-05（nano 出 ROM 转 .rpk 包 + 包载荷路径修复；此前同日：可移植性/字形排版/输入法修复）
+
+---
+
+## 2026-10-05（续5）：语法矩阵被构建产物污染（arch/ 软链）
+
+### 问题
+`check_syntax.sh` 的 `-I deps/nuttx/include` 中，`include/arch` 是 configure
+生成的软链（构建哪板指向哪架构）——c3 固件构建后 xtensa 源文件经 riscv 的
+types.h 解析，报 `_int64_t` 未定义，矩阵 44/88 大面积失败（s3 构建后碰巧
+架构一致所以此前未暴露）。
+
+### 修复
+realinc 层放指向 `deps/nuttx/arch/xtensa/include` 的 `arch` 软链并置于
+-I 最前，优先级压制生成物（deps 本体不动）。恢复 88/88。
+
+---
+
+## 2026-10-05（续4）：nano 出固件 ROM 转 .rpk 包（许可证定稿）
+
+### 问题
+GNU nano（GPL-3.0）自 2026-10-04 晚起编入五板固件 ROM，与 AGENTS 11.1 第 9 条
+"GPL 禁止编入 ROM"红线冲突。项目所有者裁决：固件零 GPL，系统默认编辑器回 vi。
+
+### 修复
+- 五份 appconfig：删 `CONFIG_RETRO_NANO=y`，加 `CONFIG_SYSTEM_VI=y`
+- Kconfig RETRO_NANO default n（实验回编开关）；Makefile nano VPATH 门控
+- apps-extra/nano 包模板 + build_packages.sh 接入（同步 external/nano ->
+  收集 ELF -> 打 .rpk；nano_port 垫片随包复用）
+- **顺带修存量 bug**：build_packages.sh 收集 ELF 到 `package/apps/`，而
+  make_package.sh 载荷树约定 `package/data/`——原路径打的 .rpk 载荷为空；
+  已统一为 `package/data/apps/`（ucblogo/nano 两包）
+
+### 验证
+s3/c3 固件重编：nano 退出链接、vi（CONFIG_SYSTEM_VI）进入、ROM 体积显著下降
+（体积数据见当日构建输出）；bash -n 通过。
 
 ---
 

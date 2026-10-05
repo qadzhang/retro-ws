@@ -38,13 +38,14 @@ if [ -z "$PKG_NAME" ] || [ -z "$PKG_VER" ]; then
     exit 1
 fi
 
-# 生成 manifest（CRC32 + 安装路径），与设备端格式一致: "<crc8位hex> /sdcard/..."
+# 生成 manifest（CRC32 + 安装路径），路径用"相对 data/"形式——与安装根
+# 解耦（Root: system 装片上 /usr、缺省装 /sdcard，设备端按所选根拼绝对路径）
 GEN_MANIFEST="$(mktemp)"
 find "$PKG_DIR/data" -type f | sort | while read -r f; do
     rel="${f#$PKG_DIR/data/}"
     crc=$(crc32 "$f" 2>/dev/null || \
           python3 -c "import sys,zlib;print(format(zlib.crc32(open(sys.argv[1],'rb').read())&0xffffffff,'08x'))" "$f")
-    printf '%s /sdcard/%s\n' "$crc" "$rel"
+    printf '%s %s\n' "$crc" "$rel"
 done > "$GEN_MANIFEST"
 
 # 拼装 tar 根（control/manifest/脚本在根，载荷在 data/）

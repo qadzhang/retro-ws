@@ -10,7 +10,8 @@
  * WHO  : ESP32-S3 Retro Project Team
  * WHERE: retro-ws/src/nuttx/common/driver/cron.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
- * HOW  : 分钟粒度扫描 /sdcard/etc/crontab，日志写 /sdcard/logs
+ * HOW  : 分钟粒度扫描 /opt/etc/crontab（片上）；日志默认只串口
+ *        输出不落盘（开发板哲学，显式定义 CONFIG_CRON_LOG 才写文件）
  */
 
 #include <nuttx/config.h>
@@ -47,12 +48,15 @@
 
 /* crontab 文件路径 */
 #ifndef CONFIG_CRON_CRONTAB
-#  define CONFIG_CRON_CRONTAB "/sdcard/etc/crontab"
+#  define CONFIG_CRON_CRONTAB "/opt/etc/crontab"
 #endif
 
-/* Cron 日志路径 */
-#ifndef CONFIG_CRON_LOG
-#  define CONFIG_CRON_LOG "/sdcard/logs/cron.log"
+/* Cron 日志：默认只串口输出不落盘（开发板哲学，2026-10-05 用户定稿）；
+ * 显式定义 CONFIG_CRON_LOG 才写文件（如长期无人值守场景自行开启） */
+#ifdef CONFIG_CRON_LOG
+#  ifndef CONFIG_CRON_LOG_FAT
+#    define CONFIG_CRON_LOG_FAT 1
+#  endif
 #endif
 
 #define CRON_MAX_ENTRIES    32
@@ -176,11 +180,11 @@ static void cron_log(const char *level, const char *fmt, ...)
     vsnprintf(log_buf, sizeof(log_buf), fmt, va);
     va_end(va);
 
-    /* 打印到控制台 */
+    /* 打印到串口控制台（默认唯一输出口径） */
     printf("[CRON] [%s] %s: %s\n", level, time_str, log_buf);
 
-    /* 写入日志文件 */
-#ifdef CONFIG_FS_FAT
+    /* 写入日志文件（可选：显式定义 CONFIG_CRON_LOG 才启用） */
+#if defined(CONFIG_CRON_LOG) && defined(CONFIG_FS_FAT)
     int fd = open(CONFIG_CRON_LOG, O_WRONLY | O_CREAT | O_APPEND, 0644);
     if (fd >= 0) {
         dprintf(fd, "[%s] %s: %s\n", level, time_str, log_buf);
@@ -511,9 +515,8 @@ int cron_load_crontab(void)
 int cron_save_crontab(void)
 {
 #ifdef CONFIG_FS_FAT
-    /* 确保目录存在 */
-    mkdir("/sdcard/etc", 0755);
-    mkdir("/sdcard/logs", 0755);
+    /* 确保目录存在（片上可写分区，无 SD 卡可用） */
+    mkdir("/opt/etc", 0755);
 
     int fd = open(CONFIG_CRON_CRONTAB, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd < 0) {

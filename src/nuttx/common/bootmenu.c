@@ -49,7 +49,7 @@ typedef enum {
 #define BOOT_MENU_TIMEOUT_MS   3000   /* 3 秒倒计时 */
 #define BOOT_MENU_SERIAL_BAUD  115200
 
-#define BOOT_CONFIG_FILE  "/var/boot.cfg"
+#define BOOT_CONFIG_FILE  "/opt/etc/boot.cfg"
 
 /*==========================
  *  全局变量
@@ -103,7 +103,7 @@ static int boot_load_config(void)
 static int boot_save_config(void)
 {
     /* 确保目录存在 */
-    mkdir("/var", 0755);
+    mkdir("/opt/etc", 0755);
 
     int fd = open(BOOT_CONFIG_FILE, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd < 0)
@@ -499,7 +499,7 @@ int cmd_recovery(int argc, char **argv)
 
     /* 删除所有配置文件 */
     unlink(BOOT_CONFIG_FILE);
-    unlink("/var/log/reboot.log");
+    unlink("/opt/var/log/reboot.log");
 
     /* 重置看门狗计数 */
     g_consecutive_wdt_resets = 0;

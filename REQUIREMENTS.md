@@ -184,6 +184,8 @@
 #### 2.2.6 定时任务
 - [x] Cron 定时任务
 - [x] 闹钟提醒
+- [x] crontab 存片上 `/opt/etc/crontab`（无 SD 卡可用，2026-10-05 定稿）
+- [x] 日志默认只串口输出不落盘（开发板哲学；reboot.log 重启计数例外）
 
 #### 2.2.7 SD 卡存储
 - **ESP32-S3**: SPI 模式 (GPIO10=CS / GPIO11=MISO / GPIO13=MOSI / GPIO14=CLK)
@@ -295,8 +297,12 @@
 - [x] **deb 风格包管理器**（参考 Debian）：
   - 包格式 `.rpk` = USTAR 容器：`control`（元数据）/ `manifest`（CRC32 清单）/
     `preinst|postinst|prerm|postrm`（NSH 维护脚本）/ `data/`（载荷树）
-  - 数据库仿 `/var/lib/dpkg`：`/sdcard/var/lib/rpkg/`
+  - 数据库仿 `/var/lib/dpkg`：`/opt/var/lib/rpkg/`（片上可写分区，无 SD 卡可用）
     （`<包名>.control` 快照 + `manifest/<包名>` + `info/*` 脚本存档）
+  - **双安装根（2026-10-05 定稿，HARDWARE 12.4）**：官方系统包 control 声明
+    `Root: system` → 装片上 `/opt`（`/opt/bin`、`/opt/share/<包>`，无需 SD 卡）；
+    第三方包缺省（或显式 `Root: sdcard`）→ `/sdcard`；非法 Root 取值安装拒绝；
+    SD 卡为可选硬件，系统包管理不依赖它
   - 设备端 512 字节流式解析（大文件不整包入内存）、CRC32 校验、
     路径穿越防护（拒绝 `..`）、Arch 字段目标检查、Depends 依赖检查
   - NSH 命令：`pkg install/remove/list/info`
@@ -371,7 +377,7 @@ const char *retro_ui_get_lang(void);       // 获取当前语言
 | Berry | nuttx-apps 固定版本 | MIT | 类 Python 轻量脚本引擎（可选） |
 | CPython | nuttx-apps 固定版本 | PSF | 完整 Python 3（可选，仅 S3） |
 | jslogo | master | Apache 2.0 | UCBLogo 子集海龟画图（可选） |
-| **GNU nano** | **8.4** | **GPL-3.0** | **CLI 编辑器（全系统一，真源码移植）** |
+| **GNU nano** | **8.4** | **GPL-3.0** | **CLI 编辑器（.rpk 独立包交付，不入固件 ROM；系统默认 vi——2026-10-05 定稿）** |
 | NotoSansSC | - | OFL-1.1 | 12px 中文字库点阵源 |
 
 ## 5. 文件结构 / File Structure

@@ -32,11 +32,12 @@ CONFIG_RETRO_SCRIPT_TINYBASIC=y
 # Berry 依赖：setjmp（工具链实现）+ system()（apps/system/system）
 CONFIG_ARCH_SETJMP_H=y
 CONFIG_SYSTEM_SYSTEM=y
-# nano 正则搜索依赖（TRE 正则为 MIT 许可组件）
+# 编辑器正则支持（vi/nano 通用）
 CONFIG_ALLOW_MIT_COMPONENTS=y
 CONFIG_LIBC_REGEX=y
-# 全系标配升级（2026-10-04 晚）：nano 编辑器 + 总线兼容层 + 板级脚本 ROM 化
-CONFIG_RETRO_NANO=y
+# 编辑器定稿（2026-10-05）：系统默认 vi（CONFIG_SYSTEM_VI）；GNU nano
+# 为 GPL-3.0 不入 ROM，经 .rpk 包交付（apps-extra/nano，AGENTS 11.1 红线）
+CONFIG_SYSTEM_VI=y
 CONFIG_RETRO_BUS=y
 CONFIG_RETRO_SCRIPTS_ROM=y
 CONFIG_FS_ROMFS=y

@@ -72,6 +72,8 @@ c3（合宙核心板 CLI 档）、pico（本地教学终端 CLI 档）。
 | 15 | CPython 编译验证 | `RETRO_SCRIPT_PYTHON=y`（仅 S3 N16R8）：配置 ROMFS 标准库镜像（`esp32s3-devkit:python` 配置可参考），核对 `<Python.h>` 包含路径 |
 | 16 | jslogo 集成验证 | 下载 deps/jslogo 后：把 JS 源码拷入 SD `/sdcard/scripts/logo/lib/`，将 jslogo 前端 canvas 获取处改为全局 RetroCanvas（预计一处改动） |
 | 17 | binfmt/LOADABLE 链路验证 | defconfig 开 `CONFIG_ELF`+`CONFIG_BUILD_LOADABLE`+`CONFIG_EXTERNAL_UCBLOGO`，先跑通 NuttX 官方 hello ELF 再跑 ucblogo.elf |
+| 17a | nano .rpk LOADABLE 编译验证 | `CONFIG_EXTERNAL_NANO=y`（apps-extra/nano）：deps/nano + nano_port 以独立 ELF 构建（2026-10-05 nano 出 ROM 转包交付，HARDWARE 13.2）；宿主 mini-curses 链路 2026-10-04 已验证，剩交叉 LOADABLE 编译 + 实机 |
+| 17b | 片上可写数据分区落地（littlefs 挂 /opt） | 安卓式分区（HARDWARE 12.4）：固件只读区 + 可写数据区承载系统包（/opt/bin）、包数据库（/opt/var/lib/rpkg）、用户数据（/opt/home）；分区 offset 按板 flash 总量定（S3 16/8MB、CAM/C3 4MB、Pico 2MB）+ mkfs + 开机挂接——`Root: system`、DB/crontab/boot.cfg 迁址 /opt 的实机前提（机制侧代码已就绪并有宿主测试） |
 | 18 | .rpk 包管理器实机验证 | `pkg install` 全链路：ustar 解析/CRC/维护脚本（需 CONFIG_SYSTEM 与 NSH 脚本支持）；格式契约已经主机端模拟验证通过 |
 | 19 | UCBLogo NuttX 适配 | 核对 src/*.c 文件清单、终端 IO（-termios/textscreen 依赖需换 NSH stdin/stdout）、Makefile 通配符改显式列表 |
 | ~~19a~~ | ~~retro_gpio 后端验证~~ 已完成(2026-10-04) | ioctl 已按真实头修正（ioexpander/gpio.h，WRITE=0/1、READ=bool*、SETPINTYPE=枚举）；占用拦截 29 项宿主测试全绿；剩：defconfig 开 CONFIG_DEV_GPIO/ADC/PWM 实机验证 |

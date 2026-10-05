@@ -155,8 +155,9 @@ source scripts/setup_tools.sh
 # 安装：dist/sdcard 整体拷入 SD 卡，固件侧 pkg list 验证
 ```
 
-GPL 组件（如 UCBLogo）不编入固件 ROM，以**独立安装包**交付（mere aggregation，
-许可证隔离，详见 DEPENDENCIES.md）。
+GPL 组件（UCBLogo、GNU nano）不编入固件 ROM，以**独立安装包**交付
+（mere aggregation，许可证隔离，详见 DEPENDENCIES.md）；系统默认 CLI
+编辑器为 vi，nano 经 `pkg install /sdcard/pkg/nano-8.4-1.rpk` 可选安装。
 
 ### 脚本直接操作 GPIO（教学模式）
 
@@ -201,7 +202,7 @@ nsh> pkg install /sdcard/pkg/ucblogo-6.2.2-1.rpk   # 安装（依赖检查+CRC �
 nsh> pkg list                                        # 已安装列表
 nsh> pkg info ucblogo                                # 包详情
 nsh> pkg remove ucblogo                              # 卸载（执行 prerm/postrm）
-nsh> /sdcard/apps/ucblogo                            # 运行（binfmt 独立进程）
+nsh> /opt/bin/ucblogo                               # 运行（binfmt 独立进程；Root: system 装片上）
 ```
 
 ### 五板固件编译（统一入口）
@@ -320,7 +321,7 @@ cd scripts/esp32s3 && ./nuttx_build.sh defconfig && ./build.sh nuttx && ./build.
 | 教学脚 | GPIO10（首选）等 | GP2-GP11、GP20-22、GP26-28 |
 
 > CLI 档与图形档共享同一套 common 层（脚本引擎、.rpk 包管理器、cvbs_console、
-> retro_gpio / retro_bus、nano 编辑器）；RAM 放不下 LVGL 帧缓冲，故无 GUI 桌面。
+> retro_gpio / retro_bus、vi 编辑器）；RAM 放不下 LVGL 帧缓冲，故无 GUI 桌面。
 
 ### 为什么以 ESP32-S3 为开发模板？
 
@@ -347,7 +348,7 @@ cd scripts/esp32s3 && ./nuttx_build.sh defconfig && ./build.sh nuttx && ./build.
 |    Windows 3.2 / WindowMaker 复古桌面      |
 +-------------------------------------------+
 |       NuttShell (NSH) CLI（五板全系）       |
-|      my_basic / Duktape / Berry + nano     |
+|      my_basic / Duktape / Berry + vi       |
 +-------------------------------------------+
 |     AV 视频管线（全系标配，CLI/GUI 共用）     |
 |  GUI 路径: lv_port_disp -> drv_cvbs        |
@@ -373,7 +374,7 @@ cd scripts/esp32s3 && ./nuttx_build.sh defconfig && ./build.sh nuttx && ./build.
 > 用于安全模式/控制台档）。
 >
 > **为何 GUI 与 CLI 分道而行**：
-> - **语义不同**——NSH/nano/输入法是字符流世界（write() + termios），
+> - **语义不同**——NSH/vi/输入法是字符流世界（write() + termios），
 >   一个 cell 网格（320x240 下 26x17 格）+ 32.6KB 场环即可伺候；
 >   LVGL 是像素帧缓冲世界（640x480 8bpp ≈300KB + 128KB LVGL 堆），
 >   只有 S3/CAM 的 PSRAM 放得下。
@@ -447,7 +448,7 @@ retro-ws/
     +-- nuttx/
     |   +-- common/         # 共享代码（启动菜单、脚本引擎、包管理器、
     |   |                   # cvbs_core/cvbs_console、retro_gpio/retro_bus、
-    |   |                   # nano 移植层、共享驱动）
+    |   |                   # nano_port 移植层[nano 包用]、共享驱动）
     |   +-- esp32s3/        # ESP32-S3 目标（S3/S3N8 共用）
     |   |   +-- driver/     # CVBS LCD_CAM、音频 I2S、USB HID、BLE HID、FSK、WS2812
     |   |   +-- board/      # ESP32-S3-DevKitC-1 板级（hw_esp32s3_devkitc.h）
@@ -491,14 +492,15 @@ retro-ws/
 | CPython（可选，仅 S3） | nuttx-apps 固定 | 完整 Python 3 / Full Python 3 | PSF |
 | jslogo（可选） | master | UCBLogo 子集海龟画图 / Turtle graphics | Apache 2.0 |
 | Logo Turtle | 自研 | Logo 海龟画图解释器 | MIT |
-| **GNU nano** | **8.4** | **CLI 文本编辑器（全系统一，vi 不编入；真源码移植）** | **GPL-3.0** |
+| **GNU nano** | **8.4** | **CLI 文本编辑器（.rpk 独立安装包，不入固件 ROM；系统默认编辑器为 vi）** | **GPL-3.0** |
 | UCBLogo（.rpk 独立包） | 6.2.2 | Logo 解释器（binfmt 独立进程，不入固件 ROM） | GPL-2.0+ |
 | NotoSansSC | - | 中文字体（全系唯一 12px 点阵源） | OFL-1.1 |
 
-> **许可证注记**：nano 为 GPL-3.0 且按 AGENTS.md 7.4 编入五板固件（独立 builtin
-> 程序，非内核链接）；这与"固件零 GPL"声明（AGENTS.md 11.1 第 9 条）存在张力，
-> 边界划分待项目所有者明确定档，见 DEPENDENCIES.md"GPL 独立程序包策略"。
-> UCBLogo 等 GPL 解释器一律不编入 ROM，以 .rpk 安装包交付（mere aggregation）。
+> **许可证注记（2026-10-05 定稿）**：固件 ROM **零 GPL**（Apache-2.0/MIT），
+> 系统 CLI 默认编辑器为 NuttX 内置 vi；GNU nano（GPL-3.0）与 UCBLogo
+> （GPL-2.0+）等一律不编入 ROM，以 .rpk 安装包交付（独立 ELF，binfmt
+> 进程隔离，mere aggregation），设备端经 `pkg` 命令安装，
+> 见 DEPENDENCIES.md"GPL 独立程序包策略"。
 
 ## 示例程序 / Example Programs
 

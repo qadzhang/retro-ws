@@ -49,15 +49,16 @@ config RETRO_MEMMON
     default y if !RETRO_BOARD_RP2040
 
 config RETRO_NANO
-    bool "GNU nano 8.4 文本编辑器（全系 CLI 编辑器，替代 vi）"
-    default y
+    bool "GNU nano 8.4 编入固件（实验选项，默认关闭）"
+    default n
     help
-      真源码移植（deps/nano 上游 nano-8.4）+ mini-curses 垫片
-      （src/nuttx/common/nano_port）。AV 控制台与串口终端通用。
-      用户要求：所有开发板 CLI 文本编辑器统一 nano，禁用 vi。
+      GNU nano（GPL-3.0）按许可证红线不入固件 ROM（AGENTS.md 11.1
+      第 9 条），标准交付形态为 .rpk 安装包（apps-extra/nano +
+      build_packages.sh）。系统默认 CLI 编辑器为 NuttX vi
+      （CONFIG_SYSTEM_VI）。本开关仅供调试/实验性回编。
 
 config RETRO_NANO_STACK
-    int "nano 任务栈（字节）"
+    int "nano 任务栈（字节，仅 RETRO_NANO 实验回编时生效）"
     default 32768 if RETRO_BOARD_RP2040
     default 24576 if RETRO_BOARD_ESP32C3
     default 65536

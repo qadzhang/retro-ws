@@ -246,7 +246,7 @@
 |------|------|------|
 | GPL 组件与固件许可证隔离（mere aggregation） | `apps-extra/ucblogo/`（README/Kconfig/Makefile） | 完成（打包链路就绪；binfmt 实机验证待办，NEXT_STEPS 17） |
 | **deb 风格包管理器（.rpk）** | `pkg_manager.[ch]`：ustar 流式解析/CRC32/路径防护/Arch 检查/Depends | 完成（格式契约已经主机端模拟验证） |
-| 安装数据库（仿 /var/lib/dpkg） | `/sdcard/var/lib/rpkg/`（control 快照+manifest+info 脚本） | 完成 |
+| 安装数据库（仿 /var/lib/dpkg） | `/opt/var/lib/rpkg/`（片上可写分区——无 SD 卡可用；2026-10-05 前在 /sdcard） | 完成 |
 | 维护脚本 | preinst/postinst/prerm/postrm（NSH 脚本，system("sh")） | 完成 |
 | 主机侧打包器 | `scripts/make_package.sh`（含 manifest CRC 生成；重复条目缺陷已修复并经 tar 结构验证） | 完成 |
 | 安装包构建器 | `scripts/build_packages.sh`（下载→LOADABLE→.rpk→dist/sdcard/pkg） | 完成 |
@@ -338,6 +338,28 @@
   插座），check_eda.py 零交叉校验 PASS
 - 板卡几何经官方 DXF/wiki 核实（DevKitC 22.86mm/CAM 22.86/合宙 21.0
   非 2.54 网格/Pico 17.78）
+
+### 26. 编辑器许可证边界定稿：nano 出 ROM 转 .rpk，系统默认 vi（2026-10-05）⭐
+- **项目所有者裁决**（解除 7.4 与 11.1 第 9 条的张力）：固件 ROM 零 GPL，
+  系统 CLI 默认编辑器 = NuttX 内置 vi（CONFIG_SYSTEM_VI，五板 appconfig 已切）
+- **nano 转 .rpk 包**：apps-extra/nano/ 模板（README/Makefile/Kconfig/
+  control/postinst，LOADABLE 构建，上游 deps/nano + nano_port 垫片复用）；
+  build_packages.sh 接入（同步 external/nano -> 收集 ELF -> 打包）；
+  CONFIG_RETRO_NANO 默认关（仅实验回编）
+- **顺带修复存量 bug**：build_packages.sh 原把 ELF 收集到 package/apps/，
+  而 make_package.sh 载荷树约定为 package/data/——原路径打的包载荷为空，
+  已改为 data/bin/（ucblogo/nano 两包统一，系统根装 /opt/bin）
+- **双安装根（同日，用户定稿）**：pkg_manager 新增 control `Root` 字段
+  （system→片上 /opt，缺省/sdcard→SD 卡，非法值拒绝）；包数据库迁址
+  /opt/var/lib/rpkg（无 SD 卡时包管理完整可用）；打包器 manifest 改相对
+  路径（与安装根解耦）；宿主新增 dual-root 测试；HARDWARE 12.4 定稿
+  安卓式分区布局（固件只读区 + littlefs 可写区挂 /opt），分区落地登记
+  NEXT_STEPS 17b
+- **存储策略三定稿（同日，用户指示）**：①日志默认只串口不落盘（cron.c
+  改造：CONFIG_CRON_LOG 显式才写文件）；②crontab/boot.cfg/重启计数迁
+  片上 /opt（bootmenu.c、cron.c、nsh_cmds.c 路径同步）；③挂载点弃 /usr
+  取 /opt（Unix 语义：附加软件位）
+- 2026-10-04 的"全系统一 nano"决定（§17）就此翻转为历史
 
 ### 25. 输入优先级原则落地（2026-10-05）⭐
 - **原则定稿（REQUIREMENTS 2.2.3）**：USB 键盘（OTG 主机）> 蓝牙 HID > 串口键盘泵；

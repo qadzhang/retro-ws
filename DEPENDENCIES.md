@@ -14,7 +14,7 @@
 | CPython（可选，仅 S3） | nuttx-apps 固定 | nuttx-apps `interpreters/python` | 完整 Python 3，需 ROMFS 标准库镜像 |
 | jslogo（可选） | master | https://github.com/inexorabletash/jslogo | UCBLogo 子集，Apache-2.0，跑在 Duktape 上 |
 | UCBLogo（独立 ELF，不入 ROM） | 6.2.2 | https://sourceforge.net/projects/ucblogo | **GPL-2.0+**，mere aggregation 交付，见下节 |
-| GNU nano | 8.4 | https://www.nano-editor.org/dist/v8/nano-8.4.tar.xz | **GPL-3.0**，CLI 编辑器真源码移植；适配层 `src/nuttx/common/nano_port`（上游不改），sha256 前 16 位 5ad29222bbd55624；**下载脚本未含，需手动解压到 `deps/nano/`** |
+| GNU nano | 8.4 | https://www.nano-editor.org/dist/v8/nano-8.4.tar.xz | **GPL-3.0**，编辑器真源码移植；适配层 `src/nuttx/common/nano_port`（上游不改），sha256 前 16 位 5ad29222bbd55624；**2026-10-05 定稿不入固件 ROM**——经 `apps-extra/nano` + `build_packages.sh` 打 .rpk 包交付（系统默认编辑器为 vi）；源码手动放置 `deps/nano/`（下载脚本未含） |
 | esp-hal-3rdparty | NuttX 配套 | 随 NuttX 仓库（子模块） | 乐鑫 HAL 装配：mbedtls（pin v3.6.2 单体版）/ esp_wifi / bt / esp_phy / esp_coex，Apache 2.0 |
 | littlefs | v2.5.1 | NuttX 树内 | 文件系统，BSD-3-Clause（独立版本号仅供参考） |
 | SQLite | 3.45.1 | nuttx-apps `database/sqlite` | Public Domain |
@@ -29,8 +29,8 @@
 
 | 层 | 内容 | 许可证 |
 |----|------|--------|
-| 固件（deps/nuttx → nuttx.bin） | NuttX/LVGL/本项目 src/ | Apache-2.0 + MIT 等宽松协议，**零 GPL** |
-| 独立程序（apps-extra/ → dist/sdcard/apps/*.elf） | UCBLogo 等 GPL 解释器 | GPL-2.0+，binfmt 独立进程加载 |
+| 固件（deps/nuttx → nuttx.bin） | NuttX/LVGL/本项目 src/（含内置 vi 编辑器） | Apache-2.0 + MIT 等宽松协议，**零 GPL** |
+| 独立程序（apps-extra/ → dist/sdcard/apps/*.elf） | UCBLogo（GPL-2.0+）、GNU nano（GPL-3.0） | GPL，binfmt 独立进程加载 |
 
 - 架构依据：GPL 的 **mere aggregation（单纯聚合）** 豁免——独立 ELF 与固件
   仅通过 NSH 执行/文件系统松耦合，无符号链接进固件映像；GPL 程序调用固件

@@ -1,6 +1,7 @@
 Package: ucblogo
 Version: 6.2.2-1
 Arch: xtensa
+Root: system
 Depends:
 License: GPL-2.0-or-later
 Installed-Size: 900

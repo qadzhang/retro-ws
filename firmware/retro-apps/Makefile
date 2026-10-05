@@ -166,6 +166,8 @@ CSRCS += scripts_romfs.c
 endif
 
 # ---- GNU nano 8.4（真源码移植 + mini-curses 垫片） ----
+# GPL-3.0：默认不入 ROM（.rpk 包交付，AGENTS 11.1 红线）；本块仅
+# RETRO_NANO 实验回编时生效（2026-10-05 定稿，见 apps-extra/nano）
 ifeq ($(CONFIG_RETRO_NANO),y)
 NANO := $(ENGINES)nano/src/
 NANO_LIB_SRCS := $(filter-out $(NANO)nano.c,$(wildcard $(NANO)*.c))
@@ -277,7 +279,9 @@ VPATH += src/esp32s3:src/esp32s3/board:src/esp32s3/driver/fsk
 VPATH += src/esp32:src/esp32/board:src/esp32/driver/fsk:src/esp32/driver/audio
 VPATH += src/esp32c3:src/esp32c3/board:src/esp32c3/driver/cvbs
 VPATH += src/rp2040:src/rp2040/board:src/rp2040/driver/cvbs
+ifeq ($(CONFIG_RETRO_NANO),y)
 VPATH += src/common/nano_port:$(ENGINES)nano/src
+endif
 VPATH += $(ENGINES)my_basic/core
 VPATH += $(ENGINES)berry/src:$(ENGINES)berry/default
 VPATH += $(ENGINES)duktape/src

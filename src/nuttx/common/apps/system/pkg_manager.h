@@ -20,7 +20,7 @@
  *   +-- preinst|postinst|prerm|postrm   # 维护脚本（NSH 脚本，可选）
  *   +-- data/...         # 载荷根，data/ 之后的部分原样落到安装前缀下
  *
- *   数据库（仿 /var/lib/dpkg）：/sdcard/var/lib/rpkg/
+ *   数据库（仿 /var/lib/dpkg）：/opt/var/lib/rpkg/（片上可写分区）
  *   +-- <包名>.control   # 安装时的 control 快照
  *   +-- manifest/<包名>  # 已装文件清单（卸载依据）
  *   +-- info/<包名>.*    # 维护脚本存档（卸载时执行 prerm/postrm）
@@ -31,15 +31,25 @@
 
 #include <nuttx/config.h>
 
-/* 安装前缀：.rpk 中 data/ 下内容全部落于此前缀之下
+/* 安装前缀（默认根）：.rpk 中 data/ 下内容全部落于所选根之下
  * （宿主机测试可用 -DPKG_INSTALL_PREFIX='"..."' 覆盖，默认值不变） */
 #ifndef PKG_INSTALL_PREFIX
 #  define PKG_INSTALL_PREFIX     "/sdcard"
 #endif
 
-/* 包数据库根（仿 /var/lib/dpkg；同样允许测试覆盖） */
+/* system 根前缀：control 声明 Root: system 的包（官方系统包）装到片上
+ * 可写分区（littlefs，挂载点 /opt——Unix 惯例"附加软件"位，避开语义
+ * 为厂商只读系统的 /usr；用户数据同区写 /opt/home，见 HARDWARE 12.4）；
+ * 未声明或 Root: sdcard 一律装 PKG_INSTALL_PREFIX（第三方包，默认） */
+#ifndef PKG_SYSTEM_PREFIX
+#  define PKG_SYSTEM_PREFIX      "/opt"
+#endif
+
+/* 包数据库根（仿 /var/lib/dpkg）——放片上可写分区：无 SD 卡时官方
+ * 系统包的安装/卸载/列表仍完整可用（SD 卡是可选大容量扩展）；
+ * 同样允许测试覆盖 */
 #ifndef PKG_DB_ROOT
-#  define PKG_DB_ROOT            "/sdcard/var/lib/rpkg"
+#  define PKG_DB_ROOT            "/opt/var/lib/rpkg"
 #endif
 
 /* .rpk 容器内保留路径（不可作为载荷名） */
@@ -57,6 +67,7 @@ enum rpkg_control_field_e {
     PKG_FLD_ARCH,           /* Arch: esp32s3 | esp32cam | all */
     PKG_FLD_DEPENDS,        /* Depends: 逗号分隔包名（v1 不比较版本） */
     PKG_FLD_LICENSE,        /* License: SPDX 标识（GPL 包必须声明） */
+    PKG_FLD_ROOT,           /* Root: system | sdcard（安装根，缺省 sdcard） */
     PKG_FLD_DESCRIPTION,    /* Description: 一行描述 */
     PKG_FLD_INSTALLED_SIZE, /* Installed-Size: KB 估算 */
     PKG_FLD_MAINTAINER,     /* Maintainer: 维护者 */

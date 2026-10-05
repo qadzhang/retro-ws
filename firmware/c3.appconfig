@@ -38,14 +38,15 @@ CONFIG_SYSTEM_DD=y
 CONFIG_SYSTEM_TEE=y
 CONFIG_FSUTILS_MKRD=y
 CONFIG_SYSTEM_HEXED=y
-# 编辑器：GNU nano（用户要求全系统一 nano，vi 不编入）
+# 编辑器：系统 vi（行编辑依赖 readline）
 CONFIG_SYSTEM_READLINE=y
 CONFIG_EXAMPLES_HELLO=y
-# nano 正则搜索依赖（TRE 正则为 MIT 许可组件）
+# 编辑器正则支持（vi/nano 通用）
 CONFIG_ALLOW_MIT_COMPONENTS=y
 CONFIG_LIBC_REGEX=y
-# 全系标配升级（2026-10-04 晚）：nano 编辑器 + 总线兼容层 + 板级脚本 ROM 化
-CONFIG_RETRO_NANO=y
+# 编辑器定稿（2026-10-05）：系统默认 vi（CONFIG_SYSTEM_VI）；GNU nano
+# 为 GPL-3.0 不入 ROM，经 .rpk 包交付（apps-extra/nano，AGENTS 11.1 红线）
+CONFIG_SYSTEM_VI=y
 CONFIG_RETRO_BUS=y
 CONFIG_RETRO_SCRIPTS_ROM=y
 CONFIG_FS_ROMFS=y

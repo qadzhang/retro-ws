@@ -106,6 +106,12 @@ EOF
 mkdir -p "$RI/armroot/arch"
 cp "$RI/nuttx/config.h" /dev/null 2>/dev/null || true
 
+# deps/nuttx/include 是源码头（保留），但其 arch/ 是 configure 生成的
+# 软链（构建哪个板就指向哪个架构——c3 构建后 xtensa 文件被 riscv types
+# 污染报 _int64_t 未定义，2026-10-05 事故）。realinc 放指向 xtensa 源的
+# arch 软链并置于 -I 最前，优先级压制生成物：
+ln -sfn "$DEPS/nuttx/arch/xtensa/include" "$RI/arch"
+
 NUTTX_INC="-I $RI -I $DEPS/nuttx/include -I $RI/archroot -I $RI/chiproot \
  -I $ROOT/tests/host/stubs -I $ROOT \
  -I $ROOT/deps/my_basic/core -I $ROOT/deps/duktape/src \

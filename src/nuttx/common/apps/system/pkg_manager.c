@@ -156,7 +156,7 @@ int rpkg_db_path(char *buf, int buflen, const char *fmt, ...)
  *==========================*/
 
 static const char *g_field_names[PKG_FLD_COUNT] = {
-    "Package", "Version", "Arch", "Depends", "License",
+    "Package", "Version", "Arch", "Depends", "License", "Root",
     "Description", "Installed-Size", "Maintainer",
 };
 
@@ -190,6 +190,37 @@ static int control_parse_line(struct rpkg_control_s *ctl, const char *line)
 static const char *control_get(const struct rpkg_control_s *ctl, int fld)
 {
     return ctl->field[fld][0] ? ctl->field[fld] : NULL;
+}
+
+/*
+ * WHAT : 按 control 的 Root 字段取安装根前缀
+ * WHY  : 双安装根（2026-10-05 用户定稿）——官方系统包装片上系统区
+ *        （PKG_SYSTEM_PREFIX，如 /opt/bin/nano），第三方包装 SD 卡
+ *        （PKG_INSTALL_PREFIX，如 /sdcard/apps/<名>）；打包器 manifest
+ *        用相对路径即两根通用
+ * HOW  : Root: system -> PKG_SYSTEM_PREFIX；缺省/"sdcard" -> 安装前缀
+ */
+static const char *root_prefix_for(const struct rpkg_control_s *ctl)
+{
+    const char *root = control_get(ctl, PKG_FLD_ROOT);
+
+    if (root && strcmp(root, "system") == 0)
+        return PKG_SYSTEM_PREFIX;
+    return PKG_INSTALL_PREFIX;
+}
+
+/*
+ * WHAT : 校验 Root 字段取值（system / sdcard / 缺省）
+ * 返回 : OK / -EINVAL
+ */
+static int root_field_valid(const struct rpkg_control_s *ctl)
+{
+    const char *root = control_get(ctl, PKG_FLD_ROOT);
+
+    if (root == NULL || strcmp(root, "system") == 0 ||
+        strcmp(root, "sdcard") == 0)
+        return OK;
+    return -EINVAL;
 }
 
 /*==========================
@@ -515,18 +546,20 @@ static bool arch_match(const char *pkg_arch)
  *  manifest（打包器 CRC 清单）辅助
  *==========================*/
 
-/* 打包器 manifest 的内存镜像："<crc8hex> /sdcard/<rel>" 逐行 */
+/* 打包器 manifest 的内存镜像："<crc8hex> <path>" 逐行；path 为
+ * 相对 data/ 的路径（推荐，与安装根解耦）或任一安装根下的绝对路径 */
 struct manifest_ent_s {
     uint32_t crc;
-    char     rel[RPKG_MAX_PATH];   /* 相对安装前缀的路径 */
+    char     rel[RPKG_MAX_PATH];   /* 相对安装根的路径 */
 };
 
 /*
  * WHAT : 解析打包器 manifest 到条目数组
  * WHY  : 安装落盘时逐文件比对 CRC，损坏/篡改的包必须被拒绝
- * HOW  : 逐行 sscanf "%x %s"；路径须以安装前缀开头（剥离之），
- *        且剥离后必须通过 path_is_safe——否则该行直接丢弃
- *        （防止恶意 manifest 借卸载之名删除任意文件）
+ * HOW  : 逐行 sscanf "%x %s"；绝对路径须在任一安装根（sdcard/system）
+ *        之下（剥离之），裸相对路径直接采用；且必须通过
+ *        path_is_safe——否则该行直接丢弃（防止恶意 manifest 借
+ *        卸载之名删除任意文件）
  * 返回 : 解析出的有效条目数（0 = 无可校验清单，不视为错误）
  */
 static int manifest_parse(struct manifest_ent_s *ents, int max_ents,
@@ -549,12 +582,16 @@ static int manifest_parse(struct manifest_ent_s *ents, int max_ents,
         char path[RPKG_MAX_PATH];
         if (sscanf(line, "%x %s", &crcval, path) == 2) {
             size_t plen = strlen(PKG_INSTALL_PREFIX);
+            size_t slen = strlen(PKG_SYSTEM_PREFIX);
             const char *rel = path;
 
-            /* 只接受安装前缀之下的绝对路径 */
+            /* 只接受安装根之下的绝对路径（两个根任一） */
             if (strncmp(path, PKG_INSTALL_PREFIX, plen) == 0 &&
                 path[plen] == '/')
                 rel = path + plen + 1;
+            else if (strncmp(path, PKG_SYSTEM_PREFIX, slen) == 0 &&
+                     path[slen] == '/')
+                rel = path + slen + 1;
 
             if (path_is_safe(rel)) {
                 ents[n].crc = (uint32_t)crcval;
@@ -795,6 +832,14 @@ int rpkg_install(const char *rpk_path)
         goto out_free;
     }
 
+    if (root_field_valid(&ctl) != OK) {
+        printf("非法安装根 / invalid Root: %s（仅 system|sdcard）\n",
+               control_get(&ctl, PKG_FLD_ROOT) ?: "");
+        ret = -EINVAL;
+        goto out_free;
+    }
+    const char *rootpfx = root_prefix_for(&ctl);
+
     if (rpkg_is_installed(pkg)) {
         printf("已安装 / already installed: %s（先 pkg remove）\n", pkg);
         ret = -EEXIST;
@@ -855,12 +900,12 @@ int rpkg_install(const char *rpk_path)
         }
 
         /* 长度前置检查：杜绝 snprintf 静默截断出半截路径 */
-        if (strlen(rel) + strlen(PKG_INSTALL_PREFIX) + 1 >= sizeof(dest)) {
+        if (strlen(rel) + strlen(rootpfx) + 1 >= sizeof(dest)) {
             printf("路径过长 / path too long: %s\n", rel);
             ret = -ENAMETOOLONG;
             goto out_rollback;
         }
-        snprintf(dest, sizeof(dest), "%s/%s", PKG_INSTALL_PREFIX, rel);
+        snprintf(dest, sizeof(dest), "%s/%s", rootpfx, rel);
 
         if (type == '5' || rel[strlen(rel) - 1] == '/') {
             mkdirs(dest);
@@ -879,6 +924,9 @@ int rpkg_install(const char *rpk_path)
         ret = tar_extract_file(&it, dest, fsize, &crc);
         if (ret < 0) {
             printf("写入失败 / extract failed: %s\n", dest);
+            if (rootpfx == PKG_SYSTEM_PREFIX)
+                printf("提示: system 根需片上可写 FS（littlefs 分区，"
+                       "NEXT_STEPS 17b）；暂可改用 Root: sdcard\n");
             goto out_rollback;
         }
 
@@ -937,9 +985,10 @@ int rpkg_install(const char *rpk_path)
     rpkg_db_path(dest, sizeof(dest), "manifest/%s", pkg);
     dfd = open(dest, O_WRONLY | O_CREAT | O_TRUNC, 0666);
     if (dfd >= 0) {
-        /* 打包器清单含 CRC 视为权威（已逐项验证过）；否则用实测清单 */
-        const char *m = (nments > 0) ? manifest_buf : manifest_out;
-        if (write(dfd, m, strlen(m)) < 0)
+        /* 卸载清单一律存"实测绝对路径"（manifest_out）：打包器 manifest
+         * 为相对路径（与安装根解耦），卸载端需绝对路径才能定位文件；
+         * CRC 在落盘时已逐项比对，两者数据等价（2026-10-05 双根修订） */
+        if (write(dfd, manifest_out, strlen(manifest_out)) < 0)
             syslog(LOG_WARNING, "[rpkg] manifest write failed\n");
         close(dfd);
     }
@@ -1002,10 +1051,13 @@ int rpkg_remove(const char *pkg_name)
         return -EIO;
     }
 
-    /* 按 manifest 删除（行格式 "<crc> /sdcard/..."） */
+    /* 按 manifest 删除（行格式 "<crc> <绝对路径>"，双根任一之下） */
     rpkg_db_path(path, sizeof(path), "manifest/%s", pkg_name);
     FILE *mf = fopen(path, "r");
     if (mf) {
+        size_t sdlen = strlen(PKG_INSTALL_PREFIX "/");
+        size_t syslen = strlen(PKG_SYSTEM_PREFIX "/");
+
         while (fgets(line, sizeof(line), mf)) {
             char *p = strchr(line, ' ');
             if (!p)
@@ -1015,9 +1067,10 @@ int rpkg_remove(const char *pkg_name)
             if (nl)
                 *nl = '\0';
 
-            /* 只删安装前缀之下的路径（防篡改 manifest 任意删除） */
-            if (strncmp(p, PKG_INSTALL_PREFIX "/",
-                        strlen(PKG_INSTALL_PREFIX) + 1) != 0)
+            /* 只删安装根之下的路径（防篡改 manifest 任意删除；
+             * 双根：sdcard 默认根 + system 片上根） */
+            if (strncmp(p, PKG_INSTALL_PREFIX "/", sdlen) != 0 &&
+                strncmp(p, PKG_SYSTEM_PREFIX "/", syslen) != 0)
                 continue;
 
             if (unlink(p) == 0)

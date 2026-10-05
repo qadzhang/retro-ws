@@ -16,7 +16,7 @@
 | 目标芯片 | **ESP32-S3** (LX7) / **ESP32** (CAM, LX6) / **ESP32-C3** (RISC-V, 合宙核心板) / **RP2040** (Pico, Cortex-M0+) |
 | 操作系统 | Apache NuttX RTOS 12.12.0 |
 | 图形引擎 | LVGL 9.5.0（仅图形档 S3/CAM） |
-| CLI 编辑器 | GNU nano 8.4（全系统一，vi 不编入；真源码移植） |
+| CLI 编辑器 | NuttX vi（系统默认）；GNU nano 8.4 为 .rpk 可选安装包（GPL-3.0 不入 ROM，2026-10-05 定稿） |
 | 文本浏览器 | Links 2.30（下载脚本已支持；板端移植待办，见 NEXT_STEPS 48） |
 | 状态 | **五板多目标支持已完成** |
 
@@ -362,8 +362,8 @@ DENY  inbound ICMP (ping)
 **功能：**
 - crontab 格式配置
 - 支持命令类型：`shell` / `audio:` / `tts:` / `notify:` / `reboot` / `wifi_reconnect`
-- 日志记录到 `/sdcard/logs/cron.log`
-- 任务保存到 `/sdcard/etc/crontab`，重启不丢失
+- 日志默认只串口输出（不落盘，2026-10-05 定稿；显式 CONFIG_CRON_LOG 才写文件）
+- 任务保存到 `/opt/etc/crontab`（片上可写分区），重启不丢失、无 SD 卡可用
 
 ---
 
@@ -392,11 +392,13 @@ DENY  inbound ICMP (ping)
 - common/driver/retro_bus.[ch]：I2C/SPI/UART machine 风格（硬后端探测 + 位摆软回退）+ retro_bus_{bas,berry,js}.c
 - common/script_rom.c：/dev/rom0 内存盘 + /rom/scripts 挂载 + retro_romfs_find Flash 直查 + `script` 命令
 - firmware/scripts/<板>/：板级脚本源目录（tools/mkromfs.py 生成 scripts_romfs.c）
-- common/nano_port/：GNU nano 8.4 移植层（mini-curses + compat + config），deps/nano 上游源码不改
+- common/nano_port/：GNU nano 8.4 移植层（mini-curses + compat + config）——
+  2026-10-05 起 nano 出 ROM 转 .rpk 包（apps-extra/nano），本垫片随包构建复用
 
 ### 2D. 内置程序（2026-10-04 晚）
-- Application.mk PROGNAME/MAINSRC 配对注册：retro_boot(init)、script、pkg、sysinfo、shell、nano
+- Application.mk PROGNAME/MAINSRC 配对注册：retro_boot(init)、script、pkg、sysinfo、shell、ime
 - src/nuttx/common/apps/system/cmd_*_main.c：薄壳 main → cmd_*()
+- 系统编辑器 vi 为 nuttx-apps 内置（CONFIG_SYSTEM_VI）；nano 为 .rpk 包（不占 builtin）
 
 ### 2F. 全系唯一字号 12px（2026-10-05 定稿）⭐
 - 唯一字型唯一字号：Noto Sans SC 12px 1bpp 点阵（lv_font_notosans_sc_12，
@@ -442,24 +444,23 @@ WiFi 802.11 b/g/n (2.4GHz)
 ## 文件系统
 
 ```
-/sdcard/              # TF 卡（FAT32，最大 32GB）
-+-- etc/
-|   +-- crontab       # 定时任务配置
-+-- logs/
-|   +-- cron.log      # Cron 执行日志
-+-- scripts/          # 用户脚本
-|   +-- basic/       # my_basic 脚本
-|   +-- js/          # Duktape JS 脚本
-+-- fonts/           # 扩展字库
+/rom/scripts/         # 板级脚本 ROMFS（只读，编入固件镜像）
+                      #   每板演示/教学脚本（XIP 直跑）
 
-/usr/                 # 片上 Flash
-+-- bin/             # 系统程序
-+-- share/fonts/    # 文泉驿字库 (WQY)
+/opt/                 # 片上可写数据分区（littlefs，HARDWARE 12.4）
++-- bin/ + share/     #   系统包装载位（Root: system，如 /opt/bin/nano）
++-- etc/              #   系统配置：crontab、boot.cfg、lang.conf
++-- var/lib/rpkg/     #   包数据库（control 快照 + manifest + 维护脚本）
++-- var/log/          #   仅重启计数（reboot.log，安全模式判定用）
++-- home/             #   用户数据写入区（无 SD 卡时的主数据区）
 
-/var/                 # 运行时文件
-+-- log/
-|   +-- reboot.log   # 重启记录
-+-- run/             # PID 文件
+/sdcard/              # TF 卡（FAT32，可选硬件；最大 32GB）
++-- scripts/          #   用户脚本（basic/js/berry）
++-- apps/             #   第三方包装载位（Root: sdcard 缺省）
++-- pkg/ + pkg-src/   #   .rpk 安装包与 GPL 源码副本
+
+> 日志默认只从串口输出、不写文件（开发板哲学，2026-10-05 定稿）；
+> 唯一例外 reboot.log（连续看门狗重启计数，安全模式判定依赖持久化）。
 ```
 
 ---

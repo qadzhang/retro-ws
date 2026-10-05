@@ -475,6 +475,65 @@ static void build_fixture_package(void)
     system(cmd);
 }
 
+static void build_root_fixture_package(const char *pkgname,
+                                       const char *root_line, const char *rpk)
+{
+    static const char body[] = "payload";
+    char cmd[512];
+
+    snprintf(cmd, sizeof(cmd), "rm -rf '%s' && mkdir -p '%s/data/bin' '%s'",
+             STAGING, STAGING, STAGING);
+    system(cmd);
+
+    char ctl[512];
+    int n = snprintf(ctl, sizeof(ctl),
+                     "Package: %s\nVersion: 1.0\n"
+                     "Arch: " CONFIG_RETRO_CHIP_VAL "\n%s"
+                     "Description: root fixture\n", pkgname, root_line);
+    write_file(STAGING "/control", ctl, (size_t)n);
+    write_file(STAGING "/data/bin/prog", body, sizeof(body) - 1);
+
+    /* 相对路径 manifest（make_package.sh 新格式，与安装根解耦） */
+    uint32_t c = crc32_update(0, (const uint8_t *)body, sizeof(body) - 1);
+    char mani[256];
+    int m = snprintf(mani, sizeof(mani), "%08lx bin/prog\n", (unsigned long)c);
+    write_file(STAGING "/manifest", mani, (size_t)m);
+
+    snprintf(cmd, sizeof(cmd),
+             "(cd '%s' && find . -mindepth 1 \\( -type f -o -type d \\) -print | "
+             "sed 's|^\\./||' | sort | "
+             "tar --format=ustar --no-recursion -cf '%s/%s' -T -)",
+             STAGING, SANDBOX, rpk);
+    system(cmd);
+}
+
+/* 双安装根（2026-10-05）：Root: system -> 片上 /opt；sdcard 默认；非法拒绝 */
+static void test_install_dual_root(void)
+{
+    char path[RPKG_MAX_PATH];
+
+    build_root_fixture_package("sysroot", "Root: system\n", "sysroot.rpk");
+    CHECK_EQ_INT(rpkg_install(SANDBOX "/sysroot.rpk"), OK);
+    snprintf(path, sizeof(path), "%s/bin/prog", PKG_SYSTEM_PREFIX);
+    CHECK(file_exists(path));
+    CHECK_EQ_INT(rpkg_remove("sysroot"), OK);
+    CHECK(!file_exists(path));
+    /* 卸载后 DB 清干净（绝对路径清单驱动删除） */
+    snprintf(path, sizeof(path), "%s/sysroot.control", PKG_DB_ROOT);
+    CHECK(!file_exists(path));
+
+    build_root_fixture_package("sdroot", "Root: sdcard\n", "sdroot.rpk");
+    CHECK_EQ_INT(rpkg_install(SANDBOX "/sdroot.rpk"), OK);
+    snprintf(path, sizeof(path), "%s/bin/prog", PKG_INSTALL_PREFIX);
+    CHECK(file_exists(path));
+    CHECK_EQ_INT(rpkg_remove("sdroot"), OK);
+    snprintf(path, sizeof(path), "%s/bin/prog", PKG_INSTALL_PREFIX);
+    CHECK(!file_exists(path));
+
+    build_root_fixture_package("badroot", "Root: /tmp\n", "badroot.rpk");
+    CHECK_EQ_INT(rpkg_install(SANDBOX "/badroot.rpk"), -EINVAL);
+}
+
 static void test_install_remove_e2e(void)
 {
     build_fixture_package();
@@ -644,6 +703,7 @@ int main(void)
     test_tar_iteration();
     test_tar_vs_gnu_tar();
     test_install_remove_e2e();
+    test_install_dual_root();
     test_install_corrupt_payload();
     test_install_traversal_rejected();
     test_install_bad_package_name();

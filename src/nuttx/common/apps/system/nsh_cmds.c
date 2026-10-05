@@ -240,7 +240,7 @@ int cmd_nettest(int argc, char **argv)
 int cmd_reboothist(int argc, char **argv)
 {
     printf("重启历史 / Reboot History:\n");
-    /* TODO: 读取 /var/log/reboot.log */
+    /* TODO: 读取 /opt/var/log/reboot.log */
     printf("  上次重启: 正常重启 / Last reboot: Normal\n");
     return OK;
 }

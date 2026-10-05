@@ -293,9 +293,15 @@ void my_keypad_read(lv_indev_t *indev, lv_indev_data_t *data)
 
 > 与 `src/lvgl/i18n.c` 的读取顺序一致（首个存在者生效）。
 
-### 7.4 CLI 文本编辑器 / CLI Text Editor（2026-10-04 增）
-- 所有开发板 CLI 文本编辑器统一 **GNU nano 8.4**（deps/nano 真源码移植 + src/nuttx/common/nano_port 垫片）
-- 一律不编入 vi（CONFIG_SYSTEM_VI 禁用）；构建新增 CLI 编辑功能优先评估 nano 内实现（nanorc/拼贴板等）
+### 7.4 CLI 文本编辑器 / CLI Text Editor（2026-10-04 增；2026-10-05 修订）
+- 系统默认 CLI 编辑器为 **NuttX 内置 vi**（`CONFIG_SYSTEM_VI=y`，五板全系）
+- **GNU nano 8.4 为 GPL-3.0，禁止编入固件 ROM**：一律放 `apps-extra/nano/`
+  （deps/nano 上游源码 + src/nuttx/common/nano_port 垫片），由
+  `scripts/build_packages.sh` 打成 **.rpk 安装包**（deb 风格，独立 ELF，
+  binfmt/进程隔离，mere aggregation）交付，设备端经 `pkg` 命令安装；
+  包 Arch 字段按架构隔离（xtensa/riscv/arm）
+- `CONFIG_RETRO_NANO` 仅作实验性回编开关，默认关闭；固件本体保持纯
+  Apache-2.0/MIT 宽松协议栈（与 11.1 第 9 条红线一致）
 
 
 ---

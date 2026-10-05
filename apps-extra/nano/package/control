@@ -1,0 +1,9 @@
+Package: nano
+Version: 8.4-1
+Arch: xtensa
+Root: system
+Depends:
+License: GPL-3.0
+Installed-Size: 700
+Maintainer: Retro WS Project Team
+Description: GNU nano 8.4 文本编辑器（GPL-3.0，独立进程，mere aggregation 交付；Xtensa 构建，RISC-V/ARM 板需另行交叉编译打包；系统默认编辑器为 vi）

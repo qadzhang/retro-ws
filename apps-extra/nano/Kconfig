@@ -1,0 +1,24 @@
+#
+# SPDX-FileCopyrightText: 2026 Retro WS Project
+# SPDX-License-Identifier: Apache-2.0
+#
+# WHAT : GNU nano 的 NuttX 菜单配置（LOADABLE 独立程序，不入固件 ROM）
+# WHY  : GPL-3.0 组件以 mere aggregation 方式提供，固件保持 Apache-2.0
+#        （2026-10-05 定稿：系统默认编辑器 vi，nano 走 .rpk 包交付）
+# WHO  : Retro WS Project Team
+# WHERE: retro-ws/apps-extra/nano/Kconfig（经 build_packages.sh 同步到
+#        deps/nuttx-apps/external/nano/ 后被 NuttX Kconfig 扫描）
+# WHEN : 2026-10-05 新增
+# HOW  : CONFIG_EXTERNAL_NANO 使能后，Application.mk 以 LOADABLE 方式
+#        产出独立 nano.elf（需 CONFIG_ELF=y + CONFIG_BUILD_LOADABLE）
+#
+
+config EXTERNAL_NANO
+	bool "GNU nano editor (GPL-3.0)"
+	default n
+	depends on ELF
+	select BUILD_LOADABLE
+	help
+	  GNU nano 8.4（GPL-3.0）作为独立可执行程序构建。产物 nano.elf
+	  打成 .rpk 安装包放 SD 卡 /sdcard/apps/，由 binfmt 加载运行，
+	  不链入固件 ROM（mere aggregation，固件保持 Apache-2.0）。

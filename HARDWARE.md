@@ -979,7 +979,30 @@ GDMA(通道) <- 环形描述符 <- 场信号缓冲（PSRAM，双场乒乓）
 > N8R8 仅 Flash 为 8MB，其余布局相同；分区表需相应缩减
 > （`CONFIG_RETRO_FLASH_8MB`）。
 
-### 12.4 ESP32-CAM 内存分配（4MB PSRAM）
+### 12.4 片上 Flash 分区布局（全系，2026-10-05 定稿）⭐
+
+参考安卓的"只读系统区 + 可写数据区"分层（NuttX 无强制分区表，按板自定义）：
+
+| 分区 | 内容 | 可写性 | 说明 |
+|------|------|--------|------|
+| 固件区 | nuttx.bin（内核 + builtin + ROMFS 板级脚本） | 只读（烧录写入） | S3/CAM/C3 经 esptool 分区表烧录；Pico 固件占 flash 头部（UF2） |
+| **片上数据区** | littlefs，挂载点 **`/opt`** | **可写** | 固件区之后的剩余 flash：系统包安装位（`/opt/bin`、`/opt/share/<包>`）、包数据库（`/opt/var/lib/rpkg`）、系统配置（`/opt/etc`：crontab/boot.cfg/lang.conf）、重启计数（`/opt/var/log/reboot.log`，安全模式判定用）、用户数据（`/opt/home`）——**无 SD 卡时系统完整可用** |
+| SD 卡（可选硬件） | FAT32，`/sdcard` | 可写 | 大容量扩展：第三方包默认根（`/sdcard/apps`）、用户脚本库 |
+
+**设计要点**：
+- **双安装根**（pkg_manager `Root` 字段，2026-10-05）：官方系统包
+  `Root: system` → 片上 `/opt`；第三方包缺省（或显式 `Root: sdcard`）→
+  `/sdcard`；非法取值安装拒绝；包数据库固定片上（无 SD 卡可用）
+- 挂载点选 `/opt` 不选 `/usr`：Unix 语义 /usr = 厂商只读系统软件，
+  /opt = 附加软件位（更贴合"官方附加包 + 用户数据"的可写分区）
+- **SD 卡是可选硬件**：系统包管理、输入法、脚本引擎全部不依赖 SD 卡
+- **日志默认只串口输出不落盘**（开发板哲学，2026-10-05 定稿）：cron 等
+  日志走 printf/syslog 到串口；唯一持久化例外是 reboot.log 重启计数
+  （/opt/var/log，"连续 3 次看门狗重启进安全模式"依赖它）
+- 落地：分区 offset 按板 flash 总量定（S3 16/8MB、CAM/C3 4MB、Pico 2MB），
+  littlefs 挂接与 mkfs 属烧录阶段任务（NEXT_STEPS 17b），机制侧代码已就绪
+
+### 12.5 ESP32-CAM 内存分配（4MB PSRAM）
 
 | 区域 | 大小 | 来源 |
 |------|------|------|
@@ -1027,16 +1050,16 @@ CAM=33 红 LED 与 4 闪光灯、C3=12/13 LED D4/D5、Pico=25 板载 LED），
 DMA 环形描述符 = "永续流"模式：CPU 只在内容变化时改写场缓冲，
 DMA 环持续输出，中断仅用于场翻转同步（suc_eof 心跳）。
 
-### 13.2 CLI 文本编辑器 = GNU nano 8.4 移植（全系统一）
+### 13.2 CLI 文本编辑器（2026-10-04 定 nano；2026-10-05 修订）
 
-**GNU nano**（著名开源编辑器，GPL）**真源码移植**，非仿制：
-`deps/nano/`（上游 nano-8.4 原版源码，tar.xz sha256 前 16 位
-5ad29222bbd55624）；NuttX 无 ncurses，移植层 `src/nuttx/common/
-nano_port/` 提供 mini-curses 垫片（curses.h/term.h/mini_curses.c，
-ANSI 转义直出 + 转义键解码），config.h 裁剪（无色彩/无鼠标/无
-speller fork；UTF-8 + 帮助 + 文件浏览器 + 行号保留）。AV 控制台
-（cvbs_console 支持 CSI 子集）与串口终端均可跑。**全系所有开发板
-的 CLI 编辑器都是 nano，vi 一律不编入**（CONFIG_SYSTEM_VI 禁用）。
+- **系统默认编辑器 = NuttX 内置 vi**（`CONFIG_SYSTEM_VI=y`，五板全系，AV 控制台
+  与串口终端通用）
+- **GNU nano 8.4（GPL-3.0）不入固件 ROM**（11.1 红线）：`deps/nano/` 上游源码
+  （手动放置）+ `src/nuttx/common/nano_port/` 移植垫片（mini-curses：
+  curses.h/term.h/mini_curses.c，ANSI 转义直出 + 转义键解码 + UTF-8 宽字符
+  感知，2026-10-04 宿主 pty 全链路验证过），经 `apps-extra/nano` +
+  `build_packages.sh` 打 **.rpk 包**（独立 ELF，binfmt 进程隔离）交付；
+  `CONFIG_RETRO_NANO` 仅实验回编开关（默认 n）
 
 ### 13.3 retro_bus 总线兼容层（I2C/SPI/UART，machine 风格）
 

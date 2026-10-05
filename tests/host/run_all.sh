@@ -27,11 +27,11 @@ DRVINC="$ROOT/src/nuttx/common/driver"
 SAN="-fsanitize=address,undefined -g"
 
 rm -rf "$OUT"
-mkdir -p "$OUT/sd" "$OUT/db"
+mkdir -p "$OUT/sd" "$OUT/db" "$OUT/opt"
 
 step "build+unit pkg_manager"
 if $CC -Wall -Wextra -Wno-unused-parameter $SAN -I "$STUBS" -I "$APPINC" \
-      -DPKG_INSTALL_PREFIX="\"$OUT/sd\"" -DPKG_DB_ROOT="\"$OUT/db\"" \
+      -DPKG_INSTALL_PREFIX="\"$OUT/sd\"" -DPKG_SYSTEM_PREFIX="\"$OUT/opt\"" -DPKG_DB_ROOT="\"$OUT/db\"" \
       -DCONFIG_RETRO_ARCH='"xtensa-esp32s3"' \
       -DCONFIG_RETRO_ARCH_VAL='"xtensa-esp32s3"' \
       -DCONFIG_RETRO_FAMILY_VAL='"xtensa"' \
@@ -145,6 +145,7 @@ fi
 step "python differential + PBT"
 if $CC -Wall -Wextra -g -I "$STUBS" -I "$APPINC" \
       -DPKG_INSTALL_PREFIX='"/tmp/retro_pbt/sd"' \
+      -DPKG_SYSTEM_PREFIX='"/tmp/retro_pbt/opt"' \
       -DPKG_DB_ROOT='"/tmp/retro_pbt/db"' \
       "$ROOT/tests/host/rpk_tool.c" "$APPINC/pkg_manager.c" \
       -o "$OUT/rpk_tool" 2>/tmp/ra5.log \
