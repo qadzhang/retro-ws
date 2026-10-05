@@ -323,6 +323,19 @@ cd scripts/esp32s3 && ./nuttx_build.sh defconfig && ./build.sh nuttx && ./build.
 > CLI 档与图形档共享同一套 common 层（脚本引擎、.rpk 包管理器、cvbs_console、
 > retro_gpio / retro_bus、vi 编辑器）；RAM 放不下 LVGL 帧缓冲，故无 GUI 桌面。
 
+### Pico 的 USB 键盘（Pico-PIO-USB，MIT 开源项目）
+
+Pico 无蓝牙、硬件 USB 块仅设备模式——USB 键盘走社区事实标准方案
+[**Pico-PIO-USB**](https://github.com/sekigon-gonnoc/Pico-PIO-USB)
+（作者 sekigon-gonnoc，**MIT License**）：PIO 状态机纯软件实现 USB
+全速主机（支持 HUB 多口与键鼠 HID）。上游源码**零修改**引入
+（`src/nuttx/rp2040/driver/input/pio_usb/upstream/`，附 LICENSE 副本），
+pico-sdk 依赖经本项目垫片层（`port/`）落到 NuttX（AGENTS.md 11.5 覆盖头
+路线）；本项目自写 HID boot 键盘枚举与报告轮询（不依赖 TinyUSB），
+键流经 `hid_ascii` 差分直喂 `/dev/cvbscon`。占用：PIO1 三 SM + DMA 通道 0
++ GP20/21（22Ω 串阻）——与 CVBS（PIO0/SM0）零冲突；轮询任务钉 **CPU1
+（媒体/IO 核）**，与 CVBS 同核。
+
 ### 为什么以 ESP32-S3 为开发模板？
 
 **ESP32-S3（首选板）的优势：**
@@ -498,6 +511,7 @@ retro-ws/
 | **GNU nano** | **8.4** | **CLI 文本编辑器（.rpk 独立安装包，不入固件 ROM；系统默认编辑器为 vi）** | **GPL-3.0** |
 | UCBLogo（.rpk 独立包） | 6.2.2 | Logo 解释器（binfmt 独立进程，不入固件 ROM） | GPL-2.0+ |
 | NotoSansSC | - | 中文字体（全系唯一 12px 点阵源） | OFL-1.1 |
+| **Pico-PIO-USB** | master 快照 | Pico USB 主机（PIO 状态机实现；上游零修改+垫片） | **MIT**（sekigon-gonnoc） |
 
 > **许可证注记（2026-10-05 定稿）**：固件 ROM **零 GPL**（Apache-2.0/MIT），
 > 系统 CLI 默认编辑器为 NuttX 内置 vi；GNU nano（GPL-3.0）与 UCBLogo

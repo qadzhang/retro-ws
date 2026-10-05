@@ -72,6 +72,30 @@ config RETRO_NANO_STACK
     default 24576 if RETRO_BOARD_ESP32C3
     default 65536
 
+config RETRO_PIO_USB
+    bool "PIO-USB 主机 HID 键盘（RP2040，Pico-PIO-USB MIT 移植）"
+    default n
+    depends on RETRO_BOARD_RP2040
+    depends on RETRO_AV_CONSOLE
+    help
+      Pico 第二 PIO 块跑 Pico-PIO-USB（sekigon-gonnoc，MIT——上游零
+      修改经 port/ 垫片编译，见 src/nuttx/rp2040/driver/input/pio_usb/
+      README.md）。USB 键盘报告经 hid_ascii 差分直喂 /dev/cvbscon
+      （输入优先级 USB > 串口落地，REQUIREMENTS 2.2.3）。占用：
+      PIO1 SM0/1/2 + DMA 通道 0 + GP20/21（22Ω 串阻）；轮询任务钉
+      CPU1（媒体/IO 核）。Pico 无蓝牙且 USB 块仅设备模式——这是其
+      唯一 USB 键盘路线。
+
+config RETRO_PIO_USB_DP_PIN
+    int "PIO-USB D+ 引脚（D- = D+ + 1，DPDM 排列）"
+    default 20
+    depends on RETRO_PIO_USB
+
+config RETRO_PIO_USB_PRIO
+    int "PIO-USB 轮询任务优先级"
+    default 110
+    depends on RETRO_PIO_USB
+
 config RETRO_BUS
     bool "脚本总线兼容层（I2C/SPI/UART，machine 风格）"
     default y

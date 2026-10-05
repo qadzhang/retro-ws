@@ -118,7 +118,7 @@ c3（合宙核心板 CLI 档）、pico（本地教学终端 CLI 档）。
 | ~~51~~ | ~~firewall 规则持久化~~ 已完成(2026-10-05) | /opt/etc/firewall.conf CSV 文本（action,proto,dir,src,dst,sport,dport,enabled,desc）；load 于 init（无文件载默认）、增/删/启停即存；语法矩阵通过 |
 | ~~52~~ | ~~静态 IP netlib 接线~~ 已完成(2026-10-05) | netlib 三件套 + dns_add_nameserver 真实调用（NuttX 12.12 API 已核对）；WiFi 板 appconfig 开 NETUTILS_NETLIB/DNSCLIENT；剩实机 wlan0 联调 |
 | 53 | WiFi 硬件驱动 bring-up（esp_wifi） | 网络管理层已全链入五板（2026-10-05）；开 ESPRESSIF_WIFI 会拖 esp-hal mbedtls 补丁链（补丁按 espressif pin 的 tf-psa 拆分结构写，对上游 v3.6.2 单体源 apply 不上——即构建日志里的 framework/tests 报错）；需按 pin 结构取 mbedtls 或写适配补丁，与实机联调一并做 |
-| 54 | Pico PIO-USB 主机移植 | Pico-PIO-USB（社区事实标准：PIO 状态机实现 USB 全速主机，支持 HUB/键鼠 HID）接入 NuttX——本项目 CVBS 占 PIO0-SM0、PIO1 空闲可承载；接通后 hid_ascii→cvbs_console_feed_keys 桥即插即用（输入优先级 USB>串口 落地）；2026-10-05 网络核实（HARDWARE 3B.3） |
+| ~~54~~ | ~~Pico PIO-USB 主机移植~~ 已完成(2026-10-05) | Pico-PIO-USB（MIT）上游零修改 vendor + port/ 垫片（pico-sdk→NuttX）+ piousb_kbd.c 驱动（自写枚举 + HID boot 键盘轮询 + hid_ascii→console 桥；轮询钉 CPU1 媒体核）；Pico 编译通过（+17.7KB）+ 语法矩阵 95/95 + 宿主全套 ALL PASS；剩实机 USB 时序联调 |
 | 55 | C3 外置 USB 主机（MAX3421E，备选） | C3 无 OTG 亦无 PIO 织物，USB 主机唯一路线 = SPI 外置 MAX3421E；NuttX 树内现成驱动 `usbhost_max3421e.c`——优先级低于 BLE HID（NEXT_STEPS 36），仅当蓝牙路线受阻再启用 |
 | 56 | 有线网卡（W5500 SPI 模块，可选） | 任意板可挂；NuttX 树内 `drivers/net/w5500.c` 现成 + 官方 W5500-EVB-PICO 参考板；ESP32 EMAC 路线（CAM）因引脚无富余不采用（HARDWARE 8.1） |
 

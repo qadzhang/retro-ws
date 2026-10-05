@@ -121,6 +121,7 @@ NUTTX_INC="-I $RI -I $DEPS/nuttx/include -I $RI/archroot -I $RI/chiproot \
  -I $ROOT/src/nuttx/esp32 -I $ROOT/src/nuttx/esp32/chip -I $ROOT/src/nuttx/esp32/board \
  -I $ROOT/src/nuttx/esp32c3 -I $ROOT/src/nuttx/esp32c3/board \
  -I $ROOT/src/nuttx/rp2040 -I $ROOT/src/nuttx/rp2040/board \
+ -I $ROOT/src/nuttx/rp2040/driver/input/pio_usb/port -I $ROOT/src/nuttx/rp2040/driver/input/pio_usb/upstream \
  -I $DEPS/nuttx/arch/arm/src/rp2040 -I $DEPS/nuttx/arch/arm/src/rp2040/hardware \
  -I $DEPS/nuttx/arch/arm/src/armv6m -I $DEPS/nuttx/arch/arm/src/common \
  -I $DEPS/nuttx/arch/arm/include"

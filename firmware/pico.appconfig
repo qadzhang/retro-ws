@@ -18,6 +18,9 @@ CONFIG_SMP=y
 CONFIG_SMP_NCPUS=2
 # AV 视频字符控制台（全系标配，含全量 UTF-8 中文字库 911KB）
 CONFIG_RETRO_AV_CONSOLE=y
+# PIO-USB 主机键盘（输入优先级 USB>串口 落地；MIT，上游出处见
+# src/nuttx/rp2040/driver/input/pio_usb/README.md；占 PIO1+DMA0+GP20/21）
+CONFIG_RETRO_PIO_USB=y
 # NSH 跑 AV 屏（PIO 视频上；UART0 只作键盘输入）
 CONFIG_RETRO_AV_INPUT=y
 CONFIG_NSH_ALTCONDEV=y

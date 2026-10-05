@@ -82,6 +82,15 @@ int retro_boot_main(int argc, char *argv[])
     }
 #endif
 
+#ifdef CONFIG_RETRO_PIO_USB
+    /* PIO-USB 主机键盘（Pico）：PIO1 + 1ms 轮询任务（钉 CPU1，驱动内） */
+    {
+        extern int piousb_kbd_init(void);
+
+        piousb_kbd_init();
+    }
+#endif
+
 #if defined(CONFIG_ARCH_CHIP_ESP32S3)
     esp32s3_retro_start();
 #elif defined(CONFIG_ARCH_CHIP_ESP32)

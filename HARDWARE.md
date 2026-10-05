@@ -671,12 +671,16 @@ SDK 仅支持设备模式；社区事实标准为 **Pico-PIO-USB**（sekigon-gon
 PIO 状态机纯软件实现 USB 全速主机：1 SM 发 + 2 SM 收，跨两个 PIO 块，
 基于 TinyUSB，**支持 HUB 多口与 USB 键鼠 HID**，RP2350 同样支持）。
 本项目 CVBS 占 PIO0-SM0，**PIO1 空闲可承载 PIO-USB**（引脚任选两只，
-如 GP20/21）——硬件不冲突，NuttX 12.12 树内无 PIO-USB 驱动，移植登记
-NEXT_STEPS 54。这使 Pico 的输入优先级路线升级为：PIO-USB 键盘 > 串口。
+如 GP20/21）——硬件不冲突，NuttX 12.12 树内无 PIO-USB 驱动，已于 2026-10-05 落地
+（RETRO_PIO_USB，上游 MIT 零修改 + port/ 垫片 + piousb_kbd 驱动，详见
+src/nuttx/rp2040/driver/input/pio_usb/README.md）。Pico 输入优先级路线：
+**PIO-USB 键盘 > 串口**（已实现）。
 
 **教学脚（GP25 板载 LED 遵循"指示灯脚避让"原则不派给脚本）**：
-GP2-GP11（数字 IO 十只）、GP20-GP22（数字 IO 三只）、
+GP2-GP11（数字 IO 十只）、GP22（数字 IO 一只）、
 GP26-GP28（ADC0/1/2 三只，3.3V 量程）。
+开 `RETRO_PIO_USB`（默认开）时 GP20/21 让位 USB 键盘差分对，
+教学脚相应减二（输入优先级 USB > 串口）。
 
 ### 3B.4 烧录
 

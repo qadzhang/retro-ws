@@ -338,6 +338,22 @@
 - 板卡几何经官方 DXF/wiki 核实（DevKitC 22.86mm/CAM 22.86/合宙 21.0
   非 2.54 网格/Pico 17.78）
 
+### 29. Pico PIO-USB 主机落地（2026-10-05 晚）⭐
+- **许可证调研**：Pico-PIO-USB = MIT（sekigon-gonnoc），与本项目零 GPL
+  红线兼容，可编入固件 ROM（LICENSE 随源码保留）
+- **vendor**：上游 master 快照 12 文件原样入
+  src/nuttx/rp2040/driver/input/pio_usb/upstream/（零修改）
+- **port/ 垫片**：pico-sdk 的 pio/dma/gpio/clocks/sync/platform/
+  bootrom/sysinfo 共 9 个替身头 + port_dma.c——桥到 NuttX rp2040_pio_*
+  与寄存器直写；PIO1 SM0/1/2 + DMA 通道 0 + GP20/21，与 CVBS(PIO0) 零冲突
+- **piousb_kbd.c**：自写枚举状态机（SET_ADDRESS→GET_DESCRIPTOR×2→
+  SET_CONFIGURATION→SET_PROTOCOL boot→SET_IDLE→IN 端点轮询），
+  8 字节报告经 hid_ascii 按下沿差分→cvbs_console_feed_keys 入环；
+  1ms 轮询任务 sched_setaffinity 钉 **CPU1（媒体/IO 核，用户指示）**；
+  PIO1 IRQ0→上游 pio_usb_host_irq_handler
+- **验证**：Pico 固件编译通过 1123.1KB（+17.7KB = PIO-USB 全链入）；
+  语法矩阵 95/95；宿主全套 ALL PASS；剩实机 USB 时序联调
+
 ### 28. 无实机代码项批量关单（2026-10-05 晚，用户方针：代码先写好跑通，实测日后）⭐
 - **firewall 持久化（NEXT_STEPS 51 关）**：/opt/etc/firewall.conf CSV 文本，
   init 载入（无文件→默认规则）、增/删/启停即存；点分 IP 互转对称可回读

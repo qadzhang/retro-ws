@@ -218,6 +218,18 @@ CSRCS += src/rp2040/rp2040_retro.c
 ifeq ($(CONFIG_RETRO_AV_CONSOLE),y)
 CSRCS += src/rp2040/driver/cvbs/drv_cvbs_pio.c
 endif
+
+# ---- PIO-USB 主机 HID 键盘（Pico-PIO-USB MIT 移植，NEXT_STEPS 54） ----
+ifeq ($(CONFIG_RETRO_PIO_USB),y)
+PIOUSB := src/rp2040/driver/input/pio_usb
+# 上游原样 + NuttX 垫片：pico-sdk 头重定向经 -I port（优先于系统路径）
+CFLAGS += -I$(PIOUSB)/port -I$(PIOUSB)/upstream
+CSRCS += $(PIOUSB)/upstream/pio_usb.c
+CSRCS += $(PIOUSB)/upstream/pio_usb_host.c
+CSRCS += $(PIOUSB)/upstream/usb_crc.c
+CSRCS += $(PIOUSB)/port/port_dma.c
+CSRCS += src/rp2040/driver/input/piousb_kbd.c
+endif
 endif
 
 # ---- 头文件搜索路径 ----
