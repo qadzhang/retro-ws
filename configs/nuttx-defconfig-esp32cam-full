@@ -347,7 +347,6 @@ CONFIG_BUILD_FLAT=y
 CONFIG_RAW_BINARY=y
 CONFIG_INT128=y
 CONFIG_HAVE_LONG_LONG=y
-CONFIG_BASE_DEFCONFIG="/home/user/retro-ws/configs/nuttx-defconfig-esp32cam-full"
 
 # Stream Buffers
 CONFIG_STREAM_OUT_BUFFER_SIZE=64

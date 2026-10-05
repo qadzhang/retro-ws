@@ -20,7 +20,7 @@
 /*******************************************************************************
  * Size: 12 px
  * Bpp: 1
- * Opts: --no-prefilter --bpp 1 --size 12 --font /tmp/tmp.mDvqPDMgEJ/NotoSansSC-Regular.ttf -r 0x20-0x7F,0x3000-0x303F,0x4E00-0x9FFF,0xFF00-0xFFEF,0x2018-0x201D,0x2026 --format lvgl -o /home/user/retro-ws/src/lvgl/fonts/lv_font_notosans_sc_12.c
+ * Opts: --no-prefilter --bpp 1 --size 12 --font /tmp/tmp.mDvqPDMgEJ/NotoSansSC-Regular.ttf -r 0x20-0x7F,0x3000-0x303F,0x4E00-0x9FFF,0xFF00-0xFFEF,0x2018-0x201D,0x2026 --format lvgl -o src/lvgl/fonts/lv_font_notosans_sc_12.c
  ******************************************************************************/
 
 #ifdef LV_LVGL_H_INCLUDE_SIMPLE

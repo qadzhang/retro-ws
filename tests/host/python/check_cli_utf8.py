@@ -21,7 +21,8 @@ import os
 import re
 import sys
 
-ROOT = os.environ.get("REPO", "/home/user/retro-ws")
+# ROOT 默认取本文件所在目录向上三级（tests/host/python -> 仓库根），可经 REPO 环境变量覆盖
+ROOT = os.environ.get("REPO", os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 EXTS = (".c", ".h", ".bas", ".be", ".js", ".py", ".lgo")
 SKIP_DIRS = {"deps", "tests/host/realinc", ".git"}
 

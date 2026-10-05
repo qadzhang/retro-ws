@@ -51,8 +51,8 @@ add_local_tools() {
     if [ -d "$PROJECT_ROOT/tools" ]; then
         export PATH="$PROJECT_ROOT/tools:$PATH"
     fi
-    if [ -f "/home/user/bin/genromfs" ]; then
-        export PATH="/home/user/bin:$PATH"
+    if [ -x "$HOME/bin/genromfs" ]; then
+        export PATH="$HOME/bin:$PATH"
         log "genromfs 已添加到 PATH"
     fi
 }

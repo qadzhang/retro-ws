@@ -26,7 +26,8 @@ import zlib
 
 from hypothesis import given, settings, strategies as st, HealthCheck
 
-REPO = os.environ.get("REPO", "/home/user/retro-ws")
+# REPO 默认取本文件所在目录向上三级（tests/host/python -> 仓库根），可经 REPO 环境变量覆盖
+REPO = os.environ.get("REPO", os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 TOOL = os.environ.get("RPK_TOOL", "/tmp/retro_test/rpk_tool")
 TOOL_S3 = os.environ.get("RPK_TOOL_S3", "/tmp/retro_test/rpk_tool_s3")
 SB = os.environ.get("RPK_SB", "/tmp/retro_pbt")
