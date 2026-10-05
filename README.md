@@ -369,7 +369,22 @@ cd scripts/esp32s3 && ./nuttx_build.sh defconfig && ./build.sh nuttx && ./build.
 > **CLI 的 AV 输出不经过 LVGL**：NSH 的输出写到字符设备 `/dev/cvbscon`，
 > 由 cvbs_console 用 12px 点阵直接渲染进 CVBS 场缓冲（C3/Pico 经
 > `CONFIG_NSH_ALTCONDEV` 让 NSH 整个跑在 AV 屏上；S3/CAM 的 AV 控制台
-> 用于安全模式/控制台档）。GUI 与 CLI 在 cvbs_core 处汇合，以下管线全板一致。
+> 用于安全模式/控制台档）。
+>
+> **为何 GUI 与 CLI 分道而行**：
+> - **语义不同**——NSH/nano/输入法是字符流世界（write() + termios），
+>   一个 cell 网格（320x240 下 26x17 格）+ 32.6KB 场环即可伺候；
+>   LVGL 是像素帧缓冲世界（640x480 8bpp ≈300KB + 128KB LVGL 堆），
+>   只有 S3/CAM 的 PSRAM 放得下。
+> - **刷新跟得上吗**——跟得上：CVBS 场频由 DMA 永续流锁定（50Hz 240p），
+>   与 CPU 解耦，不存在掉帧；cvbs_console 按单元格重画（毫秒级，远快于
+>   一场 20ms），整屏字符刷新瞬时完成；静态位图按行光栅化进场环也只需
+>   一两场。CLI 档不做 LVGL 窗口 GUI 是 SRAM 预算所限（264~400KB），
+>   不是视频带宽问题。
+> - **上层分道、下层同轨**——两条路在 cvbs_core 汇成同一场样本流，四种
+>   板级发射器（LCD_CAM/DAC/PDM/PIO）对上层无感；字库亦统一（CLI 经
+>   lvgl_font_compat 复用同一 12px 点阵，字形逐位一致）。S3/CAM 两条路
+>   都编入，按启动模式选择。
 
 ## 目录结构
 
