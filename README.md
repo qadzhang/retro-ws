@@ -45,7 +45,7 @@ ARM 三种架构——项目早已不只是"ESP32 项目"。
 | **编译验证** | **五板全部通过**（2026-10-05：pico 1181KB / c3 1559KB / cam 1912KB / s3·s3n8 1852KB） |
 | **宿主验证** | 单元/蜕变/差分/PBT/模糊/双变异门 ALL PASS（12 项套件，语法矩阵 85/85） |
 | **EDA 载板** | 五板立创EDA工程已生成（自动布线 + 零交叉校验 PASS） |
-| **多语种支持** | **中英双语**（全系唯一 12px 中文字号） |
+| **多语种支持** | **中英双语**（全系唯一 12px 字号；console 半角 6px/全角 12px 宋体 9pt 点阵体系） |
 | **依赖下载** | **完成** |
 | **实机测试** | **待开发板**（唯一未开始项） |
 
@@ -367,9 +367,9 @@ pico-sdk 依赖经本项目垫片层（`port/`）落到 NuttX（AGENTS.md 11.5 �
 |     AV 视频管线（全系标配，CLI/GUI 共用）     |
 |  GUI 路径: lv_port_disp -> drv_cvbs        |
 |  CLI 路径: cvbs_console 字符控制台          |
-|   (/dev/cvbscon, 12px 点阵渲染; 经          |
-|    lvgl_font_compat 复用同一字库,           |
-|    不依赖 LVGL)                            |
+|   (/dev/cvbscon, 半格 6px 步进点阵; 汉字经  |
+|    lvgl_font_compat 复用 Noto 全量表,       |
+|    半角/全角标点走 Fusion 表, 不依赖 LVGL)  |
 |  共用时序核心 cvbs_core -> 板级发射器:       |
 |   S3=LCD_CAM+GDMA / CAM=内置DAC /          |
 |   C3=I2S PDM / Pico=PIO+DMA -> 75Ω CVBS    |
@@ -398,9 +398,10 @@ pico-sdk 依赖经本项目垫片层（`port/`）落到 NuttX（AGENTS.md 11.5 �
 >   一两场。CLI 档不做 LVGL 窗口 GUI 是 SRAM 预算所限（264~400KB），
 >   不是视频带宽问题。
 > - **上层分道、下层同轨**——两条路在 cvbs_core 汇成同一场样本流，四种
->   板级发射器（LCD_CAM/DAC/PDM/PIO）对上层无感；字库亦统一（CLI 经
->   lvgl_font_compat 复用同一 12px 点阵，字形逐位一致）。S3/CAM 两条路
->   都编入，按启动模式选择。
+>   板级发射器（LCD_CAM/DAC/PDM/PIO）对上层无感；字号亦统一 12px（CLI
+>   汉字经 lvgl_font_compat 复用同一 Noto 点阵、字形逐位一致；console
+>   半角/全角标点另走 Fusion 等宽点阵——半角 6px/全角 12px 半格体系，
+>   宋体 9pt 布局）。S3/CAM 两条路都编入，按启动模式选择。
 
 ## 目录结构
 
@@ -487,7 +488,7 @@ retro-ws/
     |   |   +-- logo/      # Logo 海龟画图
     |   +-- assets/icons/  # 图标资源
     |   +-- audio/         # 音频解码
-    |   +-- fonts/         # 字体（全系唯一 12px 中文字库）
+    |   +-- fonts/         # 字体（Noto 12px 汉字全量 + Fusion 半角/全角表）
     |   +-- modules/       # 脚本模块适配
     +-- arch/xtensa/       # 架构相关代码
 ```
