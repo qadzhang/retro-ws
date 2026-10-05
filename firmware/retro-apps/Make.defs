@@ -1,0 +1,15 @@
+############################################################################
+# firmware/retro-apps/Make.defs - Retro WS 模块启用声明
+# SPDX-FileCopyrightText: 2026 ESP32-S3 Retro Project
+# SPDX-License-Identifier: Apache-2.0
+#
+# WHAT : 告诉 apps 顶层"retro 模块被 CONFIG_RETRO 启用"
+# WHY  : NuttX apps 只会进入含 Make.defs 且 CONFIGURED_APPS 命中的目录
+# WHO  : deps/nuttx-apps/Make.defs（BUILDIRS/CONFIGURED_APPS 机制）
+# WHERE: esp32-retro-ws/firmware/retro-apps/Make.defs（真身，同步过去）
+# WHEN : 2026-10-04 新增
+############################################################################
+
+ifneq ($(CONFIG_RETRO),)
+CONFIGURED_APPS += $(APPDIR)/retro
+endif

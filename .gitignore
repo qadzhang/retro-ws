@@ -1,0 +1,28 @@
+# Build outputs
+*.o
+*.a
+*.bin
+*.elf
+*.map
+*.d
+*.dis
+*.log
+# NuttX build
+
+deps/
+
+
+
+# Python
+__pycache__/
+*.pyc
+*.tar.gz
+.hypothesis/
+
+# GPL 独立程序包产物（仓库保持零 GPL，源码由脚本下载）/ GPL pkg artifacts
+dist/
+apps-extra/*/src/
+
+# 语法矩阵生成层（check_syntax.sh 每次重建）/ generated realinc layer
+tests/host/realinc/
+deps/lv_conf.h

@@ -1,0 +1,23 @@
+#
+# SPDX-FileCopyrightText: 2026 ESP32-S3 Retro Project
+# SPDX-License-Identifier: Apache-2.0
+#
+# WHAT : UCBLogo 的 NuttX 菜单配置（LOADABLE 独立程序，不入固件 ROM）
+# WHY  : GPL-2.0+ 组件以 mere aggregation 方式提供，固件保持 Apache-2.0
+# WHO  : ESP32-S3 Retro Project Team
+# WHERE: esp32-retro-ws/apps-extra/ucblogo/Kconfig（经 build_packages.sh 同步到
+#        deps/nuttx-apps/external/ucblogo/ 后被 NuttX Kconfig 扫描）
+# WHEN : 2026-10-04 新增
+# HOW  : CONFIG_EXTERNAL_UCBLOGO 使能后，Application.mk 以 LOADABLE 方式
+#        产出独立 ucblogo.elf（需 CONFIG_ELF=y + CONFIG_BUILD_LOADABLE）
+#
+
+config EXTERNAL_UCBLOGO
+	bool "UCBLogo interpreter (GPL-2.0+)"
+	default n
+	depends on ELF
+	select BUILD_LOADABLE
+	help
+	  Berkeley Logo（UCBLogo，GPL-2.0-or-later）作为独立可执行程序构建。
+	  产物 ucblogo.elf 放 SD 卡 /sdcard/apps/，由 binfmt 加载运行，
+	  不链入固件 ROM（mere aggregation，固件保持 Apache-2.0）。

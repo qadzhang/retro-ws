@@ -1,0 +1,1 @@
+/home/user/esp32-retro-ws/deps/nuttx/arch/xtensa/include/xtensa/xtensa_coproc.h

@@ -1,0 +1,8 @@
+Package: ucblogo
+Version: 6.2.2-1
+Arch: xtensa
+Depends:
+License: GPL-2.0-or-later
+Installed-Size: 900
+Maintainer: ESP32-S3 Retro Project Team
+Description: Berkeley Logo 解释器（GPL，独立进程，mere aggregation 交付；Xtensa 构建，C3 需另行交叉编译打包）

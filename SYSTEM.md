@@ -1,0 +1,600 @@
+/*
+ * SPDX-FileCopyrightText: 2026 ESP32 Retro Project
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
+ * ESP32 复古联网图形工作站 - 系统说明
+ * ESP32 Retro WS - System Documentation
+ */
+
+## 文档信息 / Document Info
+
+| 项目 | 内容 |
+|------|------|
+| 版本 | v0.3.0 |
+| 目标芯片 | **ESP32-S3** (LX7) / **ESP32-CAM** (LX6) / **ESP32-C3** (RISC-V, 合宙核心板) |
+| 操作系统 | Apache NuttX RTOS 12.12.0 |
+| 图形引擎 | LVGL 9.5.0 |
+| 文本浏览器 | Links 2.30 |
+| 状态 | **多目标支持已完成** |
+
+### 多目标支持
+
+> 开发模板为 **ESP32-S3 (N16R8/N8R8 首选板)**，ESP32-CAM 为兼容目标，
+> **合宙 ESP32-C3 核心板为低资源第三目标（RISC-V，纯 CLI）**。
+> 每板对应一个硬件档案文件：`src/nuttx/esp32s3/board/hw_esp32s3_devkitc.h`、
+> `src/nuttx/esp32/board/hw_esp32cam_aithinker.h`、
+> `src/nuttx/esp32c3/board/hw_esp32c3_luatos.h`（引脚唯一事实来源）。
+
+| 目标 | 架构 | 芯片 | Flash | PSRAM | 显示 | 定位 |
+|------|------|------|-------|-------|------|------|
+| esp32s3 | Xtensa LX7 | ESP32-S3 | 8/16MB | 8MB (Octal) | CVBS 320x240/640x480/1024x768(实验) | 首选板/开发模板，构建 `cd scripts/esp32s3 && ./build.sh nuttx` |
+| esp32cam | Xtensa LX6 | ESP32 | 4MB | 4MB (QSPI) | CVBS 320x240/640x480 | 兼容目标，构建 `cd scripts/esp32cam && ./build.sh nuttx` |
+| esp32c3 | **RISC-V RV32IMC** | ESP32-C3 (合宙) | 4MB | 无 | **无（CLI-only）** | 低资源/低价格，构建 `cd scripts/esp32c3 && ./build.sh nuttx` |
+
+---
+
+## 系统架构
+
+### 双核分工（两个目标通用）
+
+```
++------------------------------------------------------+
+|                    ESP32 / ESP32-S3                   |
+|                                                      |
+|  +------------------+    +------------------------+  |
+|  |     Core 0       |    |      Core 1            |  |
+|  |  (图形 + 音频)   |    |  (系统 + 网络)          |  |
+|  |                  |    |                        |  |
+|  |  * LVGL 图形引擎  |    |  * NuttShell (NSH)     |  |
+|  |  * CVBS 显示驱动  |    |  * WiFi / TCP/IP       |  |
+|  |  * 音频播放       |    |  * NTP 时间同步        |  |
+|  |  * FSK 磁带录制   |    |  * Cron 定时任务       |  |
+|  |  * 看门狗 (WDT0)  |    |  * SD 卡文件系统        |  |
+|  |  负载 <= 60%      |    |  * RTC 驱动             |  |
+|  |                  |    |  * 看门狗 (WDT1)        |  |
+|  +------------------+    |  * 负载 <= 70%           |  |
+|                          +------------------------+  |
++------------------------------------------------------+
+```
+
+### ESP32-S3 内存布局
+
+```
+0x3C00_0000 +---------------------+
+             |      PSRAM (8MB)    | 图形帧缓冲 / LVGL 堆 / 字库缓存
+             |                     |
+0x3F80_0000 +---------------------+
+             |    SRAM (512KB)     |  内核 / 栈 / 全局变量
+0x4000_0000 +---------------------+
+             |   Flash (16MB)      |  代码 + 只读数据
+             +---------------------+
+```
+
+### ESP32-CAM 内存布局
+
+```
+0x3F80_0000 +---------------------+
+             |    SRAM (512KB)     |  内核 / 栈 / 全局变量 (396KB 可用)
+0x3F80_0000 +---------------------+
+             |   Flash (4MB)       |  代码 + 只读数据
+0x3F80_0000 +---------------------+
+             |    PSRAM (4MB)      |  图形帧缓冲 / LVGL 堆 / 字库缓存
+             +---------------------+
+```
+
+---
+
+## 源代码结构
+
+```
+/home/user/esp32-retro-ws/
++-- README.md
++-- SYSTEM.md                    # 本文件
++-- CODING_STANDARD.md           # 编码规范
++-- .gitignore
+|
++-- scripts/
+|   +-- download_deps.sh         # 下载所有开源依赖（共享）
+|   +-- setup_tools.sh           # 激活工具链环境（共享）
+|   +-- verify.sh                # 项目验证（共享）
+|   +-- convert_font.sh          # 字体转换（共享）
+|   +-- setup_env.sh             # 系统依赖安装（共享）
+|   +-- esp32s3/                 # ESP32-S3 编译脚本
+|   |   +-- build.sh             # 编译和烧录
+|   |   +-- nuttx_build.sh       # NuttX 专用编译
+|   +-- esp32cam/                # ESP32-CAM 编译脚本
+|       +-- build.sh             # 编译和烧录
+|       +-- nuttx_build.sh       # NuttX 专用编译
+|
++-- configs/
+|   +-- nuttx-defconfig          # NuttX 内核完整配置
+|   +-- lv_conf.h                # LVGL 9.x 配置
+|
++-- src/
+|   +-- nuttx/
+|   |   +-- common/              # 共享代码（14个文件）
+|   |   |   +-- bootmenu.c       # 启动菜单
+|   |   |   +-- script_engines.c # 脚本引擎集成
+|   |   |   +-- network_utils.c  # curl/wget 网络工具
+|   |   |   +-- apps/system/
+|   |   |   |   +-- nsh_cmds.c     # NSH 自定义命令（pkg 薄分发）
+|   |   |   |   +-- pkg_manager.h  # .rpk 包管理器接口（deb 风格）
+|   |   |   |   +-- pkg_manager.c  # 安装/卸载/列表/查询（ustar 流式解析）
+|   |   |   +-- driver/          # 共享驱动
+|   |   |       +-- retro_gpio.c/.h     # 脚本 GPIO 统一接口（占用拦截+/dev 后端）
+|   |   |       +-- retro_gpio_{bas,js,berry,py}.c  # 四引擎 GPIO 绑定
+|   |   |       +-- watchdog.c   # 看门狗
+|   |   |       +-- firewall.c   # 防火墙
+|   |   |       +-- memmon.c     # 内存监控
+|   |   |       +-- network.c    # WiFi/网络
+|   |   |       +-- ntp.c        # NTP 时间同步
+|   |   |       +-- cron.c       # Cron 定时任务
+|   |   |       +-- drv_rtc.c    # RTC 驱动
+|   |   |       +-- drv_pinyin.c # 拼音输入法驱动
+|   |   |       +-- drv_player.c # 媒体播放器驱动
+|   |   |       +-- drv_recorder.c # 录音机驱动
+|   |   |       +-- drv_sqlite.c # SQLite 驱动
+|   |   |       +-- audio/       # 音频目录（目标特定）
+|   |   |       +-- cvbs/        # CVBS 目录（目标特定）
+|   |   |       +-- fsk/         # FSK 目录（目标特定）
+|   |   |       +-- hid/         # HID 目录（目标特定）
+|   |   +-- esp32s3/             # ESP32-S3 目标代码
+|   |   |   +-- esp32s3_retro.c  # 主入口 + 双核任务
+|   |   |   +-- Kconfig          # menuconfig 配置
+|   |   |   +-- board/
+|   |   |   |   +-- board.h      # GPIO/外设定义（引入硬件档案）
+|   |   |   |   +-- hw_esp32s3_devkitc.h  # 硬件档案：DevKitC-1 N16R8/N8R8
+|   |   |   |   +-- board.c      # 板级初始化
+|   |   |   +-- chip/
+|   |   |   |   +-- esp32s3.h    # 芯片寄存器定义
+|   |   |   |   +-- startup.c    # 启动代码/中断向量
+|   |   |   |   +-- xt_utils.h   # 工具函数头文件
+|   |   |   +-- driver/          # ESP32-S3 专用驱动
+|   |   |   |   +-- ble_hid.c    # BLE HID 键盘驱动
+|   |   |   |   +-- ble_hid.h    # BLE HID 头文件
+|   |   |   |   +-- usb_hid.c    # USB HID 键盘驱动
+|   |   |   |   +-- watchdog.c   # 看门狗
+|   |   |   |   +-- cvbs/drv_cvbs.c       # CVBS I2S 显示驱动
+|   |   |   |   +-- fsk/drv_fsk.c         # FSK 磁带调制解调
+|   |   |   |   +-- audio/drv_audio.c     # I2S 音频驱动
+|   |   |   +-- include/         # deps/ bug 的覆盖头文件
+|   |   +-- esp32/               # ESP32-CAM 目标代码
+|   |       +-- esp32_retro.c    # 主入口 + 双核任务
+|   |       +-- Kconfig.esp32    # menuconfig 配置
+|   |       +-- board/
+|   |       |   +-- board.h      # GPIO/外设定义（引入硬件档案）
+|   |       |   +-- hw_esp32cam_aithinker.h  # 硬件档案：AI-Thinker
+|   |       |   +-- board.c      # 板级初始化
+|   |       +-- chip/
+|   |       |   +-- esp32.h      # 芯片寄存器定义
+|   |       +-- driver/          # ESP32-CAM 专用驱动
+|   |       |   +-- ble_hid.c    # BLE HID 键盘驱动
+|   |       |   +-- ble_hid.h    # BLE HID 头文件
+|   |       |   +-- watchdog.c   # 看门狗
+|   |       |   +-- cvbs/drv_cvbs_dac.c   # CVBS DAC 显示驱动
+|   |       |   +-- fsk/drv_fsk.c         # FSK 磁带调制解调
+|   |       |   +-- audio/drv_audio_dac.c # DAC 音频驱动
+|   |       +-- include/         # 覆盖头文件
+|   +-- esp32c3/             # ESP32-C3 目标（合宙核心板，RISC-V，CLI-only）
+|   |   +-- esp32c3_retro.c  # 主入口（单核，无 SMP 分工）
+|   |   +-- Kconfig.esp32c3  # menuconfig（RETRO_ARCH=riscv-esp32c3）
+|   |   +-- board/
+|   |       +-- board.h      # GPIO/外设定义（引入硬件档案）
+|   |       +-- hw_esp32c3_luatos.h  # 硬件档案：合宙两款核心板
+|   |       +-- board.c      # 板级初始化（骨架）
+|   +-- lvgl/
+|   |   +-- retro_ui.c               # 脚本 UI 胶水层
+|   |   +-- lvgl_app.c               # LVGL 应用框架
+|   |   +-- lv_port_disp.c           # 显示端口
+|   |   +-- lv_port_indev.c          # 输入设备端口
+|   |   +-- i18n.c                   # 多语种框架
+|   |   +-- i18n.h                   # 多语种头文件
+|   |   +-- retro_win3_styles.h      # Win3 风格定义
+|   |   +-- app/                     # GUI 应用程序
+|   |   |   +-- desktop.c           # 桌面管理器（Win3.2 外壳 + 外壳切换）
+|   |   |   +-- desktop_api.h       # 桌面外壳公共接口（app 派发/外壳切换）
+|   |   |   +-- wmaker_shell.c      # WindowMaker/NeXT 风格外壳（可选）
+|   |   |   +-- app_editor.c        # 记事本
+|   |   |   +-- app_browser.c       # 浏览器
+|   |   |   +-- app_terminal.c      # 终端
+|   |   |   +-- app_pinyin.c        # 拼音输入法
+|   |   |   +-- app_player.c        # 媒体播放器
+|   |   |   +-- app_recorder.c      # 录音机
+|   |   |   +-- app_sqlite.c        # SQLite 工具
+|   |   |   +-- logo/               # Logo 海龟画图
+|   |   +-- modules/
+|   |   |   +-- retro_ui_bas.c      # BASIC 脚本 UI 模块
+|   |   |   +-- retro_ui_js.c       # JS 脚本 UI 模块
+|   |   |   +-- retro_ui_berry.c    # Berry 脚本 UI 模块（可选）
+|   |   |   +-- retro_ui_py.c       # CPython 脚本 UI 模块（可选，仅 S3）
+|   |   |   +-- logo_jslogo.c       # jslogo 加载器 + LVGL canvas shim（可选）
+|   |   +-- audio/
+|   |   |   +-- wav_decoder.c       # WAV 解码器
+|   |   +-- fonts/
+|   |   |   +-- pinyin_ime.c        # 拼音输入法字库
+|   |   +-- assets/icons/           # 图标资源 (32x32 PNG)
+|   +-- arch/xtensa/src/common/
+|       +-- xtensa_cpuinfo.c          # CPU 信息接口
+```
+
+---
+
+## 驱动说明
+
+### 目标共享驱动（src/nuttx/common/driver/）
+
+| 驱动 | 文件 | 行数 | 状态 |
+|------|------|------|------|
+| 看门狗 | watchdog.c | ~560 | 完成 |
+| 防火墙 | firewall.c | 623 | 完成 |
+| 内存监控 | memmon.c | 537 | 完成 |
+| WiFi/网络 | network.c | 432 | 完成 |
+| NTP | ntp.c | 444 | 完成 |
+| Cron | cron.c | 739 | 完成 |
+| RTC 驱动 | drv_rtc.c | 538 | 完成 |
+| 拼音输入法驱动 | drv_pinyin.c | 1014 | 完成 |
+| 媒体播放器驱动 | drv_player.c | 549 | 完成 |
+| 录音机驱动 | drv_recorder.c | 518 | 完成 |
+| SQLite 驱动 | drv_sqlite.c | 995 | 完成 |
+
+### ESP32-S3 专用驱动（src/nuttx/esp32s3/driver/）
+
+| 驱动 | 文件 | 说明 |
+|------|------|------|
+| CVBS 显示 | cvbs/drv_cvbs.c | I2S bitbang -> GPIO2 |
+| 音频 | audio/drv_audio.c | I2S -> 外部 DAC |
+| FSK 磁带 | fsk/drv_fsk.c | FSK 调制解调 |
+| USB HID | usb_hid.c | USB OTG 键盘鼠标 |
+| 看门狗 | watchdog.c | 硬件看门狗 |
+
+### ESP32-CAM 专用驱动（src/nuttx/esp32/driver/）
+
+| 驱动 | 文件 | 说明 |
+|------|------|------|
+| CVBS 显示 | cvbs/drv_cvbs_dac.c | 内置 DAC -> GPIO25 |
+| 音频 | audio/drv_audio_dac.c | 内置 DAC -> GPIO26 |
+| FSK 磁带 | fsk/drv_fsk.c | FSK 调制解调 |
+| BLE HID | ble_hid.c | BLE 键盘鼠标 |
+| BLE Storage | ble_storage.c | Bond 信息 Flash 存储 |
+| BLE NSH 命令 | ble_nsh.c | `ble` 命令行工具 |
+| BLE 配对界面 | ble_pair_ui.c | LVGL 配对 UI |
+
+### BLE HID 配对流程
+
+**首次配对（无已配对设备）**：
+```
+上电 -> LED 慢闪(等待配对) -> 用户触发配对命令
+  -> LED 快闪(扫描中) -> 发现键盘 -> 自动连接 -> LED 慢闪(已连接)
+```
+
+**自动重连（有已配对设备）**：
+```
+上电 -> 自动连接已配对设备 -> LED 慢闪(已连接)
+```
+
+**NSH 命令**：
+```
+nsh> ble list     # 列出已配对设备
+nsh> ble scan     # 扫描附近 HID 设备
+nsh> ble pair     # 进入配对模式
+nsh> ble unpair 0 # 删除第 1 个设备
+nsh> ble unpair all  # 删除所有配对
+nsh> ble status   # 显示连接状态
+```
+
+**GPIO 使用**：
+- 状态 LED: GPIO4 (Flash LED)
+- 状态: 快闪=扫描中, 慢闪=已连接, 灭=未连接
+| 看门狗 | watchdog.c | 硬件看门狗 |
+
+### 看门狗 (watchdog.c)
+
+| 看门狗 | 所属 | 超时 | 用途 |
+|--------|------|------|------|
+| WDT_CORE0 | Core 0 | 10s | 监控图形任务 |
+| WDT_CORE1 | Core 1 | 10s | 监控系统任务 |
+| WDT_TASK | 调度器 | 15s | 监控任务调度 |
+
+**功能：**
+- 三个独立硬件看门狗，双核各一个
+- 超时自动硬件复位
+- 看门狗重启记录（`/var/log/reboot.log`）
+- 连续3次看门狗重启 -> 进入安全模式（CLI Only）
+- 安全模式可恢复出厂设置
+
+### 防火墙 (firewall.c) - 623行
+
+**功能：**
+- 入站规则：默认强制封禁所有外部入站
+- 出站规则：允许所有出站
+- 防 ping：禁止外部 ICMP ping
+- 连接跟踪：记录活跃连接（最多128个）
+- 规则存储于 Flash，重启不丢失
+- `fw_enable` / `fw_disable` 动态开关
+- `fw_add_rule` / `fw_del_rule` 动态管理
+
+**默认规则：**
+```
+ALLOW all outbound
+DENY  all inbound
+ALLOW outbound ICMP (ping)
+DENY  inbound ICMP (ping)
+```
+
+### 内存监控 (memmon.c) - 537行
+
+**功能：**
+- 实时监控堆内存使用（5秒间隔）
+- 三级告警阈值：80%（警告）/ 90%（严重）/ 95%（紧急）
+- 内存即将耗尽时自动终止最大非核心任务
+- 95%以上触发看门狗重启
+- 日志记录峰值、最小空闲、分配失败次数
+
+### WiFi/网络 (network.c) - 432行
+
+**功能：**
+- STA 模式连接 WiFi
+- DHCP 自动获取 IP
+- DNS 解析
+- `ping` / `netstat` / `ifconfig` 命令
+
+### NTP 时间同步 (ntp.c) - 444行
+
+**功能：**
+- 自动 NTP 对时（默认阿里云 ntp.aliyun.com）
+- 备选服务器：ntp.aliyun.com（阿里云）、time.windows.com（微软）、pool.ntp.org（国际）
+- 每小时同步一次（可配置）
+- 同步成功后写入 RTC
+
+### Cron 定时任务 (cron.c) - 739行
+
+**功能：**
+- crontab 格式配置
+- 支持命令类型：`shell` / `audio:` / `tts:` / `notify:` / `reboot` / `wifi_reconnect`
+- 日志记录到 `/sdcard/logs/cron.log`
+- 任务保存到 `/sdcard/etc/crontab`，重启不丢失
+
+---
+
+
+### 2A. AV 视频输出硬件层（2026-10-04 晚）⭐
+
+| 板 | 文件 | 机制 | 时钟 |
+|----|------|------|------|
+| S3/S3N8 | src/nuttx/esp32s3/driver/cvbs/drv_cvbs.c | LCD_CAM I80 + GDMA 环形链（PSRAM 帧环 625×853×4bit 量化） | PLL160M÷12=13.3333MHz |
+| CAM | src/nuttx/esp32/driver/cvbs/drv_cvbs_dac.c | I2S0+内置 DAC1(GPIO25)，16-bit 槽帧环（PSRAM 1.07MB） | APB80M÷6=13.3333MHz |
+| C3 | src/nuttx/esp32c3/driver/cvbs/drv_cvbs_pdm.c | I2S0 PDM-TX raw + GDMA，一阶 sigma-delta 位流场环（SRAM 32.6KB） | 160M÷4×170/510 |
+| Pico | src/nuttx/rp2040/driver/cvbs/drv_cvbs_pio.c | PIO SM0 `out pins,4` + DMA DREQ 逐行（4 槽乒乓，Core1 生成任务） | 125M÷1.8515625÷5 |
+
+共用：common/driver/cvbs_core.c（行长运行时可配 + 单行 API）、drv_cvbs.c（weak emit_line/frame 供板覆盖）。
+
+### 2B. /dev/cvbscon 字符控制台（2026-10-04 晚）
+- common/driver/cvbs_console.c：UTF-8 点阵渲染 + ANSI/CSI 子集 + 可见光标 + 输入环 + poll 等待队列 + TIOCGWINSZ
+- UART 键盘泵（avkbin 任务）→ NSH 经 CONFIG_NSH_CONDEV=/dev/cvbscon 跑 AV 屏（C3/Pico）
+
+### 2C. 总线兼容层 / 脚本 ROM（2026-10-04 晚）
+- common/driver/retro_bus.[ch]：I2C/SPI/UART machine 风格（硬后端探测 + 位摆软回退）+ retro_bus_{bas,berry,js}.c
+- common/script_rom.c：/dev/rom0 内存盘 + /rom/scripts 挂载 + retro_romfs_find Flash 直查 + `script` 命令
+- firmware/scripts/<板>/：板级脚本源目录（tools/mkromfs.py 生成 scripts_romfs.c）
+- common/nano_port/：GNU nano 8.4 移植层（mini-curses + compat + config），deps/nano 上游源码不改
+
+### 2D. 内置程序（2026-10-04 晚）
+- Application.mk PROGNAME/MAINSRC 配对注册：retro_boot(init)、script、pkg、sysinfo、shell、nano
+- src/nuttx/common/apps/system/cmd_*_main.c：薄壳 main → cmd_*()
+
+### 2F. 全系唯一字号 12px（2026-10-05 定稿）⭐
+- 唯一字型唯一字号：Noto Sans SC 12px 1bpp 点阵（lv_font_notosans_sc_12，
+  UTF-8 全量字符集；嵌入式体积优先，CLI/GUI 共用）
+- cvbs_console 网格 12x14（320x240→26x17；640x480→53x34）
+- RETRO_FONT_DEFAULT/RETRO_FONT_CONSOLE 同指 12px；LVGL
+  LV_FONT_DEFAULT=montserrat_12；CLI 兼容层 lvgl_font_compat 同步
+
+### 2E. 硬件全真外设收口（2026-10-04 深夜）⭐
+- esp32s3/driver/ws2812_rmt.c：WS2812 状态灯 RMT 硬件驱动（/dev/rmt0，
+  板级绑 GPIO38/48；编码纯函数供宿主测试直链）
+- fsk/drv_fsk.c（S3/CAM）：fsk_send() 经 audio_play_pcm() 走 I2S/DAC DMA；
+  Kconfig RETRO_FSK_BAUD；drv_fsk.c 首次入构建
+- lv_port_disp.c：init 顺序修复（先 drv_cvbs_init 再取帧缓冲——原实现
+  memset 空指针，设备 GUI 启动即崩）
+- 硬件 I2C0：s3/s3n8（SCL=5/SDA=6）cam（SCL=22/SDA=21）→ /dev/i2c0
+  （RTC drv_rtc.c 的 I2CIOC_TRANSFER 路径自此有真实设备节点）
+- 四板 hw_*.h 档案与 HARDWARE.md 同步（Pico CVBS=GP12-15、C3 LED 极性/
+  Flash 脚修正、CAM GPIO17、S3 LCD_CAM 注释）；tests/host/test_hw_profiles.c
+  契约钉死（LED 避让/教学脚/修正回归，219 检查）
+- eda/：五板立创EDA 载板工程（gen_eda.py 自动布线 + check_eda.py 零交叉
+  校验；全插接件、最小面积；板卡几何经官方 DXF/wiki 核实）
+
+## 网络架构
+
+```
+WiFi 802.11 b/g/n (2.4GHz)
+    |
+    +---> WPA2-PSK 客户端模式
+    |
+    +---> 网络服务
+            +---> DHCP (自动获取 IP)
+            +---> DNS 解析
+            +---> NTP 客户端 (阿里云 ntp.aliyun.com)
+            +---> HTTP 服务器 (可选)
+            +---> SSH 客户端
+            +---> curl / wget
+            +---> Cron (定时任务)
+```
+
+---
+
+## 文件系统
+
+```
+/sdcard/              # TF 卡（FAT32，最大 32GB）
++-- etc/
+|   +-- crontab       # 定时任务配置
++-- logs/
+|   +-- cron.log      # Cron 执行日志
++-- scripts/          # 用户脚本
+|   +-- basic/       # my_basic 脚本
+|   +-- js/          # Duktape JS 脚本
++-- fonts/           # 扩展字库
+
+/usr/                 # 片上 Flash
++-- bin/             # 系统程序
++-- share/fonts/    # 文泉驿字库 (WQY)
+
+/var/                 # 运行时文件
++-- log/
+|   +-- reboot.log   # 重启记录
++-- run/             # PID 文件
+```
+
+---
+
+## 双启动模式
+
+### GUI 模式（默认）
+上电 -> NuttX 启动 -> LVGL 桌面 -> Windows 3.2 风格界面
+
+### CLI 模式（NSH）
+上电 -> NuttX 启动 -> NSH Shell -> 命令行界面
+
+### 切换方式
+- **启动菜单**：上电时 3 秒倒计时，可选模式
+- **NSH 命令**：`bootmode gui` / `bootmode cli`
+
+---
+
+## 安全机制
+
+### 看门狗重启
+
+```
+系统卡死 -> WDT 超时 -> 硬件复位 -> 重启记录 -> 正常启动
+```
+
+### 连续重启保护
+
+```
+连续 3 次看门狗重启 -> 进入安全模式（CLI Only）-> 用户干预
+```
+
+### 内存保护
+
+```
+内存告警阈值: 80%（黄色）/ 90%（红色）/ 95%（紧急）
+内存耗尽 -> 终止非核心任务 -> 仍不够 -> 看门狗重启
+```
+
+### 防火墙
+
+```
+默认封禁所有入站，允许所有出站
+动态规则管理，防 ping
+```
+
+---
+
+## 待验证/待优化功能
+
+| 模块 | 优先级 | 说明 |
+|------|--------|------|
+| ESP32-CAM 适配编译 | 高 | BLE HID、DAC 驱动、SPI SD 卡 |
+| ESP32-S3 适配编译 | 高 | USB HID、I2S 驱动、SPI SD 卡、BLE HID |
+| ESP32-C3 适配编译 | 高 | 合宙核心板：RISC-V 工具链、双款控制台、defconfig 校准 |
+| LVGL PC 模拟器 | 高 | PC 上开发 UI（需 NuttX + LVGL 交叉编译）|
+| curl/wget 优化 | 中 | 完善 HTTP 客户端，支持 HTTPS |
+| LVGL 桌面 UI 完善 | 中 | 窗口/图标/任务栏细节 |
+| 实机测试 | 高 | 需开发板 |
+
+---
+
+## 测试与调试
+
+### 编译
+
+```bash
+# ESP32-S3 目标
+cd scripts/esp32s3 && ./build.sh nuttx
+
+# ESP32-CAM 目标
+cd scripts/esp32cam && ./build.sh nuttx
+```
+
+### 串口输出
+
+```
+115200 8N1
+连接后按回车进入 NSH
+```
+
+---
+
+## 实现清单
+
+| 模块 | 文件 | 行数 | 状态 |
+|------|------|------|------|
+| **共享代码** | | | |
+| 启动菜单 | common/bootmenu.c | 502 | 完成 |
+| 脚本引擎集成 | common/script_engines.c | 649+ | 完成（五引擎可配置：bas/js/be/py/lgo） |
+| curl/wget | common/network_utils.c | 487 | 完成 |
+| NSH 命令 | common/apps/system/nsh_cmds.c | 400 | 完成 |
+| .rpk 包管理器 | common/apps/system/pkg_manager.c | 560 | 完成（deb 风格，待实机验证） |
+| 脚本 GPIO 接口 | common/driver/retro_gpio.c | 280 | 完成（占用拦截+四引擎绑定） |
+| 防火墙 | common/driver/firewall.c | 623 | 完成 |
+| CVBS 时序核心 | common/driver/cvbs_core.c | - | 完成（宿主解码器差分验证） |
+| CVBS 统一驱动 | common/driver/drv_cvbs.c | - | 完成（weak 硬件钩子） |
+| 内存监控 | common/driver/memmon.c | 537 | 完成 |
+| WiFi/网络 | common/driver/network.c | 432 | 完成 |
+| NTP | common/driver/ntp.c | 444 | 完成 |
+| Cron | common/driver/cron.c | 739 | 完成 |
+| RTC 驱动 | common/driver/drv_rtc.c | 538 | 完成 |
+| 拼音输入法驱动 | common/driver/drv_pinyin.c | 1014 | 完成 |
+| 媒体播放器驱动 | common/driver/drv_player.c | 549 | 完成 |
+| 录音机驱动 | common/driver/drv_recorder.c | 518 | 完成 |
+| SQLite 驱动 | common/driver/drv_sqlite.c | 995 | 完成 |
+| **ESP32-S3 专用** | | | |
+| 主入口 | esp32s3/esp32s3_retro.c | 403 | 完成 |
+| 板级初始化 | esp32s3/board/board.c | ~250 | 完成 |
+| 芯片定义 | esp32s3/chip/esp32s3.h | ~200 | 完成 |
+| 启动代码 | esp32s3/chip/startup.c | ~180 | 完成 |
+| CVBS 驱动 (I2S) | esp32s3/driver/cvbs/drv_cvbs.c | 455 | 完成 |
+| FSK 驱动 | esp32s3/driver/fsk/drv_fsk.c | 486 | 完成 |
+| 音频驱动 (I2S) | esp32s3/driver/audio/drv_audio.c | 734 | 完成 |
+| USB HID | esp32s3/driver/usb_hid.c | 424 | 完成 |
+| 看门狗 | esp32s3/esp32s3_retro.c（寄存器级，唯一实现） | - | 完成 |
+| **ESP32-CAM 专用** | | | |
+| 主入口 | esp32/esp32_retro.c | ~350 | 完成 |
+| 板级初始化 | esp32/board/board.c | ~200 | 完成 |
+| 芯片定义 | esp32/chip/esp32.h | ~150 | 完成 |
+| CVBS 驱动 (DAC) | esp32/driver/cvbs/drv_cvbs_dac.c | ~400 | 完成 |
+| FSK 驱动 | esp32/driver/fsk/drv_fsk.c | ~400 | 完成 |
+| 音频驱动 (DAC) | esp32/driver/audio/drv_audio_dac.c | ~500 | 完成 |
+| BLE HID | esp32/driver/ble_hid.c | ~200 | 完成 |
+| 看门狗 | esp32/driver/watchdog.c | ~300 | 完成 |
+| **LVGL 应用** | | | |
+| 桌面管理器 | lvgl/app/desktop.c | 1280 | 完成（含外壳切换/app 派发） |
+| WindowMaker 外壳 | lvgl/app/wmaker_shell.c | 430 | 完成（可选 RETRO_DESKTOP_SHELL_WMAKER） |
+| 记事本 | lvgl/app/app_editor.c | 636 | 完成 |
+| 浏览器 | lvgl/app/app_browser.c | 564 | 完成 |
+| 终端 | lvgl/app/app_terminal.c | 673 | 完成 |
+| 拼音输入法 | lvgl/app/app_pinyin.c | 557 | 完成 |
+| 媒体播放器 | lvgl/app/app_player.c | 742 | 完成 |
+| 录音机 | lvgl/app/app_recorder.c | 705 | 完成 |
+| SQLite 工具 | lvgl/app/app_sqlite.c | 1314 | 完成 |
+| Logo 海龟画图 | lvgl/app/logo/ | ~400 | 完成 |
+| 多语种框架 | lvgl/i18n.c | 493 | 完成 |
+| 脚本 UI 胶水层 | lvgl/retro_ui.c | 860 | 完成 |
+| LVGL 应用框架 | lvgl/lvgl_app.c | 43 | 完成 |
+| WAV 解码器 | lvgl/audio/wav_decoder.c | 534 | 完成 |
+| 拼音输入法字库 | lvgl/fonts/pinyin_ime.c | 470 | 完成 |
+| BASIC 脚本 UI | lvgl/modules/retro_ui_bas.c | 226 | 完成 |
+| JS 脚本 UI | lvgl/modules/retro_ui_js.c | 340 | 完成 |
+| Berry 脚本 UI | lvgl/modules/retro_ui_berry.c | 285 | 完成（可选 CONFIG_RETRO_SCRIPT_BERRY） |
+| CPython 脚本 UI | lvgl/modules/retro_ui_py.c | 300 | 完成（可选，仅 S3） |
+| jslogo 加载器 | lvgl/modules/logo_jslogo.c | 330 | 完成（可选 CONFIG_RETRO_LOGO_JSLOGO） |
+| CPU 信息接口 | arch/xtensa/xtensa_cpuinfo.c | 229 | 完成 |
+| **总计** | | **~42,300**（2026-10-04 含五脚本引擎/包管理器/双外壳/retro_gpio） | **完成** |
+
+---
+
+_最后更新: 2026-10-04_

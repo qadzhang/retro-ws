@@ -1,0 +1,291 @@
+#
+# ESP32-S3 NuttX Kconfig - Menuconfig 配置
+#
+
+config ESP32_RETRO
+    bool "ESP32-S3 复古图形工作站"
+    select ESP32S3
+    select ESP32S3_Kconfig
+    help
+      启用 ESP32-S3 复古图形工作站支持
+
+if ESP32_RETRO
+
+config RETRO_ARCH
+    string
+    default "xtensa-esp32s3"
+    help
+      本目标架构标识（.rpk 包 Arch 匹配用：<family>-<chip>）。
+
+config RETRO_PKG_MANAGER
+    bool ".rpk 包管理器（deb 风格）"
+    default y
+    help
+      NSH pkg install/remove/list/info 命令（pkg_manager.c）。
+      RISC-V 与 Xtensa 包经 Arch 字段隔离，防止误装。
+
+config RETRO_GPIO_SCRIPT
+    bool "脚本引擎 GPIO/ADC/PWM 接口（教学）"
+    default y
+    help
+      各脚本引擎（bas/js/berry/py）经 retro_gpio 统一接口操作 GPIO。
+      系统占用引脚（各板硬件档案占用表）访问时直接报"已占用"返回 -EBUSY。
+
+config RETRO_DEVKITC_V10
+    bool "ESP32-S3-DevKitC-1 v1.0 板本（LED=GPIO48）"
+    default n
+    help
+      v1.0 板载 WS2812 RGB LED 接 GPIO48；v1.1（默认）接 GPIO38。
+      按板丝印版本选择，详见 HARDWARE.md 2.8 节。
+
+config RETRO_FLASH_8MB
+    bool "N8R8 模组（8MB Flash）"
+    default n
+    help
+      N16R8（默认 16MB Flash）/ N8R8（8MB Flash）引脚一致，
+      仅分区表布局不同。详见 HARDWARE.md 1.1 节。
+
+config RETRO_DISPLAY
+    bool "CVBS 显示驱动"
+    default y
+    help
+      启用 CVBS AV 输出驱动
+
+if RETRO_DISPLAY
+
+config RETRO_DISPLAY_WIDTH
+    int "显示宽度"
+    default 640
+    range 320 1280
+    help
+      水平分辨率
+
+config RETRO_DISPLAY_HEIGHT
+    int "显示高度"
+    default 480
+    range 240 768
+    help
+      垂直分辨率
+
+config RETRO_DISPLAY_REFR_RATE
+    int "刷新率(Hz)"
+    default 60
+    range 25 60
+    help
+      帧率（帧重复降刷新）
+
+config RETRO_DISPLAY_PALETTE_SIZE
+    int "调色板颜色数"
+    default 256
+    range 2 256
+    help
+      256色调色板
+
+choice
+    prompt "桌面外壳风格"
+    default RETRO_DESKTOP_SHELL_WIN3
+    help
+      图形桌面外观：Windows 3.2 任务栏风格（默认）或
+      WindowMaker/NeXT 风格（右侧 Dock + 桌面点击弹出根菜单）。
+      运行时可用 NSH 命令切换: shell win3 | shell wmaker
+
+config RETRO_DESKTOP_SHELL_WIN3
+    bool "Windows 3.2 风格（默认）"
+
+config RETRO_DESKTOP_SHELL_WMAKER
+    bool "WindowMaker/NeXT 风格（Dock + 根菜单）"
+
+endchoice
+
+config RETRO_CVBS
+    bool "CVBS 硬件输出（I2S + 电阻网络）"
+    default y
+    depends on RETRO_DISPLAY
+    help
+      ESP32-S3 无内置 DAC：I2S+GDMA 以 13.5MHz 字节流
+      经电阻网络输出 PAL 复合视频（行时序核心见
+      src/nuttx/common/driver/cvbs_core.c，与宿主机
+      模拟器共用同一份时序定义）
+
+endif # RETRO_DISPLAY
+
+config RETRO_MEMMON
+    bool "内存水位监控"
+    default y
+    help
+      80/90/95% 三级内存告警与紧急处置（AGENTS.md 10.2）
+
+config RETRO_NET
+    bool "网络工具（ping/ifconfig）"
+    default y
+    depends on NET
+    help
+      WiFi 连接管理与网络诊断命令
+
+config RETRO_FIREWALL
+    bool "入站防火墙（默认拒绝）"
+    default n
+    depends on RETRO_NET
+    help
+      规则表式入站过滤（当前为独立 API，接入网络栈见 NEXT_STEPS）
+
+config RETRO_AUDIO
+    bool "音频驱动"
+    default y
+    help
+      启用 I2S DAC 音频驱动
+
+if RETRO_AUDIO
+
+config RETRO_AUDIO_I2S
+    int "I2S 端口"
+    default 0
+    range 0 1
+    help
+      I2S 端口号
+
+config RETRO_AUDIO_SAMPLE_RATE
+    int "采样率"
+    default 44100
+    range 8000 48000
+
+endif # RETRO_AUDIO
+
+config RETRO_FSK
+    bool "FSK 磁带调制解调"
+    default y
+    help
+      启用 FSK 磁带调制解调器
+
+if RETRO_FSK
+
+config RETRO_FSK_BAUD
+    int "FSK 码速率"
+    default 4800
+    range 300 9600
+    help
+      波特率（默认 4800）
+
+config RETRO_FSK_LOGIC0_FREQ
+    int "逻辑0频率(Hz)"
+    default 4800
+    help
+      FSK 逻辑0频率
+
+config RETRO_FSK_LOGIC1_FREQ
+    int "逻辑1频率(Hz)"
+    default 9600
+    help
+      FSK 逻辑1频率
+
+endif # RETRO_FSK
+
+config RETRO_RTC
+    bool "RTC 时钟支持"
+    default n
+    help
+      启用 RTC 外置时钟芯片支持
+
+if RETRO_RTC
+
+config RETRO_RTC_CHIP
+    string "RTC 芯片型号"
+    default "ds1307"
+    help
+      支持: ds1307, ds1338, pcf8563, rv3028
+
+endif # RETRO_RTC
+
+config RETRO_WIFI
+    bool "WiFi 支持"
+    default y
+    help
+      启用 WiFi 网络
+
+if RETRO_WIFI
+
+config RETRO_WIFI_SSID
+    string "WiFi SSID"
+    default ""
+    help
+      WiFi 名称
+
+config RETRO_WIFI_PASSWORD
+    string "WiFi 密码"
+    default ""
+    help
+      WiFi 密码
+
+endif # RETRO_WIFI
+
+config RETRO_SCRIPTS
+    bool "脚本引擎支持"
+    default y
+    help
+      启用脚本引擎框架（每种引擎均可独立勾选编译嵌入）：
+      my-basic / Duktape / Berry / CPython / jslogo
+
+if RETRO_SCRIPTS
+
+config RETRO_SCRIPT_TINYBASIC
+    bool "my-basic (BASIC)"
+    default y
+    help
+      启用 my-basic 解释器（.bas，约 128KB 内存）
+
+config RETRO_SCRIPT_DUKTAPE
+    bool "Duktape (JavaScript ES5)"
+    default y
+    help
+      启用 Duktape JavaScript 引擎（.js，约 384KB 内存）
+
+config RETRO_SCRIPT_BERRY
+    bool "Berry (类 Python 轻量语言)"
+    default n
+    help
+      启用 Berry 解释器（.be，内核 <40KB ROM、<4KB 堆，S3/CAM 通吃）。
+      依赖 nuttx-apps interpreters/berry（构建时自动拉取固定版本）。
+
+config RETRO_SCRIPT_PYTHON
+    bool "CPython (完整 Python 3)"
+    default n
+    depends on !RETRO_FLASH_8MB
+    help
+      启用 CPython（.py，nuttx-apps interpreters/python）。
+      仅 ESP32-S3 16MB Flash (N16R8) 可用——N8R8/CAM 容量不足。
+      ROMFS 标准库镜像需按 NuttX 文档配置。
+
+config RETRO_LOGO_JSLOGO
+    bool "jslogo (UCBLogo 子集，跑在 Duktape 上)"
+    default n
+    depends on RETRO_SCRIPT_DUKTAPE
+    help
+      启用 jslogo 海龟画图（.lgo，Apache-2.0，UCBLogo 子集）。
+      解释器 JS 源码由 download_deps.sh 下载到 deps/jslogo，
+      运行时从 /sdcard/scripts/logo/lib/ 加载；绘图走 LVGL 后端。
+
+endif # RETRO_SCRIPTS
+
+config RETRO_NTP
+    bool "NTP 时间同步"
+    default y
+    help
+      启用 NTP 自动对时
+
+if RETRO_NTP
+
+config RETRO_NTP_SERVER
+    string "NTP 服务器"
+    default "ntp.aliyun.com"
+    help
+      NTP 服务器地址
+
+endif # RETRO_NTP
+
+config RETRO_CRON
+    bool "Cron 定时任务"
+    default y
+    help
+      启用 Cron 定时任务
+
+endif # ESP32_RETRO

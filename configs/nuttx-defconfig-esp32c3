@@ -1,0 +1,69 @@
+# SPDX-FileCopyrightText: 2026 ESP32-S3 Retro Project
+# SPDX-License-Identifier: Apache-2.0
+#
+# WHAT : ESP32-C3（合宙核心板）最小 CLI 工作站 NuttX 配置
+# WHY  : 低资源目标（400KB SRAM 无 PSRAM）——NSH + 网络 + 脚本 + 包管理器
+# WHO  : scripts/esp32c3/nuttx_build.sh defconfig 装载
+# WHERE: esp32-retro-ws/configs/nuttx-defconfig-esp32c3
+# WHEN : 2026-10-04 新增（骨架，首次构建时按 NuttX 12.12 实际选项校准）
+# HOW  : 参照 esp32cam defconfig 裁剪：去 LVGL/显示/音频，保留网络与 binfmt
+#
+# 架构 / RISC-V
+CONFIG_ARCH_RISCV=y
+CONFIG_ARCH_CHIP_ESP32C3=y
+CONFIG_ARCH_FAMILY="esp32c3"
+CONFIG_ESP32C3_RTC_CLK=y
+
+# 目标标识（pkg_manager Arch 匹配用）
+CONFIG_ESP32C3_RETRO=y
+CONFIG_RETRO_ARCH="riscv-esp32c3"
+
+# 核心板版本：经典款（CH343 串口）— 简约款改为 NATIVEUSB
+CONFIG_RETRO_LUATOS_C3_UARTBRIDGE=y
+
+# 串口控制台（经典款 UART0）
+CONFIG_UART0_SERIAL_CONSOLE=y
+CONFIG_DEV_CONSOLE=y
+
+# NSH
+CONFIG_NSH_LIBRARY=y
+CONFIG_NSH_READLINE=y
+CONFIG_NSH_PROMPT_STRING="c3> "
+CONFIG_NSH_BUILTIN_APPS=y
+
+# SD 卡（SPI，GPIO4/5/6/7 见硬件档案）+ FAT32
+CONFIG_ESP32C3_SPI2=y
+CONFIG_SD=y
+CONFIG_SD_SPI=y
+CONFIG_FS_FAT=y
+
+# 网络（WiFi STA）
+CONFIG_ESP32C3_WIFI=y
+CONFIG_NET=y
+CONFIG_NET_UDP=y
+CONFIG_NET_TCP=y
+CONFIG_NET_IPv4=y
+CONFIG_NETDEV_LATEINIT=y
+
+# 定时器/看门狗基础
+CONFIG_ESP32C3_TIMER=y
+CONFIG_ESP32C3_WDT=y
+
+# ELF 动态加载（.rpk 安装独立程序的运行基础）
+CONFIG_ELF=y
+CONFIG_ELF_ALIGN_LOG2=2
+CONFIG_BINFMT_LOADABLE=y
+CONFIG_LIBC_ENVPATH=y
+
+# 工作队列
+CONFIG_SCHED_WORKQUEUE=y
+
+# RT 时钟（NTP 用）
+CONFIG_ESP32C3_RT_TIMER=y
+
+# 脚本引擎：my-basic（默认）+ Berry（可选，menuconfig 勾选）
+CONFIG_RETRO_SCRIPTS=y
+CONFIG_RETRO_SCRIPT_TINYBASIC=y
+
+# .rpk 包管理器
+CONFIG_RETRO_PKG_MANAGER=y

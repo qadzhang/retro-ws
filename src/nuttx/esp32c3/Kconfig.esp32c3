@@ -1,0 +1,81 @@
+#
+# SPDX-FileCopyrightText: 2026 ESP32-S3 Retro Project
+# SPDX-License-Identifier: Apache-2.0
+#
+# WHAT : ESP32-C3 目标（合宙核心板，CLI 工作站）menuconfig 配置
+# WHY  : 低资源/低价格第三目标；RISC-V 架构，纯 CLI + .rpk 包管理器
+# WHO  : NuttX Kconfig 系统扫描
+# WHERE: esp32-retro-ws/src/nuttx/esp32c3/Kconfig.esp32c3
+# WHEN : 2026-10-04 新增
+# HOW  : RETRO_ARCH 供 pkg_manager 做包架构匹配；无 LVGL/CPython 选项
+#
+
+config ESP32C3_RETRO
+    bool "合宙 ESP32-C3 核心板复古 CLI 工作站"
+    select ARCH_CHIP_ESP32C3
+    help
+      启用合宙 ESP32-C3 核心板支持（经典款 CH343 / 简约款原生 USB）
+
+if ESP32C3_RETRO
+
+config RETRO_ARCH
+    string
+    default "riscv-esp32c3"
+    help
+      本目标架构标识（.rpk 包 Arch 匹配用：<family>-<chip>）。
+      包 Arch 取值 all / riscv / xtensa / esp32c3 / esp32s3 / esp32。
+
+choice
+    prompt "核心板版本（控制台通道）"
+    default RETRO_LUATOS_C3_UARTBRIDGE
+    help
+      经典款：板载 CH343 USB 转串口（UART0 控制台）。
+      简约款：无串口芯片，Type-C 直连原生 USB（USB-Serial-JTAG）。
+
+config RETRO_LUATOS_C3_UARTBRIDGE
+    bool "经典款（CH343 串口芯片）"
+
+config RETRO_LUATOS_C3_NATIVEUSB
+    bool "简约款（原生 USB，无串口芯片）"
+
+endchoice
+
+config RETRO_SCRIPTS
+    bool "脚本引擎支持"
+    default y
+    help
+      CLI 脚本引擎（无 LVGL，retro_ui 胶水层不可用）：
+      my-basic 与 Berry 均可运行于 400KB SRAM。
+
+if RETRO_SCRIPTS
+
+config RETRO_SCRIPT_TINYBASIC
+    bool "my-basic (BASIC)"
+    default y
+    help
+      启用 my-basic 解释器（.bas）
+
+config RETRO_SCRIPT_BERRY
+    bool "Berry (类 Python 轻量语言)"
+    default n
+    help
+      启用 Berry 解释器（.be，内核 <40KB ROM、<4KB 堆）。
+      CLI 模式下 retro_ui_* 函数退化为 printf 输出。
+
+endif # RETRO_SCRIPTS
+
+config RETRO_PKG_MANAGER
+    bool ".rpk 包管理器（deb 风格）"
+    default y
+    help
+      NSH pkg install/remove/list/info 命令（pkg_manager.c）。
+      低资源目标的软件交付主通道；RISC-V 包经 Arch 字段与 Xtensa 隔离。
+
+config RETRO_GPIO_SCRIPT
+    bool "脚本引擎 GPIO/ADC/PWM 接口（教学）"
+    default y
+    help
+      各脚本引擎（bas/js/berry/py）经 retro_gpio 统一接口操作 GPIO。
+      系统占用引脚（各板硬件档案占用表）访问时直接报"已占用"返回 -EBUSY。
+
+endif # ESP32C3_RETRO

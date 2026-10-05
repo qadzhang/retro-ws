@@ -1,0 +1,12 @@
+# postinst - UCBLogo 安装后脚本（NSH 脚本）
+# WHAT : 安装完成后打印许可与运行提示
+# WHY  : GPL 组件必须向用户明示许可证边界
+# WHO  : pkg_manager.c 在 install 末尾经 system("sh ...") 执行
+# WHERE: 包内 postinst（安装后存档于 /sdcard/var/lib/rpkg/info/postinst）
+# WHEN : 2026-10-04 新增
+# HOW  : NSH echo 命令输出提示信息
+
+echo "UCBLogo 已安装到 /sdcard/apps/ucblogo"
+echo "许可证: GPL-2.0-or-later（独立程序，未链入固件，mere aggregation）"
+echo "源码副本: SD 卡 pkg-src/ 目录（GPL 分发义务随包提供）"
+echo "运行: /sdcard/apps/ucblogo"

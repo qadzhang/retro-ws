@@ -1,0 +1,235 @@
+# SPDX-FileCopyrightText: 2026 ESP32-S3 Retro Project
+# SPDX-License-Identifier: Apache-2.0
+#
+# retro-apps/Kconfig - Retro WS 固件模块（由 scripts/sync_src_to_apps.sh
+# 同步到 deps/nuttx-apps/retro/；本文件为唯一真身）
+
+config RETRO
+    tristate "Retro WS workstation core"
+    default n
+    help
+      复古图形工作站核心：板级装配（双核分工：CPU0=程序，
+      CPU1=图形/视频/音频/文件IO）、脚本 GPIO 占用拦截、
+      NSH 命令（sysinfo/pkg/shell 等）。
+
+      由各目标 defconfig 选中，普通用户无需手动改。
+
+if RETRO
+
+config RETRO_BOARD_ESP32S3
+    bool
+    default y if ARCH_CHIP_ESP32S3
+
+config RETRO_BOARD_ESP32
+    bool
+    default y if ARCH_CHIP_ESP32
+
+config RETRO_BOARD_ESP32C3
+    bool
+    default y if ARCH_CHIP_ESP32C3
+
+config RETRO_BOARD_RP2040
+    bool
+    default y if ARCH_CHIP_RP2040
+
+config RETRO_PKG_MANAGER
+    bool ".rpk 包管理器（pkg install/remove/list）"
+    default y
+
+config RETRO_GPIO_SCRIPT
+    bool "脚本 GPIO 访问（系统占用脚拦截 -EBUSY）"
+    default y
+
+config RETRO_PINYIN_CLI
+    bool "CLI 拼音输入法（drv_pinyin）"
+    default y
+
+config RETRO_MEMMON
+    bool "内存水位监控（80/90/95%）"
+    default y if !RETRO_BOARD_RP2040
+
+config RETRO_NANO
+    bool "GNU nano 8.4 文本编辑器（全系 CLI 编辑器，替代 vi）"
+    default y
+    help
+      真源码移植（deps/nano 上游 nano-8.4）+ mini-curses 垫片
+      （src/nuttx/common/nano_port）。AV 控制台与串口终端通用。
+      用户要求：所有开发板 CLI 文本编辑器统一 nano，禁用 vi。
+
+config RETRO_NANO_STACK
+    int "nano 任务栈（字节）"
+    default 32768 if RETRO_BOARD_RP2040
+    default 24576 if RETRO_BOARD_ESP32C3
+    default 65536
+
+config RETRO_BUS
+    bool "脚本总线兼容层（I2C/SPI/UART，machine 风格）"
+    default y
+    help
+      MicroPython machine 风格统一 API（HARDWARE.md 13.3）：
+      硬件后端 /dev/i2cN、/dev/spiN、/dev/ttySN 优先，缺驱动板
+      回退 retro_gpio 位摆软总线；三引擎同名绑定。
+
+config RETRO_SCRIPTS_ROM
+    bool "板级脚本 ROM 化（/rom/scripts + script 命令，XIP）"
+    default y
+    help
+      firmware/scripts/<板>/ 打包 ROMFS 进固件（tools/mkromfs.py，
+      build_firmware.sh 生成 scripts_romfs.c）；运行时源码直驻
+      Flash，引擎长度型接口消费指针（零 RAM 拷贝）。
+
+config RETRO_FSK
+    bool "磁带机 FSK 调制解调"
+    default y if !RETRO_BOARD_RP2040
+
+config RETRO_FSK_BAUD
+    int "FSK 波特率（KCS 标准 300）"
+    default 300
+    depends on RETRO_FSK
+
+config RETRO_RTC
+    bool "I2C RTC 驱动"
+    default n
+
+config RETRO_WIFI
+    bool "WiFi 连接管理与网络工具"
+    default n
+
+config RETRO_NTP
+    bool "NTP 对时"
+    default n
+
+config RETRO_CRON
+    bool "Cron 定时任务"
+    default n
+
+config RETRO_SCRIPTS
+    bool "脚本引擎（NSH script 命令）"
+    default y
+    help
+      Berry + my-basic 默认编入 ROM（用户要求：空间不够则保底 Berry）。
+
+if RETRO_SCRIPTS
+
+config RETRO_SCRIPT_TINYBASIC
+    bool "my-basic (BASIC)"
+    default y
+    help
+      全系默认（Pico 实测装下字体+双解释器后仍余 ~50%）。
+
+config RETRO_SCRIPT_BERRY
+    bool "Berry"
+    default y
+
+config RETRO_SCRIPT_DUKTAPE
+    bool "Duktape (JavaScript)"
+    default y if !RETRO_BOARD_RP2040
+    help
+      ~430KB；CLI/JS 引擎 + jslogo 依赖。
+
+config RETRO_SCRIPT_STACK_TINYBASIC
+    int "my-basic 任务栈（字节）"
+    default 32768 if RETRO_BOARD_ESP32C3
+    default 16384 if RETRO_BOARD_RP2040
+    default 65536
+    help
+      RAM 预算：C3 400KB/Pico 264KB SRAM 用小栈；S3/CAM 有 PSRAM 堆用大栈。
+
+config RETRO_SCRIPT_STACK_DUKTAPE
+    int "Duktape 任务栈（字节）"
+    default 49152 if RETRO_BOARD_ESP32C3
+    default 24576 if RETRO_BOARD_RP2040
+    default 262144
+
+config RETRO_SCRIPT_STACK_BERRY
+    int "Berry 任务栈（字节）"
+    default 24576 if RETRO_BOARD_ESP32C3
+    default 16384 if RETRO_BOARD_RP2040
+    default 65536
+
+config RETRO_SCRIPT_STACK_JSLOGO
+    int "jslogo 任务栈（字节）"
+    default 32768 if RETRO_BOARD_ESP32C3
+    default 262144
+
+config RETRO_SCRIPT_JSLOGO
+    bool "jslogo（小海龟画图，需 Duktape + GUI）"
+    default y if RETRO_SCRIPT_DUKTAPE
+    depends on RETRO_SCRIPT_DUKTAPE && RETRO_GUI
+
+endif # RETRO_SCRIPTS
+
+config RETRO_GUI
+    bool "LVGL 图形界面（桌面/WindowMaker 外壳/图形程序）"
+    default y if RETRO_BOARD_ESP32S3 || RETRO_BOARD_ESP32
+    help
+      LVGL 9.5（deps/lvgl）+ Win3.2/WindowMaker 双外壳 + 记事本/终端/
+      播放器/画图等图形程序。需 RETRO_DISPLAY（CVBS 视频输出）。
+
+config RETRO_DISPLAY
+    bool "CVBS 显示驱动（帧缓冲 + PAL 场时序）"
+    default y if RETRO_GUI
+
+config RETRO_DISPLAY_WIDTH
+    int "显示宽度（GUI=640；CLI AV 控制台=320）"
+    default 640 if RETRO_GUI
+    default 320
+
+config RETRO_DISPLAY_HEIGHT
+    int "显示高度（GUI=480；CLI AV 控制台=240）"
+    default 480 if RETRO_GUI
+    default 240
+
+if RETRO_DISPLAY
+
+config RETRO_DISPLAY_REFR_RATE
+    int "刷新率"
+    default 30
+
+
+if RETRO_GUI
+
+config RETRO_AUDIO
+    bool "I2S 音频驱动（GUI 播放器/录音机后端）"
+    default y
+
+config RETRO_AUDIO_DAC
+    bool "内置 DAC 音频（ESP32 CAM：I2S0→DAC1/GPIO25）"
+    default y if RETRO_BOARD_ESP32
+    depends on RETRO_AUDIO
+
+endif
+
+endif # RETRO_DISPLAY
+
+config RETRO_AV_CONSOLE
+    bool "AV 视频字符控制台（全系标配）"
+    default y
+    help
+      UTF-8 点阵渲染到 CVBS 帧缓冲（AGENTS.md 7.3：字符输出必须
+      走 AV 视频输出）。含全量中文字库（.o 911KB）。
+      2026-10-04(晚) 升级：ANSI/CSI 子集 + 可见光标 +
+      /dev/cvbscon 字符设备（read=键盘环）。
+
+if RETRO_AV_CONSOLE
+
+config RETRO_AV_INPUT
+    bool "NSH 控制台走 AV 屏（/dev/cvbscon + UART 键盘泵）"
+    default y if !RETRO_DISPLAY
+    depends on !RETRO_DISPLAY
+    help
+      CLI 档（C3/Pico）：NSH 与 nano 跑在 AV 屏上，UART 只作
+      键盘输入（CONFIG_NSH_ALTCONDEV=/dev/cvbscon）。
+
+config RETRO_AV_INPUT_STACK
+    int "键盘泵任务栈（字节）"
+    default 2048
+
+endif # RETRO_AV_CONSOLE
+
+
+config RETRO_FIRMWARE_DEBUG_UART
+    bool "固件构建期把 syslog 打到控制台 UART"
+    default y
+
+endif # RETRO

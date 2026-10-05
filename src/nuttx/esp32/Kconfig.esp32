@@ -1,0 +1,309 @@
+#
+# ESP32-CAM NuttX Kconfig - Menuconfig 配置
+#
+
+config ESP32_RETRO
+    bool "ESP32-CAM 复古图形工作站"
+    select ESP32
+    help
+      启用 ESP32-CAM 复古图形工作站支持
+
+if ESP32_RETRO
+
+config RETRO_ARCH
+    string
+    default "xtensa-esp32"
+    help
+      本目标架构标识（.rpk 包 Arch 匹配用：<family>-<chip>）。
+
+config RETRO_PKG_MANAGER
+    bool ".rpk 包管理器（deb 风格）"
+    default y
+    help
+      NSH pkg install/remove/list/info 命令（pkg_manager.c）。
+      RISC-V 与 Xtensa 包经 Arch 字段隔离，防止误装。
+
+config RETRO_GPIO_SCRIPT
+    bool "脚本引擎 GPIO/ADC/PWM 接口（教学）"
+    default y
+    help
+      各脚本引擎（bas/js/berry/py）经 retro_gpio 统一接口操作 GPIO。
+      系统占用引脚（各板硬件档案占用表）访问时直接报"已占用"返回 -EBUSY。
+
+config RETRO_DISPLAY
+    bool "CVBS 显示驱动 (DAC 模式)"
+    default y
+    help
+      启用 CVBS AV 输出驱动（使用 ESP32 内置 DAC）
+
+config RETRO_CVBS_DAC
+    bool "使用内置 DAC 输出 CVBS"
+    default y
+    depends on RETRO_DISPLAY
+    help
+      使用 ESP32 内置 DAC (GPIO25) 输出 CVBS 复合视频
+
+if RETRO_DISPLAY
+
+config RETRO_DISPLAY_WIDTH
+    int "显示宽度"
+    default 640
+    range 320 720
+    help
+      水平分辨率（CVBS 最大 720）
+
+config RETRO_DISPLAY_HEIGHT
+    int "显示高度"
+    default 480
+    range 240 576
+    help
+      垂直分辨率（PAL 576, NTSC 480）
+
+config RETRO_DISPLAY_REFR_RATE
+    int "刷新率(Hz)"
+    default 50
+    range 25 60
+    help
+      PAL 50Hz, NTSC 60Hz
+
+config RETRO_DISPLAY_PALETTE_SIZE
+    int "调色板颜色数"
+    default 256
+    range 2 256
+    help
+      256色调色板
+
+choice
+    prompt "桌面外壳风格"
+    default RETRO_DESKTOP_SHELL_WIN3
+    help
+      图形桌面外观：Windows 3.2 任务栏风格（默认）或
+      WindowMaker/NeXT 风格（右侧 Dock + 桌面点击弹出根菜单）。
+      运行时可用 NSH 命令切换: shell win3 | shell wmaker
+
+config RETRO_DESKTOP_SHELL_WIN3
+    bool "Windows 3.2 风格（默认）"
+
+config RETRO_DESKTOP_SHELL_WMAKER
+    bool "WindowMaker/NeXT 风格（Dock + 根菜单）"
+
+endchoice
+
+endif # RETRO_DISPLAY
+
+config RETRO_AUDIO
+    bool "音频驱动 (DAC 模式)"
+    default y
+    help
+      启用 DAC 音频驱动（使用 ESP32 内置 DAC）
+
+config RETRO_AUDIO_DAC
+    bool "使用内置 DAC 输出音频"
+    default y
+    depends on RETRO_AUDIO
+    help
+      使用 ESP32 内置 DAC (GPIO26) 输出模拟音频
+
+if RETRO_AUDIO
+
+config RETRO_AUDIO_I2S
+    int "I2S 端口"
+    default 0
+    range 0 1
+    help
+      I2S 端口号（DAC 模式下使用 I2S0）
+
+config RETRO_AUDIO_SAMPLE_RATE
+    int "采样率"
+    default 44100
+    range 8000 48000
+
+endif # RETRO_AUDIO
+
+config RETRO_INPUT_BLE_HID
+    bool "BLE HID 输入（键盘/鼠标）"
+    default y
+    help
+      使用 BLE HID 连接蓝牙键盘和鼠标
+
+if RETRO_INPUT_BLE_HID
+
+config RETRO_BLE_MAX_BOND
+    int "最大配对设备数"
+    default 3
+    range 1 5
+    help
+      最多存储的配对设备数量
+
+config RETRO_BLE_DEVICE_NAME
+    string "BLE 设备名称"
+    default "ESP32-CAM"
+    help
+      BLE 广播时的设备名称
+
+config RETRO_BLE_AUTO_CONNECT
+    bool "启动时自动连接"
+    default y
+    help
+      上电时自动连接已配对设备
+
+config RETRO_BLE_SCAN_TIMEOUT
+    int "扫描超时(秒)"
+    default 10
+    range 5 30
+    help
+      扫描 HID 设备的超时时间
+
+config RETRO_BLE_LED_PIN
+    int "状态 LED 引脚"
+    default 4
+    help
+      ESP32-CAM BLE 状态 LED 引脚。
+      4 = Flash LED (板载唯一 LED，用于蓝牙状态指示)
+      注意：使用此引脚后，拍照闪光灯功能将被蓝牙指示灯占用
+
+endif # RETRO_INPUT_BLE_HID
+
+config RETRO_RTC_I2C_SDA
+    int "RTC I2C SDA 引脚"
+    default 21
+    help
+      ESP32-CAM RTC I2C SDA 引脚。
+      推荐使用 GPIO21 (SDA) / GPIO22 (SCL)，这是 ESP32 默认 I2C 引脚。
+
+config RETRO_RTC_I2C_SCL
+    int "RTC I2C SCL 引脚"
+    default 22
+    help
+      ESP32-CAM RTC I2C SCL 引脚
+
+config RETRO_FSK
+    bool "FSK 磁带调制解调"
+    default y
+    help
+      启用 FSK 磁带调制解调器
+
+if RETRO_FSK
+
+config RETRO_FSK_BAUD
+    int "FSK 码速率"
+    default 4800
+    range 300 9600
+    help
+      波特率（默认 4800）
+
+config RETRO_FSK_LOGIC0_FREQ
+    int "逻辑0频率(Hz)"
+    default 4800
+    help
+      FSK 逻辑0频率
+
+config RETRO_FSK_LOGIC1_FREQ
+    int "逻辑1频率(Hz)"
+    default 9600
+    help
+      FSK 逻辑1频率
+
+endif # RETRO_FSK
+
+config RETRO_RTC
+    bool "RTC 时钟支持"
+    default n
+    help
+      启用 RTC 外置时钟芯片支持
+
+if RETRO_RTC
+
+config RETRO_RTC_CHIP
+    string "RTC 芯片型号"
+    default "ds1307"
+    help
+      支持: ds1307, ds1338, pcf8563, rv3028
+
+endif # RETRO_RTC
+
+config RETRO_WIFI
+    bool "WiFi 支持"
+    default y
+    help
+      启用 WiFi 网络
+
+if RETRO_WIFI
+
+config RETRO_WIFI_SSID
+    string "WiFi SSID"
+    default ""
+    help
+      WiFi 名称
+
+config RETRO_WIFI_PASSWORD
+    string "WiFi 密码"
+    default ""
+    help
+      WiFi 密码
+
+endif # RETRO_WIFI
+
+config RETRO_SCRIPTS
+    bool "脚本引擎支持"
+    default y
+    help
+      启用脚本引擎框架（每种引擎均可独立勾选编译嵌入）。
+      ESP32-CAM (4MB Flash) 不提供 CPython 选项——容量不足
+      （2026-04-02 已验证移除，见 BUILD_FIXES.md）。
+
+if RETRO_SCRIPTS
+
+config RETRO_SCRIPT_TINYBASIC
+    bool "my-basic (BASIC)"
+    default y
+    help
+      启用 my-basic 解释器（.bas，约 128KB 内存）
+
+config RETRO_SCRIPT_DUKTAPE
+    bool "Duktape (JavaScript ES5)"
+    default y
+    help
+      启用 Duktape JavaScript 引擎（.js，约 384KB 内存）
+
+config RETRO_SCRIPT_BERRY
+    bool "Berry (类 Python 轻量语言)"
+    default n
+    help
+      启用 Berry 解释器（.be，内核 <40KB ROM、<4KB 堆，CAM 也可用）。
+      依赖 nuttx-apps interpreters/berry（构建时自动拉取固定版本）。
+
+config RETRO_LOGO_JSLOGO
+    bool "jslogo (UCBLogo 子集，跑在 Duktape 上)"
+    default n
+    depends on RETRO_SCRIPT_DUKTAPE
+    help
+      启用 jslogo 海龟画图（.lgo，Apache-2.0，UCBLogo 子集）。
+      解释器 JS 源码由 download_deps.sh 下载到 deps/jslogo，
+      运行时从 /sdcard/scripts/logo/lib/ 加载；绘图走 LVGL 后端。
+
+endif # RETRO_SCRIPTS
+
+config RETRO_NTP
+    bool "NTP 时间同步"
+    default y
+    help
+      启用 NTP 自动对时
+
+if RETRO_NTP
+
+config RETRO_NTP_SERVER
+    string "NTP 服务器"
+    default "ntp.aliyun.com"
+    help
+      NTP 服务器地址
+
+endif # RETRO_NTP
+
+config RETRO_CRON
+    bool "Cron 定时任务"
+    default y
+    help
+      启用 Cron 定时任务
+
+endif # ESP32_RETRO

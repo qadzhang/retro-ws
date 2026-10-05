@@ -1,0 +1,37 @@
+; spiral.lgo - jslogo 海龟画图示例 / jslogo turtle demo
+; 运行 / run:  script run /sdcard/scripts/logo/spiral.lgo
+; 需要 / needs: CONFIG_RETRO_LOGO_JSLOGO=y 且 jslogo 库已装入
+;               /sdcard/scripts/logo/lib/
+
+; 方形螺旋 / square spiral
+TO spiral :side
+  IF :side > 100 [STOP]
+  FORWARD :side
+  RIGHT 90
+  spiral :side + 4
+END
+
+CLEARSCREEN
+PENUP SETXY -80 -80 PENDOWN
+spiral 8
+
+; 多彩圆花 / colorful flower
+TO flower :n :i
+  IF :i > :n [STOP]
+  REPEAT 36 [FORWARD 6 RIGHT 10]
+  RIGHT 360 / :n
+  flower :n :i + 1
+END
+
+PENUP SETXY 160 160 PENDOWN
+SETPENCOLOR [255 0 0]
+flower 8 1
+
+; 五角星 / five-pointed star
+TO star :size
+  REPEAT 5 [FORWARD :size RIGHT 144]
+END
+
+PENUP SETXY -200 200 PENDOWN
+SETPENCOLOR [255 255 0]
+star 120

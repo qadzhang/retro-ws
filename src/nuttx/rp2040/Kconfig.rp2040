@@ -1,0 +1,54 @@
+# SPDX-FileCopyrightText: 2026 ESP32-S3 Retro Project
+# SPDX-License-Identifier: Apache-2.0
+#
+# rp2040 目标配置（第四目标：Pico 本地 CLI 终端，无网络）
+
+menu "Retro WS RP2040 (Pico)"
+
+config RP2040_RETRO
+    bool "启用 Retro WS Pico 支持"
+    default y
+    help
+      第四目标：本地 CLI 教学终端（无 CVBS/音频/网络）。
+
+config RETRO_ARCH
+    string
+    default "arm-rp2040" if RP2040_RETRO
+
+config RETRO_PKG_MANAGER
+    bool ".rpk 包管理器"
+    default y
+    depends on RP2040_RETRO
+    help
+      CLI 侧 pkg install/remove/list（SD 卡安装源）。
+      注意 arch=arm 的包与 xtensa/riscv 不通用。
+
+config RETRO_GPIO_SCRIPT
+    bool "脚本 GPIO 访问（占用拦截）"
+    default y
+    depends on RP2040_RETRO
+
+config RETRO_SCRIPTS
+    bool "脚本引擎"
+    default y
+    depends on RP2040_RETRO
+
+if RETRO_SCRIPTS
+
+config RETRO_SCRIPT_TINYBASIC
+    bool "my-basic (BASIC)"
+    default y
+
+config RETRO_SCRIPT_DUKTAPE
+    bool "Duktape (JavaScript)"
+    default n
+    help
+      ~430KB；实测 2MB 装下字体+Berry+my-basic 后仍余 ~38%，按需开。
+
+config RETRO_PINYIN_CLI
+    bool "CLI 拼音输入法"
+    default y
+
+endif # RETRO_SCRIPTS
+
+endmenu
