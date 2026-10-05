@@ -5,7 +5,7 @@
  * WHAT : retro_gpio 策略层测试（宿主机）
  * WHY  : "系统占用脚必须被拦截并提示" 是用户明确要求的硬契约
  * WHO  : tests/host/run_all.sh
- * WHERE: esp32-retro-ws/tests/host/test_retro_gpio.c
+ * WHERE: retro-ws/tests/host/test_retro_gpio.c
  * WHEN : 2026-10-04 新增
  * HOW  : 本文件提供模拟占用表（g_retro_gpio_occupied，模拟 S3 板：
  *        GPIO2=CVBS、GPIO26..32=flash、GPIO35..37=PSRAM），

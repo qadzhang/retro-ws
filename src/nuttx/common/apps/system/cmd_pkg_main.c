@@ -11,7 +11,7 @@
  * WHY  : nsh_cmds.c 的命令表原先无注册通道（死代码）——builtin
  *        是 NuttX 标准的应用注册机制
  * WHO  : NuttX builtin 框架（PROGNAME/MAINSRC 按序配对）
- * WHERE: esp32-retro-ws/src/nuttx/common/apps/system/cmd_pkg_main.c
+ * WHERE: retro-ws/src/nuttx/common/apps/system/cmd_pkg_main.c
  * WHEN : 2026-10-04(晚) 新增
  * HOW  : 转发到 cmd_pkg()（nsh_cmds.c / script_rom.c 实现）
  */

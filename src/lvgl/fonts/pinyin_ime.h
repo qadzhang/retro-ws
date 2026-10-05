@@ -8,7 +8,7 @@
  * WHAT : 拼音输入法引擎接口（pinyin_ime.c 对外契约）
  * WHY  : app_pinyin.c / drv_pinyin.c 共享词库查询 API
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/lvgl/fonts/pinyin_ime.h
+ * WHERE: retro-ws/src/lvgl/fonts/pinyin_ime.h
  * WHEN : 2026-03~04 初版，2026-10-04 补齐缺失头文件（5W1H, AGENTS.md 4.0）
  * HOW  : 导出 pinyin_ime.c 的真实函数原型与词组长度常量
  */

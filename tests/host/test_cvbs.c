@@ -6,7 +6,7 @@
  * WHY  : 视频时序错误在真机上只能"看不到画面"——宿主机先用
  *        独立解码器把波形还原成图像，逐样本差分验证
  * WHO  : tests/host/run_all.sh；渲染的 PGM 交 glm 视觉审查
- * WHERE: esp32-retro-ws/tests/host/test_cvbs.c
+ * WHERE: retro-ws/tests/host/test_cvbs.c
  * WHEN : 2026-10-04 新增
  * HOW  : 1) 行结构断言（同步位置/宽度/电平）
  *        2) 场/帧行数断言（312/313/625）

@@ -8,7 +8,7 @@
  * WHAT : retro_ui 的 CPython 绑定
  * WHY  : Python 脚本 import retro_ui 调 UI（仅 S3 N16R8）
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/lvgl/modules/retro_ui_py.c
+ * WHERE: retro-ws/src/lvgl/modules/retro_ui_py.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : PyImport_AppendInittab 注册内建模块（可选编译）
  */

@@ -8,7 +8,7 @@
  * WHAT : FSK 磁带驱动（CAM）
  * WHY  : KCS 300 波特磁带调制解调
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/esp32/driver/fsk/drv_fsk.c
+ * WHERE: retro-ws/src/nuttx/esp32/driver/fsk/drv_fsk.c
  * WHEN : 2026-03~04 初版，2026-10-04 与 S3 版对齐：修复频率宏
  *        反逻辑/块大小/Goertzel 溢出，并如实标注 RX 现状
  * HOW  : 复用共享算法，走 DAC/ADC 通道（1200/2400Hz Goertzel）

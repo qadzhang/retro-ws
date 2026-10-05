@@ -8,7 +8,7 @@
  * WHAT : SQLite 驱动
  * WHY  : 数据库 CLI 与 GUI 共用的执行通道
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/drv_sqlite.c
+ * WHERE: retro-ws/src/nuttx/common/driver/drv_sqlite.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : sqlite3 API 封装 + 结果回调
  */

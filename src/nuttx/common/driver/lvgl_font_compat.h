@@ -11,7 +11,7 @@
  *        为 CLI 再生成一套裸字库会双份 911KB 且易失同步
  * WHO  : cvbs_console.c（字形渲染）；构建系统把本目录放在 -I 最前
  *        使 #include "lvgl.h" 命中本文件
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/lvgl_font_compat.h
+ * WHERE: retro-ws/src/nuttx/common/driver/lvgl_font_compat.h
  * WHEN : 2026-10-04 新增
  * HOW  : 复刻 LVGL 9.5 lv_font_fmt_txt 的类型布局与查找语义
  *        （get_glyph_dsc_id 三种 cmap 类型查找逐行对照

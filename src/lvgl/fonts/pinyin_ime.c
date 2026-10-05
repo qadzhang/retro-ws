@@ -9,7 +9,7 @@
  *        工具: python3 一次性变换；勿再引入 GB 码条目）
  * WHY  : 3000+ 常用汉字/词组数据（全拼+简拼）
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/lvgl/fonts/pinyin_ime.c
+ * WHERE: retro-ws/src/lvgl/fonts/pinyin_ime.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : 静态码表，供 drv_pinyin.c / app_pinyin.c 查询
  */

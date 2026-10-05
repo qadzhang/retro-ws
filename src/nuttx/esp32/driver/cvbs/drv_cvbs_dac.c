@@ -11,7 +11,7 @@
  *        直出复合视频（HARDWARE.md 5.3/6.2）；2026-10-04(晚) 从
  *        两行乒乓升级为整帧环形链（消除乒乓撕裂），时钟改整除
  * WHO  : common/driver/drv_cvbs.c 的 cvbs_core_generate_frame()
- * WHERE: esp32-retro-ws/src/nuttx/esp32/driver/cvbs/drv_cvbs_dac.c
+ * WHERE: retro-ws/src/nuttx/esp32/driver/cvbs/drv_cvbs_dac.c
  * WHEN : 2026-03 初版；2026-10-04 重写；同日(晚) 整帧环 + 853 行
  * HOW  : APB 80MHz 整数 ÷6 = 13.3333MHz（无小数抖动），
  *        行长 853 样本（12/63/68/710）→ 行 63.975µs（-0.04%）；

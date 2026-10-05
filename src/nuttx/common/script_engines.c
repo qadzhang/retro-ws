@@ -8,7 +8,7 @@
  * WHAT : 脚本引擎集成层
  * WHY  : 五种引擎（bas/js/be/py/lgo）按需加载与统一调度
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/common/script_engines.c
+ * WHERE: retro-ws/src/nuttx/common/script_engines.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : RETRO_SCRIPT_* 可选编译 + 扩展名路由 + retro_ui 绑定注入
  */

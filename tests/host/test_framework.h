@@ -5,7 +5,7 @@
  * WHAT : 极简 C 测试框架 / minimal host test framework
  * WHY  : 嵌入式项目无平台测试设施；变异测试需要"失败即非零退出码"
  * WHO  : tests/host/ 下全部 C 测试（test_pkgmanager.c 等）
- * WHERE: esp32-retro-ws/tests/host/test_framework.h
+ * WHERE: retro-ws/tests/host/test_framework.h
  * WHEN : 2026-10-04 新增
  * HOW  : CHECK* 宏：失败打印 文件:行 与表达式，累计失败数；
  *        main 返回 g_fail_count（0 = 全过，非零供 CI/变异脚本判定）

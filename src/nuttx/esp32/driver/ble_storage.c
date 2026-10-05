@@ -9,7 +9,7 @@
  * WHAT : BLE Bond 存储
  * WHY  : 配对信息持久化（重启自动重连）
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/esp32/driver/ble_storage.c
+ * WHERE: retro-ws/src/nuttx/esp32/driver/ble_storage.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : Bond 写入片上 Flash 分区
  */

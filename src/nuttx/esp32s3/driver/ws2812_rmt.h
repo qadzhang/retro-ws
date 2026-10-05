@@ -10,7 +10,7 @@
  *        RMT 硬件外设编码（HARDWARE.md 2.8 节，2026-10-04 晚定稿）；
  *        本头同时导出纯编码函数供宿主测试直链（tests/host）
  * WHO  : ble_hid.c（蓝牙状态指示）、esp32s3_retro.c（开机自检灯）
- * WHERE: esp32-retro-ws/src/nuttx/esp32s3/driver/ws2812_rmt.h
+ * WHERE: retro-ws/src/nuttx/esp32s3/driver/ws2812_rmt.h
  * WHEN : 2026-10-04 晚新增（替代 ble_hid.c 里点不亮的 gpio 直驱桩）
  * HOW  : open("/dev/rmt0") -> 24-bit GRB 编码成 RMT 符号字 -> write；
  *        /dev/rmt0 由 NuttX 树内 RMT 驱动链注册

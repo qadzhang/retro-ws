@@ -16,7 +16,7 @@
  * WHAT : xt_utils.h 覆盖
  * WHY  : 上游工具宏缺陷修正
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/esp32s3/chip/xt_utils.h
+ * WHERE: retro-ws/src/nuttx/esp32s3/chip/xt_utils.h
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : EXTRAFLAGS -I 覆盖
  */

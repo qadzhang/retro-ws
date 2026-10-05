@@ -9,7 +9,7 @@
  * WHAT : esp32c3 目标上电外设就位（GPIO/SD/控制台）
  * WHY  : CLI 工作站最小系统初始化
  * WHO  : esp32c3_retro.c 启动时调用
- * WHERE: esp32-retro-ws/src/nuttx/esp32c3/board/board.c
+ * WHERE: retro-ws/src/nuttx/esp32c3/board/board.c
  * WHEN : 2026-10-04 新增（骨架，待 deps 就绪后随 NuttX 初始化流程完善）
  * HOW  : 按 hw_esp32c3_luatos.h 引脚表配置；LED 状态指示低电平点亮
  */

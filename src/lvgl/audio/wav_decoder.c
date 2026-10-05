@@ -8,7 +8,7 @@
  * WHAT : WAV 解码器
  * WHY  : 播放器/录音机的音频文件解析
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/lvgl/audio/wav_decoder.c
+ * WHERE: retro-ws/src/lvgl/audio/wav_decoder.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : 解析 RIFF 头与 PCM 块，流式喂给音频驱动
  */

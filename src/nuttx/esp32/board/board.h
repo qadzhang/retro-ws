@@ -8,7 +8,7 @@
  * WHAT : ESP32-CAM 板级配置头
  * WHY  : 外设参数/内存映射/中断定义（引脚在硬件档案）
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/esp32/board/board.h
+ * WHERE: retro-ws/src/nuttx/esp32/board/board.h
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : #include hw_esp32cam_aithinker.h + 非引脚配置
  */

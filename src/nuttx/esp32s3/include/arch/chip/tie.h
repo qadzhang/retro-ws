@@ -18,7 +18,7 @@
  * WHAT : tie.h 覆盖（include 路径）
  * WHY  : 修正 XCHAL_CP_NUM
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/esp32s3/include/arch/chip/tie.h
+ * WHERE: retro-ws/src/nuttx/esp32s3/include/arch/chip/tie.h
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : src include 优先于 deps
  */

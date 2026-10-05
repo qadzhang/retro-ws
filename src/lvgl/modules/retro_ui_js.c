@@ -8,7 +8,7 @@
  * WHAT : retro_ui 的 Duktape JS 绑定
  * WHY  : JS 脚本调用 retro_ui.msgbox/input/list 等
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/lvgl/modules/retro_ui_js.c
+ * WHERE: retro-ws/src/lvgl/modules/retro_ui_js.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : duk_function_list 注册 retro_ui 全局对象
  */

@@ -10,7 +10,7 @@
  * WHY  : common 层 drv_player.c / drv_recorder.c 通过这些符号访问音频；
  *        此前驱动缺少 pause/resume/play_pcm/get_status，链接期缺符号
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/esp32/driver/audio/drv_audio.h
+ * WHERE: retro-ws/src/nuttx/esp32/driver/audio/drv_audio.h
  * WHEN : 2026-10-04 新增（对齐 common 播放器/录音机调用面）
  * HOW  : 声明与 drv_player.c 中的 extern 声明逐字一致
  */

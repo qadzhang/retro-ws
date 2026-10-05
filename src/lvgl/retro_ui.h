@@ -8,7 +8,7 @@
  * WHAT : retro_ui 胶水层头文件
  * WHY  : 统一 UI 接口契约（AGENTS.md 8.1）
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/lvgl/retro_ui.h
+ * WHERE: retro-ws/src/lvgl/retro_ui.h
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : retro_ui_* 函数原型
  */

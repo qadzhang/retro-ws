@@ -6,8 +6,8 @@
  * WHY  : ai-code-testing 规范：性能守护（回归门禁的基线来源）；
  *        CRC32 逐位表查实现 vs zlib 字节表实现应有同数量级吞吐
  * WHO  : tests/host/run_all.sh
- * WHERE: esp32/esp32-retro-ws/tests/host/bench_core.c 之
- *        esp32-retro-ws/tests/host/bench_core.c
+ * WHERE: esp32/retro-ws/tests/host/bench_core.c 之
+ *        retro-ws/tests/host/bench_core.c
  * WHEN : 2026-10-04 新增
  * HOW  : CLOCK_MONOTONIC 计时；断言吞吐下限（防"功能对但慢"
  *        的回归），输出 JSON 行供 CI 记录基线

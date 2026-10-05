@@ -8,7 +8,7 @@
  * WHAT : Win3.2 记事本
  * WHY  : 桌面文本编辑器（多标签/行号/搜索替换/文件读写/拼音输入）
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/lvgl/app/app_editor.c
+ * WHERE: retro-ws/src/lvgl/app/app_editor.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : LVGL textarea + 标签页管理，经 drv_pinyin 支持中文输入
  */

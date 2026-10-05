@@ -348,7 +348,7 @@ const char *retro_ui_get_lang(void);       // 获取当前语言
 ## 5. 文件结构 / File Structure
 
 ```
-/home/user/esp32-retro-ws/
+/home/user/retro-ws/
 +-- README.md                    # 项目说明
 +-- CODING_STANDARD.md          # 编码规范
 +-- REQUIREMENTS.md             # 需求说明书 (本文档)
@@ -436,7 +436,7 @@ const char *retro_ui_get_lang(void);       // 获取当前语言
 
 ```bash
 # 1. 下载依赖 / Download dependencies
-cd /home/user/esp32-retro-ws
+cd /home/user/retro-ws
 ./scripts/download_deps.sh
 
 # 2. 激活 ESP-IDF 环境 / Activate ESP-IDF

@@ -9,7 +9,7 @@
  * WHAT : DAC 音频驱动
  * WHY  : 内置 DAC2(GPIO26) 输出 + ADC(GPIO34) 输入
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/esp32/driver/audio/drv_audio_dac.c
+ * WHERE: retro-ws/src/nuttx/esp32/driver/audio/drv_audio_dac.c
  * WHEN : 2026-03~04 初版，2026-10-04 修复 DMA 启动/分块播放/补齐 API
  * HOW  : I2S0 DAC 模式（仅 I2S0 支持），双缓冲 DMA 环 + 描述符 owner 轮询
  */

@@ -10,7 +10,7 @@
  * WHY  : 复古教学设备的核心能力——脚本直接点灯/读按键/呼吸灯，
  *        无需写 C；与 retro_ui 同构的胶水层（AGENTS.md 8.1 模式）
  * WHO  : retro_gpio_{bas,js,berry,py}.c 各引擎绑定转发到本接口
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/retro_gpio.[ch]
+ * WHERE: retro-ws/src/nuttx/common/driver/retro_gpio.[ch]
  * WHEN : 2026-10-04 新增
  * HOW  : 策略层 + 后端层：
  *   - 策略层：查目标板"系统占用引脚表"（各板 board.c 提供的

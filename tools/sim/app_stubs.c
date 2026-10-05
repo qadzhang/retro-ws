@@ -10,7 +10,7 @@
  * WHY  : 模拟器聚焦桌面外壳本身；真实应用窗口依赖
  *        sqlite/wav/网络等设备，无头环境不可用
  * WHO  : tools/sim/build.sh 链接
- * WHERE: esp32-retro-ws/tools/sim/app_stubs.c
+ * WHERE: retro-ws/tools/sim/app_stubs.c
  * WHEN : 2026-10-04 新增
  * HOW  : 每个桩创建带标题标签的窗口对象，验证桌面装配不空转
  */

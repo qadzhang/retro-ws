@@ -10,7 +10,7 @@
  * WHY  : 低资源/低价格目标（RISC-V 单核 160MHz、400KB SRAM、无 PSRAM），
  *        不运行 LVGL/CVBS——定位纯 CLI 工作站，软件经 .rpk 包安装
  * WHO  : NuttX 启动流程（board 最终初始化）
- * WHERE: esp32-retro-ws/src/nuttx/esp32c3/esp32c3_retro.c
+ * WHERE: retro-ws/src/nuttx/esp32c3/esp32c3_retro.c
  * WHEN : 2026-10-04 新增
  * HOW  : C3 为单核（无双核分工）：主任务顺序初始化各模块后进入
  *        NSH 交互；控制台由 Kconfig 选择（经典款 UART0 / 简约款 USB）

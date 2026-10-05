@@ -8,7 +8,7 @@
  * WHAT : Cron 定时任务
  * WHY  : crontab 格式定时执行（shell/audio/tts/notify/reboot）
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/cron.c
+ * WHERE: retro-ws/src/nuttx/common/driver/cron.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : 分钟粒度扫描 /sdcard/etc/crontab，日志写 /sdcard/logs
  */
@@ -451,7 +451,7 @@ static int cron_parse_line(const char *line, struct cron_entry *entry)
  *   加载 crontab 文件到条目表 / Load crontab file into the entry table
  * WHY : 定时任务需要持久化恢复 / Cron entries must survive reboot
  * WHO : cron_init / `cron load` 命令 / cron_init / `cron load` command
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/cron.c
+ * WHERE: retro-ws/src/nuttx/common/driver/cron.c
  * WHEN : 2026-10-04 重写（原来按固定 255 字节分块 read，跨块截断长行）
  * HOW  : 一次性读入整个文件（上限 CRON_FILE_MAX），再按 '\n' 逐行切分解析
  * 返回值 / Return:

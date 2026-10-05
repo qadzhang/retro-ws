@@ -6,7 +6,7 @@
 # WHAT : 一键整体构建——固件（双目标）+ 可选安装包（GPL 独立 ELF）+ SD 分发目录
 # WHY  : 单一入口完成"固件不含 GPL + GPL 以独立程序交付"的完整编译流程
 # WHO  : ESP32-S3 Retro Project Team
-# WHERE: esp32-retro-ws/scripts/build_all.sh
+# WHERE: retro-ws/scripts/build_all.sh
 # WHEN : 2026-10-04 新增
 # HOW  : 串接 download_deps -> setup_tools -> scripts/<target>/build.sh ->
 #        build_packages.sh -> dist/sdcard/ 打包

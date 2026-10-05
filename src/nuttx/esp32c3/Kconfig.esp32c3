@@ -5,7 +5,7 @@
 # WHAT : ESP32-C3 目标（合宙核心板，CLI 工作站）menuconfig 配置
 # WHY  : 低资源/低价格第三目标；RISC-V 架构，纯 CLI + .rpk 包管理器
 # WHO  : NuttX Kconfig 系统扫描
-# WHERE: esp32-retro-ws/src/nuttx/esp32c3/Kconfig.esp32c3
+# WHERE: retro-ws/src/nuttx/esp32c3/Kconfig.esp32c3
 # WHEN : 2026-10-04 新增
 # HOW  : RETRO_ARCH 供 pkg_manager 做包架构匹配；无 LVGL/CPython 选项
 #

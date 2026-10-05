@@ -18,7 +18,7 @@
  * WHAT : tie.h 覆盖副本
  * WHY  : 修正 XCHAL_CP_NUM（BUILD_FIXES.md）
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/esp32s3/chip/esp-hal-3rdparty/components/xtensa/esp32s3/include/xtensa/config/tie.h
+ * WHERE: retro-ws/src/nuttx/esp32s3/chip/esp-hal-3rdparty/components/xtensa/esp32s3/include/xtensa/config/tie.h
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : EXTRAFLAGS -I 覆盖
  */

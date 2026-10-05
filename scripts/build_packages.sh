@@ -7,7 +7,7 @@
 # WHY  : GPL-2.0+ 组件以 mere aggregation（进程隔离）方式提供，固件 ROM 保持 Apache-2.0；
 #        同时验证 binfmt ELF 动态加载/软件安装链路
 # WHO  : ESP32-S3 Retro Project Team
-# WHERE: esp32-retro-ws/scripts/build_packages.sh（由 build_all.sh 或手动调用）
+# WHERE: retro-ws/scripts/build_packages.sh（由 build_all.sh 或手动调用）
 # WHEN : 2026-10-04 新增
 # HOW  : 下载上游源码 -> 同步 apps-extra/ 到 nuttx-apps/external/ ->
 #        LOADABLE 构建 -> 收集 .elf 与源码副本到 dist/sdcard/

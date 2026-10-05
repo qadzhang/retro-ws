@@ -9,7 +9,7 @@
  * WHAT : JS 脚本 retro_bus.i2c/spi/uart_* 对象方法
  * WHY  : machine 风格总线兼容层（HARDWARE.md 13.3）
  * WHO  : script_engines.c 的 duk 初始化调用 retro_bus_js_init()
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/retro_bus_js.c
+ * WHERE: retro-ws/src/nuttx/common/driver/retro_bus_js.c
  * WHEN : 2026-10-04(晚) 新增
  * HOW  : duk_push_c_function 注册到全局对象 retro_bus；
  *        字节缓冲用 JS 数组（读返回 number[]）

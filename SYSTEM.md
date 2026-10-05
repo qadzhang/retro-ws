@@ -89,7 +89,7 @@
 ## 源代码结构
 
 ```
-/home/user/esp32-retro-ws/
+/home/user/retro-ws/
 +-- README.md
 +-- SYSTEM.md                    # 本文件
 +-- CODING_STANDARD.md           # 编码规范

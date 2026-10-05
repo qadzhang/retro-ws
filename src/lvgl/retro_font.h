@@ -11,7 +11,7 @@
  *        320x240 控制台 + 640x480 桌面）共用 12px；12px 恰为中文
  *        Windows 3.2/95 界面宋体 9pt 点阵的历史标准字号
  * WHO  : src/lvgl 全部 UI 代码、cvbs_console、tools/sim 模拟器
- * WHERE: esp32-retro-ws/src/lvgl/retro_font.h
+ * WHERE: retro-ws/src/lvgl/retro_font.h
  * WHEN : 2026-10-04 定稿；2026-10-05 由两档收敛为单一 12px 档
  * HOW  : GUI 构建直接引用 LVGL 字体符号；CLI 构建（无 LVGL）经
  *        lvgl_font_compat.h 同一字体文件编译（见 cvbs_console）

@@ -12,7 +12,7 @@
  * WHY  : 分层单测各自为绿不足以证明链路接对——端到端"画什么
  *        显什么"才是视频输出的验收标准
  * WHO  : tools/sim/build.sh（CI 视觉闭环），glm 视觉审查读 PPM
- * WHERE: esp32-retro-ws/tools/sim/cvbs_pipeline.c
+ * WHERE: retro-ws/tools/sim/cvbs_pipeline.c
  * WHEN : 2026-10-04 新增
  * HOW  : 复用项目 lv_port_disp.c（而非模拟器自有端口），
  *        emit_line 强符号替换为波形采集器；解码同 test_cvbs

@@ -18,7 +18,7 @@
  * WHAT : 海龟画图核心（自研 Logo）
  * WHY  : 复古 Logo 小海龟绘图的核心状态机
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/lvgl/app/logo/logo_turtle.c
+ * WHERE: retro-ws/src/lvgl/app/logo/logo_turtle.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : logo_canvas_t 保存海龟状态，forward/left 等经注册的画线回调输出
  */

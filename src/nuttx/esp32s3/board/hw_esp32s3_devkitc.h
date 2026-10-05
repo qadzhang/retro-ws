@@ -8,7 +8,7 @@
  * WHAT : DevKitC-1 N16R8/N8R8 硬件档案
  * WHY  : 首选板引脚唯一事实来源（HARDWARE.md 1.2）
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/esp32s3/board/hw_esp32s3_devkitc.h
+ * WHERE: retro-ws/src/nuttx/esp32s3/board/hw_esp32s3_devkitc.h
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : 全部 GPIO 宏 + strapping/模组保留脚说明 + 分辨率档位
  */

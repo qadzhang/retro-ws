@@ -10,7 +10,7 @@
  * WHY  : 教学设备核心能力，统一走 retro_gpio.h（占用脚报"已占用"）
  * WHO  : script_engines.c 的 python_init() 调用 retro_gpio_py_init()
  *        （PyImport_AppendInittab 须在 Py_Initialize 之前）
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/retro_gpio_py.c
+ * WHERE: retro-ws/src/nuttx/common/driver/retro_gpio_py.c
  * WHEN : 2026-10-04 新增
  * HOW  : PyMethodDef 表 + PyModule_Create 内建模块
  *

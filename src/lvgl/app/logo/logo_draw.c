@@ -18,7 +18,7 @@
  * WHAT : 海龟画图 LVGL 后端
  * WHY  : 把海龟线段渲染到屏幕，并对外提供绘图上下文
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/lvgl/app/logo/logo_draw.c
+ * WHERE: retro-ws/src/lvgl/app/logo/logo_draw.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : logo_draw_line_cb 实现 LVGL 画线，logo_draw_create/get_canvas 供前端复用
  */

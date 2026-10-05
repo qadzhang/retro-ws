@@ -8,7 +8,7 @@
  * WHAT : 录音机驱动
  * WHY  : ADC 采样写 WAV 的后端通道
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/drv_recorder.c
+ * WHERE: retro-ws/src/nuttx/common/driver/drv_recorder.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : 分块采集 + RIFF 组包
  */

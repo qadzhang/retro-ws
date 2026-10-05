@@ -8,7 +8,7 @@
  * WHAT : 启动菜单
  * WHY  : 上电 3 秒倒计时选 GUI/CLI；连续 3 次 WDT 重启进安全模式
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/common/bootmenu.c
+ * WHERE: retro-ws/src/nuttx/common/bootmenu.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : bootctl 读取重启记录，倒计时超时按默认模式引导
  */

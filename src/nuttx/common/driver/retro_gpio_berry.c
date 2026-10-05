@@ -9,7 +9,7 @@
  * WHAT : Berry 脚本 retro_gpio_* 全局函数（教学 GPIO/ADC/PWM）
  * WHY  : 教学设备核心能力，统一走 retro_gpio.h（占用脚报"已占用"）
  * WHO  : script_engines.c 的 berry_init() 调用 retro_gpio_berry_init()
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/retro_gpio_berry.c
+ * WHERE: retro-ws/src/nuttx/common/driver/retro_gpio_berry.c
  * WHEN : 2026-10-04 新增
  * HOW  : be_regfunc 注册全局函数（CLI 目标 C3 也可用）
  *

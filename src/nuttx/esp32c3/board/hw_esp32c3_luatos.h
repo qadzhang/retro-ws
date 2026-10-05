@@ -11,7 +11,7 @@
  * WHY  : C3 是 RISC-V 单核（与 Xtensa 二进制不互通），定位纯 CLI +
  *        .rpk 包管理器装软件（无 LVGL/CVBS/摄像头，400KB SRAM 无 PSRAM）
  * WHO  : src/nuttx/esp32c3/ 全部板级代码
- * WHERE: esp32-retro-ws/src/nuttx/esp32c3/board/hw_esp32c3_luatos.h
+ * WHERE: retro-ws/src/nuttx/esp32c3/board/hw_esp32c3_luatos.h
  * WHEN : 2026-10-04 新增（HARDWARE.md 第 3A 章）；同日晚按 LuatOS wiki
  *        修正 LED 极性（GPIO12/13 高有效）与 Flash 占用（11=VDD_SPI、
  *        14-17=总线），GPIO10 释放为教学脚，CVBS 注释对齐 PDM 单脚方案

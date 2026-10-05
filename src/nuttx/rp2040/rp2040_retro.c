@@ -10,7 +10,7 @@
  * WHY  : 用户定的全局双核分工原则在 Pico 档的落地（本板无图形/
  *        音频，媒体核退化为文件服务核）
  * WHO  : board.c 的 board_late_initialize()（经 apps 集成层）
- * WHERE: esp32-retro-ws/src/nuttx/rp2040/rp2040_retro.c
+ * WHERE: retro-ws/src/nuttx/rp2040/rp2040_retro.c
  * WHEN : 2026-10-04 新增
  * HOW  : rp2040_retro_start() -> kthread_create(io 服务) 并以
  *        sched_setaffinity 钉到 CPU1；NSH 保持 CPU0 上下文

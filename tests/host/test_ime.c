@@ -10,7 +10,7 @@
  * WHY  : ai-code-testing 分层守护——CCDOS 形态是用户明确需求
  *        （2026-10-05），行为必须被测试钉死
  * WHO  : tests/host/run_all.sh 调度
- * WHERE: esp32-retro-ws/tests/host/test_ime.c
+ * WHERE: retro-ws/tests/host/test_ime.c
  * WHEN : 2026-10-05 新增
  * HOW  : 宿主直链 console+pinyin+ime；断言：条占用后滚动不侵入末行、
  *        statusline 含拼音与候选、feed 数字后正文出现 UTF-8 汉字、

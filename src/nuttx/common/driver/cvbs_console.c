@@ -15,7 +15,7 @@
  *        输出走 AV 视频输出），必须提供与 VT100 兼容的终端语义
  * WHO  : retro_boot / NSH(CONFIG_NSH_CONDEV=/dev/cvbscon) / nano
  *        / 测试 tests/host/test_cvbs_console.c
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/cvbs_console.c
+ * WHERE: retro-ws/src/nuttx/common/driver/cvbs_console.c
  * WHEN : 2026-10-04 新增；同日(晚)加 ANSI+字符设备+输入泵
  * HOW  : 字形 1bpp 行距 = ceil(box_w/8)；全角字 adv_w=12 对齐；
  *        direct luma 前景 255/背景 0；滚动 = 整屏 memmove；

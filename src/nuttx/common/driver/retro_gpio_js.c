@@ -9,7 +9,7 @@
  * WHAT : JS 脚本 retro_gpio.* 对象（config/write/read/adc/pwm/release）
  * WHY  : 教学设备核心能力，统一走 retro_gpio.h（占用脚报"已占用"）
  * WHO  : script_engines.c 的 duk_init() 调用 retro_gpio_js_init()
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/retro_gpio_js.c
+ * WHERE: retro-ws/src/nuttx/common/driver/retro_gpio_js.c
  * WHEN : 2026-10-04 新增
  * HOW  : duk_push_c_function 注册到全局对象 retro_gpio
  *

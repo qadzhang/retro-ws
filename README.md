@@ -112,7 +112,7 @@ cvbs_console（12px 点阵、12x14 网格）渲染（320x240，240p）。
 
 ```bash
 # 1. 下载所有依赖（源码）
-cd /home/user/esp32-retro-ws
+cd /home/user/retro-ws
 ./scripts/download_deps.sh
 
 # 2. 下载 ESP-IDF 工具链（使用 axel 多线程下载）
@@ -331,7 +331,7 @@ cd scripts/esp32c3 && ./nuttx_build.sh defconfig
 ## 目录结构
 
 ```
-esp32-retro-ws/
+retro-ws/
 +-- README.md              # 本文件
 +-- CODING_STANDARD.md     # 编码规范
 +-- SYSTEM.md              # 系统架构文档

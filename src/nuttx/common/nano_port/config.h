@@ -10,7 +10,7 @@
  * WHY  : deps/nano 上游源码不改（AGENTS.md 11.5），全部适配经
  *        本目录 -I 优先注入
  * WHO  : deps/nano/src/definitions.h (#include <config.h>)
- * WHERE: esp32-retro-ws/src/nuttx/common/nano_port/config.h
+ * WHERE: retro-ws/src/nuttx/common/nano_port/config.h
  * WHEN : 2026-10-04(晚) 新增
  * HOW  : autoconf 惯例——只定义"开启"的 HAVE_/ENABLE_ 宏，
  *        关闭的功能一律【不定义】（nano 用 #ifdef 判定，

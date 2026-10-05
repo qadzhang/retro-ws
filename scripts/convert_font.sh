@@ -7,7 +7,7 @@
 # WHY  : 简体中文是默认语言（AGENTS.md 7.1）；复古低分辨率用 1bpp
 #        纯点阵（无抗锯齿，体积仅 4bpp 的 1/4）
 # WHO  : 需要重生成/换字体时手工执行
-# WHERE: esp32-retro-ws/scripts/convert_font.sh
+# WHERE: retro-ws/scripts/convert_font.sh
 # WHEN : 2026-10-04 定稿（实测可用管线）
 # HOW  : 系统字体 NotoSansCJK-Regular.ttc --fonttools--> 单面 ttf
 #        --lv_font_conv--> LVGL C 字库；两档：

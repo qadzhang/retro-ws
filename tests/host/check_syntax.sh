@@ -7,7 +7,7 @@
 # WHY  : 捕获幻觉 API/错误包含路径——所有 src/ 下的 C 文件必须
 #        能在"真实 NuttX 12.12 + 真实 LVGL 9.5 头"下通过语法检查
 # WHO  : CI / tests/host/run_matrix.sh 调用；开发者提交前
-# WHERE: esp32-retro-ws/tests/host/check_syntax.sh
+# WHERE: retro-ws/tests/host/check_syntax.sh
 # WHEN : 2026-10-04 新增
 # HOW  : 1) 组装 realinc/（arch->xtensa/include 软链、chip 链到
 #           esp32s3 硬件头、最小 core-isa、空 config 兜底）

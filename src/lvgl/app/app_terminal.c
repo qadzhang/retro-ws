@@ -8,7 +8,7 @@
  * WHAT : Win3.2 终端模拟器
  * WHY  : GUI 内命令行（16 个内置命令/历史/ANSI 彩色/CLI 拼音）
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/lvgl/app/app_terminal.c
+ * WHERE: retro-ws/src/lvgl/app/app_terminal.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : 行输入 + 滚动输出区，命令经 nsh_cmds 接口分发
  */

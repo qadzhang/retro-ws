@@ -18,7 +18,7 @@
  * WHAT : 海龟画图核心头文件
  * WHY  : logo_turtle/logo_vm/logo_draw/jslogo 共享的类型与 API 契约
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/lvgl/app/logo/logo_turtle.h
+ * WHERE: retro-ws/src/lvgl/app/logo/logo_turtle.h
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : logo_canvas_t / logo_draw_line_cb / logo_turtle_* 原型
  */

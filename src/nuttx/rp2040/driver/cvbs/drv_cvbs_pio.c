@@ -11,7 +11,7 @@
  *        3B.2A，2026-10-04 定稿）：SM0 单指令 `out pins,4 [4]`，
  *        每 5 个 SM 周期输出一个 4-bit 样本到 GP12-15 → 4-bit R-2R
  * WHO  : Core1 视频生成任务（rp2040_retro 启动；双核分工规范）
- * WHERE: esp32-retro-ws/src/nuttx/rp2040/driver/cvbs/drv_cvbs_pio.c
+ * WHERE: retro-ws/src/nuttx/rp2040/driver/cvbs/drv_cvbs_pio.c
  * WHEN : 2026-10-04(晚) 新增；同日深夜移脚 GP20-23 -> GP12-15
  *        （GP23=SMPS PS 脚：视频位翻转会把 3V3 纹波调制进
  *        R-2R 基准；且 PIO OUT PINS 只能映射连续引脚）

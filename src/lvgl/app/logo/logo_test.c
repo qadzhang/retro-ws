@@ -18,7 +18,7 @@
  * WHAT : 海龟画图自测程序
  * WHY  : 开发期功能自检（不入正式固件）
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/lvgl/app/logo/logo_test.c
+ * WHERE: retro-ws/src/lvgl/app/logo/logo_test.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : 依次执行示例命令验证 logo_turtle/logo_vm 行为
  */

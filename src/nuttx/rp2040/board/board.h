@@ -7,7 +7,7 @@
  *
  * WHAT : 板级符号导出（占用表实例化 + 复位原因桩）
  * WHY  : 与其他三块板同构（board.c 唯一符号归属）
- * WHERE: esp32-retro-ws/src/nuttx/rp2040/board/board.h
+ * WHERE: retro-ws/src/nuttx/rp2040/board/board.h
  * WHEN : 2026-10-04 新增
  * HOW  : 包含硬件档案；声明 board_* 接口
  */

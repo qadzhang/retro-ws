@@ -9,7 +9,7 @@
  * WHAT : retro_bus.h 接口的实现（I2C/SPI/UART 三总线）
  * WHY  : 见头注释（machine 风格统一 + 后端探测）
  * WHO  : retro_bus_{bas,js,berry}.c；tests/host 可桩测分支逻辑
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/retro_bus.c
+ * WHERE: retro-ws/src/nuttx/common/driver/retro_bus.c
  * WHEN : 2026-10-04(晚) 新增
  * HOW  : 后端探测：open("/dev/i2cN"/"spiN"/"ttySN") 成功 → 硬件；
  *        失败 → retro_gpio 位摆软总线（I2C 开漏仿真 / SPI mode0）。

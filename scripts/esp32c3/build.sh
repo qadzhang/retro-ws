@@ -6,7 +6,7 @@
 # WHAT : ESP32-C3（合宙核心板）编译/烧录脚本
 # WHY  : 第三目标入口（CLI 工作站，RISC-V）
 # WHO  : 开发者
-# WHERE: esp32-retro-ws/scripts/esp32c3/build.sh
+# WHERE: retro-ws/scripts/esp32c3/build.sh
 # WHEN : 2026-10-04 新增
 # HOW  : 复用 nuttx_build.sh；烧录经 esptool（芯片 esp32c3）
 #

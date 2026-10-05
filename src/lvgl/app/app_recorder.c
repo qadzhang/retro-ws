@@ -8,7 +8,7 @@
  * WHAT : Win3.2 录音机
  * WHY  : 音频录制与回放（波形条形图/时长显示）
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/lvgl/app/app_recorder.c
+ * WHERE: retro-ws/src/lvgl/app/app_recorder.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : ADC 采集经 drv_recorder.c 写 WAV，回放走播放器通道
  */

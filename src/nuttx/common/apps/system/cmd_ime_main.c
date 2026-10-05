@@ -10,7 +10,7 @@
  *        显式唤起行内拼音；ime on 后屏幕底部出现常驻输入法条
  *        （CCDOS 显示方式），Ctrl+Q 或 ime off 释放
  * WHO  : NuttX builtin（retro-apps Application.mk 注册）
- * WHERE: esp32-retro-ws/src/nuttx/common/apps/system/cmd_ime_main.c
+ * WHERE: retro-ws/src/nuttx/common/apps/system/cmd_ime_main.c
  * WHEN : 2026-10-05 新增
  * HOW  : 薄壳转 cvbs_ime_enable/active；组合键：Ctrl+Space 中英、
  *        Ctrl+Q 关闭（在 cvbs_ime_feed 内处理）

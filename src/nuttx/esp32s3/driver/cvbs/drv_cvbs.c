@@ -11,7 +11,7 @@
  *        是 LCD_CAM 外设 I80 模式（HARDWARE.md 6.5，2026-10-04 定稿），
  *        8-bit 总线只接高/低 4 位到 4-bit R-2R 电阻梯（16 电平）
  * WHO  : common/driver/drv_cvbs.c 的 cvbs_core_generate_frame()
- * WHERE: esp32-retro-ws/src/nuttx/esp32s3/driver/cvbs/drv_cvbs.c
+ * WHERE: retro-ws/src/nuttx/esp32s3/driver/cvbs/drv_cvbs.c
  * WHEN : 2026-03 初版；2026-10-04 接 cvbs_core；同日(晚)重写为
  *        LCD_CAM+GDMA 真硬件流（原 I2S 桩只 memcpy 不上硬件）
  * HOW  : 帧缓冲 = 625 行 × 853 样本（PAL 隔行整帧，13.3333MHz 采样），

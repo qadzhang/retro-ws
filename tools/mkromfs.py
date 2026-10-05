@@ -9,7 +9,7 @@ WHAT : 把 firmware/scripts/<板>/ 下的 .bas/.be/.js 打包成 ROMFS 镜像，
 WHY  : 用户要求每板有脚本目录，编译期二进制化进 ROM，运行时从
        Flash 直接执行（XIP 语义，HARDWARE.md 13.4）
 WHO  : scripts/firmware/build_firmware.sh（同步 deps 后调用）
-WHERE: esp32-retro-ws/tools/mkromfs.py
+WHERE: retro-ws/tools/mkromfs.py
 WHEN : 2026-10-04(晚) 新增
 HOW  : ROMFS 格式按 NuttX fs/romfs/fs_romfs.h：
        卷头 "-rom1fs-" + be32 全尺寸 + be32 头 512B 异或校验 +

@@ -9,7 +9,7 @@
  * WHAT : BASIC 脚本 retro_gpio_* 函数（教学点灯/读按键/呼吸灯）
  * WHY  : 教学设备核心能力，统一走 retro_gpio.h（占用脚报"已占用"）
  * WHO  : script_engines.c 的 mybasic_init() 调用 retro_gpio_bas_register()
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/retro_gpio_bas.c
+ * WHERE: retro-ws/src/nuttx/common/driver/retro_gpio_bas.c
  * WHEN : 2026-10-04 新增
  * HOW  : mb_register_func 注册；读函数经 mb_push_int 返回值
  *

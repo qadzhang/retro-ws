@@ -8,7 +8,7 @@
  * WHAT : USB HID 驱动
  * WHY  : USB OTG 键鼠输入（GPIO19/20）
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/esp32s3/driver/usb_hid.c
+ * WHERE: retro-ws/src/nuttx/esp32s3/driver/usb_hid.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : USB 主机栈 HID 报告解析
  */

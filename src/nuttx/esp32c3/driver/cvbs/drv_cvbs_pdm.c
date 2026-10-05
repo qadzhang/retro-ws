@@ -12,7 +12,7 @@
  *        PDM TX raw 模式：DMA 供 16-bit 字，硬件按 PDM 时钟逐位
  *        直出（pcm2pdm 滤波旁路），单脚 sigma-delta DAC
  * WHO  : common/driver/drv_cvbs.c 的 cvbs_core_generate_frame()
- * WHERE: esp32-retro-ws/src/nuttx/esp32c3/driver/cvbs/drv_cvbs_pdm.c
+ * WHERE: retro-ws/src/nuttx/esp32c3/driver/cvbs/drv_cvbs_pdm.c
  * WHEN : 2026-10-04(晚) 新增
  * HOW  : 亮度 8-bit 样本 --一阶 sigma-delta--> 1-bit 流：
  *          acc += level;  bit = (acc >= 128);  acc -= bit ? 128 : 0

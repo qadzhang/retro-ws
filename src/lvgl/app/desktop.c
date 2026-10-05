@@ -8,7 +8,7 @@
  * WHAT : Win3.2 桌面外壳 + 外壳切换/应用派发
  * WHY  : 复古图形工作站的核心桌面（任务栏/开始菜单/程序管理器/窗口管理）
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/lvgl/app/desktop.c
+ * WHERE: retro-ws/src/lvgl/app/desktop.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : LVGL 控件组合，set_shell() 切换外壳，app_launch() 派发到各 create_* 窗口工厂
  */

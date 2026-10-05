@@ -8,7 +8,7 @@
  * WHAT : 自定义 NSH 命令
  * WHY  : sysinfo/fsk/display/nettest/reboothist/reboot/shell 等命令
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/common/apps/system/nsh_cmds.c
+ * WHERE: retro-ws/src/nuttx/common/apps/system/nsh_cmds.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : 命令表注册 + boardctl/驱动接口封装
  */
@@ -60,7 +60,7 @@
  * WHY : cmd_sysinfo 与 bootmenu 的 [S] 键共用同一份输出，
  *       抽取为可调用函数避免重复实现（bootmenu.c 通过 extern 引用）
  * WHO : cmd_sysinfo / bootmenu
- * WHERE: esp32-retro-ws/src/nuttx/common/apps/system/nsh_cmds.c
+ * WHERE: retro-ws/src/nuttx/common/apps/system/nsh_cmds.c
  * WHEN : 2026-10-04 从 cmd_sysinfo 中抽取
  * HOW  : printf 直出；mallinfo 统计堆内存
  * 注意 / Note:

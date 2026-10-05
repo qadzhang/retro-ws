@@ -8,7 +8,7 @@
  * WHAT : Win3.2 媒体播放器
  * WHY  : WAV 音频 GUI 播放（进度/音量/文件选择）
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/lvgl/app/app_player.c
+ * WHERE: retro-ws/src/lvgl/app/app_player.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : wav_decoder.c 解码 + drv_player.c 驱动 DAC/I2S 输出
  */

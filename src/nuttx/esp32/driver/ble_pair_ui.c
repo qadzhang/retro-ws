@@ -9,7 +9,7 @@
  * WHAT : BLE 配对 UI
  * WHY  : LVGL 图形化配对/设备管理
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/esp32/driver/ble_pair_ui.c
+ * WHERE: retro-ws/src/nuttx/esp32/driver/ble_pair_ui.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : 扫描列表 + 确认对话框
  */

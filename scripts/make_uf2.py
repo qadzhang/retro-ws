@@ -6,7 +6,7 @@ WHAT : nuttx.bin -> nuttx.uf2（RP2040 drag-flash 格式）
 WHY  : NuttX 的 UF2 生成依赖 picotool/pico-sdk；UF2 是极简容器，
       宿主直接打包免依赖
 WHO  : scripts/firmware/build_firmware.sh
-WHERE: esp32-retro-ws/scripts/make_uf2.py
+WHERE: retro-ws/scripts/make_uf2.py
 WHEN : 2026-10-04 新增
 HOW  : 512B 块：32B 头 + 476B 数据（RP2040 family 0xE48BFF56，
       flag 0x00002000），基址 0x10000000（XIP flash）

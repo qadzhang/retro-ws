@@ -8,7 +8,7 @@
  * WHAT : FSK 磁带驱动（S3）
  * WHY  : KCS 300 波特磁带调制解调
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/esp32s3/driver/fsk/drv_fsk.c
+ * WHERE: retro-ws/src/nuttx/esp32s3/driver/fsk/drv_fsk.c
  * WHEN : 2026-03~04 初版，2026-10-04 修复频率宏反逻辑/块大小/
  *        Goertzel 溢出，并如实标注 RX 现状
  * HOW  : 1200/2400Hz Goertzel 检测 + 调制输出

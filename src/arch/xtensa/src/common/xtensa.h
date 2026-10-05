@@ -35,7 +35,7 @@
  * WHAT : Xtensa 架构覆盖头
  * WHY  : 修复 NuttX tie.h XCHAL_CP_NUM 等缺陷（AGENTS.md 11.5）
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/arch/xtensa/src/common/xtensa.h
+ * WHERE: retro-ws/src/arch/xtensa/src/common/xtensa.h
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : include 路径优先级覆盖 deps 版本
  */

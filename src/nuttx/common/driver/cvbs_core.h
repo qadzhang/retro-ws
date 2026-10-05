@@ -12,7 +12,7 @@
  *        抽出核心后可在宿主机用"解码模拟器"验证时序与图像，
  *        设备层只负责把采样字节以 13.5MHz 推给 DAC/I2S
  * WHO  : drv_cvbs.c(S3)、drv_cvbs_dac.c(CAM)、tests/host CVBS 模拟器
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/cvbs_core.[ch]
+ * WHERE: retro-ws/src/nuttx/common/driver/cvbs_core.[ch]
  * WHEN : 2026-10-04 新增（修复原两份驱动各自缺垂直同步/时序
  *        常数不一致/flush 逻辑无效的问题，见 BUILD_FIXES.md）
  * HOW  : PAL-B 625 行 50Hz：

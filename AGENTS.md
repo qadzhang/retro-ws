@@ -132,7 +132,7 @@ int module_init(FAR struct module_config_s *config)
  * WHAT : 该文件/模块是什么、做什么
  * WHY  : 为什么存在，解决什么问题，谁依赖它
  * WHO  : 维护者（ESP32-S3 Retro Project Team，详见 git log）
- * WHERE: 所在路径及上下游模块（如 "esp32-retro-ws/src/...，上层见 SYSTEM.md"）
+ * WHERE: 所在路径及上下游模块（如 "retro-ws/src/...，上层见 SYSTEM.md"）
  * WHEN : 初版日期与最近标准化/重大修改日期
  * HOW  : 实现机制一句话（关键数据结构/外设/算法/调用链）
  */

@@ -8,7 +8,7 @@ WHAT: .rpk 包管理器差分 + PBT 测试（Python 工业级 oracle）
 WHY : C 实现自证不可信——用 Python 标准库（zlib.crc32 / tarfile /
       hashlib / 文件系统）作第三方裁判逐值比对
 WHO : tests/host/run_all.sh 调用
-WHERE: esp32-retro-ws/tests/host/python/test_rpkg_diff.py
+WHERE: retro-ws/tests/host/python/test_rpkg_diff.py
 WHEN : 2026-10-04 新增
 HOW : 1) Hypothesis 生成随机包树 -> GNU tar 打 ustar -> rpk_tool 安装
          -> 落盘字节/CRC/数据库逐项比对 -> 卸载 -> 状态还原（蜕变）
@@ -26,7 +26,7 @@ import zlib
 
 from hypothesis import given, settings, strategies as st, HealthCheck
 
-REPO = os.environ.get("REPO", "/home/user/esp32-retro-ws")
+REPO = os.environ.get("REPO", "/home/user/retro-ws")
 TOOL = os.environ.get("RPK_TOOL", "/tmp/retro_test/rpk_tool")
 TOOL_S3 = os.environ.get("RPK_TOOL_S3", "/tmp/retro_test/rpk_tool_s3")
 SB = os.environ.get("RPK_SB", "/tmp/retro_pbt")

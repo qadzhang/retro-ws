@@ -6,7 +6,7 @@
 # WHAT : .rpk 打包器（主机侧）——把"包源目录"打成 deb 风格安装包
 # WHY  : 设备端 pkg_manager 只做安装/卸载，打包在主机完成，保持固件精简
 # WHO  : build_packages.sh 调用；用户也可手工打包自有软件
-# WHERE: esp32-retro-ws/scripts/make_package.sh
+# WHERE: retro-ws/scripts/make_package.sh
 # WHEN : 2026-10-04 新增
 # HOW  : 包源目录 = control + manifest(可选) + 维护脚本(可选) + data/ 载荷树
 #        -> 排序拼装 -> tar --format=ustar -> <name>-<ver>.rpk

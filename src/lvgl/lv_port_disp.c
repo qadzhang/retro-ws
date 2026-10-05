@@ -15,7 +15,7 @@
  * WHY  : 把 LVGL 刷新接到 CVBS 显示驱动；CVBS 只携带亮度信号，
  *        L8 (8-bit luminance) 与之天然匹配，且无需调色板
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/lvgl/lv_port_disp.c
+ * WHERE: retro-ws/src/lvgl/lv_port_disp.c
  * WHEN : 2026-03~04 初版，2026-10-04 移除 9.5 不存在的 set_px/px_cb，改行拷贝
  * HOW  : PARTIAL 绘制缓冲 + disp_flush 逐行拷入全尺寸帧缓冲，
  *        再 drv_cvbs_send 送 CVBS；cvbs_core_set_direct_luma(true) 让

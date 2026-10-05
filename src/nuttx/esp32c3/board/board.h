@@ -9,7 +9,7 @@
  * WHAT : esp32c3 目标的非引脚配置（引脚全部在硬件档案中）
  * WHY  : 低资源/低价格目标，RISC-V 架构，纯 CLI + 包管理器
  * WHO  : src/nuttx/esp32c3/ 目标代码
- * WHERE: esp32-retro-ws/src/nuttx/esp32c3/board/board.h
+ * WHERE: retro-ws/src/nuttx/esp32c3/board/board.h
  * WHEN : 2026-10-04 新增
  * HOW  : #include 硬件档案 + 外设参数；无显示/音频配置（CLI-only）
  */

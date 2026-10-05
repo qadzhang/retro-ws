@@ -11,7 +11,7 @@
  *        事实（CAM GPIO17=PSRAM CLK、C3 12/13=LED 且 GPIO10 释放、
  *        Pico CVBS 移脚 GP12-15、S3 WS2812=38/48）必须被测试钉死
  * WHO  : tests/host/run_all.sh 调度
- * WHERE: esp32-retro-ws/tests/host/test_hw_profiles.c
+ * WHERE: retro-ws/tests/host/test_hw_profiles.c
  * WHEN : 2026-10-04 晚新增
  * HOW  : 四板 provider（hw_tab_*.c）各含档案落表 -> 本文件断言：
  *        L1 契约（板上 LED 脚全部被占 = 指示灯避让原则）+

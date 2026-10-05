@@ -6,7 +6,7 @@
  * WHY  : 蜕变/差分/PBT 验合法输入，fuzz 验畸形输入——SD 损坏包、
  *        恶意构造包都不能让安装器崩溃或死循环
  * WHO  : tests/host/run_all.sh（短跑）/ 夜间长跑（加 --long）
- * WHERE: esp32-retro-ws/tests/host/fuzz_tar.c
+ * WHERE: retro-ws/tests/host/fuzz_tar.c
  * WHEN : 2026-10-04 新增
  * HOW  : 三路轰炸（确定性 xorshift PRNG，崩溃可复现 seed）：
  *   1) 纯随机字节流

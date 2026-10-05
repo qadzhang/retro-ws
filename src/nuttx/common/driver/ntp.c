@@ -8,7 +8,7 @@
  * WHAT : NTP 对时
  * WHY  : 网络时间同步（默认阿里云，每小时一次）
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/ntp.c
+ * WHERE: retro-ws/src/nuttx/common/driver/ntp.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : UDP NTP 报文，成功后写入 RTC
  */

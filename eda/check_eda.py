@@ -11,7 +11,7 @@ WHAT : 校验 gen_eda.py 产出的 PCB/原理图 JSON：结构合法、层号正
 WHY  : 手写 EasyEDA 源文件最大的风险是分段字段错位与 DRC 级短路——
        生成后必须机器验证（ai-code-testing Layer 2 静态检查思想）
 WHO  : eda/ 维护者 + CI
-WHERE: esp32-retro-ws/eda/check_eda.py
+WHERE: retro-ws/eda/check_eda.py
 WHEN : 2026-10-04 晚新增
 HOW  : 逐 JSON 解析 -> TRACK 拆正交子段 -> 逐层做异网线段相交测试
        （平行共线按重叠判）；任一失败非零退出

@@ -12,7 +12,7 @@
  *        8-bit 调色板 256 色（REQUIREMENTS 2.2.1）——彩色截图展示
  *        目标视觉规格；README 文档配图
  * WHO  : tools/sim/build.sh 编译；docs/screenshots/ 消费
- * WHERE: esp32-retro-ws/tools/sim/lvgl_sim_color.c
+ * WHERE: retro-ws/tools/sim/lvgl_sim_color.c
  * WHEN : 2026-10-05 新增（README 截图需求）
  * HOW  : 与 lvgl_sim.c 同流程，仅显示格式 L8 -> RGB565；
  *        截图 PPM 为 RGB888（P6），转 PNG 时 quantize(256)

@@ -6,7 +6,7 @@
  * WHY  : .rpk 解析器与安装器是安全敏感路径（路径穿越/CRC/架构门禁），
  *        按 ai-code-testing 规范用"关系断言+工业级 oracle"绕开自证
  * WHO  : tests/host/run_all.sh 调度；变异测试复用本套（-DPKG_MGR_SRC）
- * WHERE: esp32-retro-ws/tests/host/test_pkgmanager.c
+ * WHERE: retro-ws/tests/host/test_pkgmanager.c
  * WHEN : 2026-10-04 新增
  * HOW  : 直接 #include 被测 .c 以触达 static 函数；
  *        oracle 来源：CRC32 标准校验值（RFC 1952 生态共识）、

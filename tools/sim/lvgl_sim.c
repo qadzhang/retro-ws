@@ -11,7 +11,7 @@
  * WHY  : GUI 代码的正确性（布局/中文/交互结构）只有在渲染出
  *        图像后才能被验证——模拟器让"看画面"进入 CI 闭环
  * WHO  : tools/sim/build.sh 编译运行；glm 视觉审查读输出的 PPM
- * WHERE: esp32-retro-ws/tools/sim/lvgl_sim.c
+ * WHERE: retro-ws/tools/sim/lvgl_sim.c
  * WHEN : 2026-10-04 新增
  * HOW  : lv_init -> 内存 display(I8 640x480, 调色板取自 cvbs_core)
  *        -> retro_desktop_init -> 若干帧 lv_timer_handler ->

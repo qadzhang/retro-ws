@@ -9,7 +9,7 @@
  * WHAT : BLE NSH 命令
  * WHY  : ble list/scan/pair/unpair/status 管理
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/esp32/driver/ble_nsh.c
+ * WHERE: retro-ws/src/nuttx/esp32/driver/ble_nsh.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : 命令行封装 ble_hid 接口
  */

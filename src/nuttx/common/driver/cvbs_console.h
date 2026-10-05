@@ -11,7 +11,7 @@
  * WHY  : AGENTS.md 7.3：所有板必须能经 AV 输出显示中文；CLI 档
  *        无 LVGL，由本模块 + lvgl_font_compat 直接驱动字体位图
  * WHO  : retro_boot（横幅/系统消息镜像）、NSH con 命令、后续 syslog
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/cvbs_console.[ch]
+ * WHERE: retro-ws/src/nuttx/common/driver/cvbs_console.[ch]
  * WHEN : 2026-10-04 新增
  * HOW  : UTF-8 解码 -> retro_compat_glyph_dsc/bitmap -> 1bpp 位图
  *        按 MSB-first 展开到 L8 亮度（direct luma 模式下 0/255）；

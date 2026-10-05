@@ -10,7 +10,7 @@ WHY : 用户要求"CLI 也可以正常显示使用中文"——串口控制台�
       UTF-8、无控制字符混入、NSH 输出串（printf 双语提示）
       编码正确；终端字形由 PC 侧 UTF-8 终端渲染
 WHO : tests/host/run_all.sh 第 8 项门禁
-WHERE: esp32-retro-ws/tests/host/python/check_cli_utf8.py
+WHERE: retro-ws/tests/host/python/check_cli_utf8.py
 WHEN : 2026-10-04 新增
 HOW : 1) 全仓 .c/.h/.bas/.be/.js/.py/.lgo 逐文件 UTF-8 解码校验
       2) 扫描源内字符串字面量中是否混入 C0 控制字符（\t \n \r 除外）
@@ -21,7 +21,7 @@ import os
 import re
 import sys
 
-ROOT = os.environ.get("REPO", "/home/user/esp32-retro-ws")
+ROOT = os.environ.get("REPO", "/home/user/retro-ws")
 EXTS = (".c", ".h", ".bas", ".be", ".js", ".py", ".lgo")
 SKIP_DIRS = {"deps", "tests/host/realinc", ".git"}
 

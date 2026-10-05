@@ -6,7 +6,7 @@
 # WHAT : Retro WS 核心的 apps 模块（同步副本在 deps/nuttx-apps/retro）
 # WHY  : NuttX 只编 apps 内模块；按 CONFIG 挑源（每型号裁剪点）
 # WHO  : NuttX apps 构建系统（$(APPDIR)/Application.mk）
-# WHERE: esp32-retro-ws/firmware/retro-apps/Makefile（真身）
+# WHERE: retro-ws/firmware/retro-apps/Makefile（真身）
 # WHEN : 2026-10-04 新增；同日加 AV 控制台/字库/双解释器
 # HOW  : CSRCS 按 RETRO_* 挑选；引擎源经 $(APPDIR)/../ 指向 deps；
 #        字体经 fontbridge（CLI 构建无 LVGL 时桥到兼容层）

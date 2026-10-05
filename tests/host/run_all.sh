@@ -7,7 +7,7 @@
 # WHY  : ai-code-testing 规范要求机器化收敛判定——一键跑齐
 #        单元/差分/PBT/模糊/变异/基准六类守护，任一失败即非零退出
 # WHO  : 开发者提交前、CI
-# WHERE: esp32-retro-ws/tests/host/run_all.sh
+# WHERE: retro-ws/tests/host/run_all.sh
 # WHEN : 2026-10-04 新增
 # HOW  : 依次构建并执行 test_pkgmanager / test_retro_gpio / test_cvbs /
 #        fuzz_tar(短跑) / python 差分+PBT / mutation(>=80%) / bench；

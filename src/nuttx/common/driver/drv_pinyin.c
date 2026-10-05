@@ -8,7 +8,7 @@
  * WHAT : 拼音输入驱动（CLI 行内 IME）
  * WHY  : 纯 CLI/安全模式下的中文输入（REQUIREMENTS 2.1.3，ime 命令待接）
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/drv_pinyin.c
+ * WHERE: retro-ws/src/nuttx/common/driver/drv_pinyin.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : 行内编辑 + 词库匹配 + 候选选择
  */
@@ -545,7 +545,7 @@ static cli_pinyin_state_t g_cli_state;
  * WHY : 单字词典是 UTF-8（汉字 3 字节），按字节迭代会把一个汉字拆成
  *       3 个残缺候选 / char dict is UTF-8; byte stepping splits hanzi
  * WHO : search_chars / cli 候选逻辑
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/drv_pinyin.c
+ * WHERE: retro-ws/src/nuttx/common/driver/drv_pinyin.c
  * WHEN : 2026-10-04 新增
  * HOW  : 依据首字节前导 1 的个数判断（RFC 3629）
  * 返回值 / Return: 1-4；非法首字节按 1 处理
@@ -589,7 +589,7 @@ static int search_phrases(const char *pinyin, const char *results[], int max_res
  * 功能描述 / WHAT: 按拼音前缀搜索单字候选 / Search single hanzi candidates
  * WHY : 候选必须按完整 UTF-8 序列拷贝（原实现逐字节拷贝产生残缺字节）
  * WHO : cli_show_candidates / cli_pinyin_input
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/drv_pinyin.c
+ * WHERE: retro-ws/src/nuttx/common/driver/drv_pinyin.c
  * WHEN : 2026-10-04 重写（UTF-8 安全 + 去掉恒等 expand_abbr 映射）
  * HOW  : 遍历词典命中项，utf8_seq_len 步进，整字 memcpy 进 results[][]
  * 返回值 / Return: 实际候选数 / number of candidates
@@ -640,7 +640,7 @@ static int search_chars(const char *pinyin,
  * 功能描述 / WHAT: 向输入缓冲追加 UTF-8 文本（带边界检查）
  * WHY : 原实现逐字节写入无容量检查，多字词可写穿 input_buf
  * WHO : cli_pinyin_input 的候选确认路径
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/drv_pinyin.c
+ * WHERE: retro-ws/src/nuttx/common/driver/drv_pinyin.c
  * WHEN : 2026-10-04 新增
  * HOW  : memcpy 定长 + 显式容量判断
  * 返回值 / Return: OK；-ENOSPC 缓冲已满

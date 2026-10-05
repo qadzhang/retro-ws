@@ -10,7 +10,7 @@
  *        Flash/PSRAM/双核引导，本文件若覆盖它会破坏启动——
  *        因此整体收进 CONFIG_RETRO_CUSTOM_STARTUP 守卫（默认未定义）
  * WHO  : 需要定制启动流程的开发者显式打开该宏后使用
- * WHERE: esp32-retro-ws/src/nuttx/esp32s3/chip/startup.c
+ * WHERE: retro-ws/src/nuttx/esp32s3/chip/startup.c
  * WHEN : 2026-03~04 初版；2026-10-04 修订（修复非法标识符/
  *        汇编约束/重复符号，见 BUILD_FIXES.md）
  * HOW  : _start(naked) 清 BSS/设栈 -> esp32s3_start() ->

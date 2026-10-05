@@ -7,7 +7,7 @@
 # WHY  : 把真实固件源（desktop/wmaker/i18n/lv_port_disp/drv_cvbs）
 #        与宿主 LVGL 库链接成无头模拟器
 # WHO  : 开发者与 CI（视觉验证闭环）
-# WHERE: esp32-retro-ws/tools/sim/build.sh
+# WHERE: retro-ws/tools/sim/build.sh
 # WHEN : 2026-10-04 新增
 # HOW  : 1) LVGL 9.5 源码编译为 /tmp/liblvgl_host.a
 #        2) lvgl_sim（桌面外壳渲染）与 cvbs_pipeline（全链路波形）

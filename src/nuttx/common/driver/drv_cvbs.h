@@ -11,7 +11,7 @@
  *        lv_port_disp.c 引用的接口在两份驱动里都不存在——统一后
  *        一份头文件 + 可移植实现 + 板级 weak 钩子
  * WHO  : lv_port_disp.c（LVGL flush）、esp32*_retro.c（启动）
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/drv_cvbs.[ch]
+ * WHERE: retro-ws/src/nuttx/common/driver/drv_cvbs.[ch]
  * WHEN : 2026-10-04 新增（补齐缺失代码，见 BUILD_FIXES.md）
  * HOW  : 帧缓冲/调色板/PAL 场时序全部来自 cvbs_core；
  *        每行波形经 drv_cvbs_emit_line()（weak 钩子）送往硬件——

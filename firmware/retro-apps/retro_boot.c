@@ -10,7 +10,7 @@
  * WHY  : NuttX 只认一个 init 入口；项目任务必须在 NSH 前起好，
  *        同时不能丢 NSH（CLI 是所有档位的基础交互）
  * WHO  : NuttX 启动代码（CONFIG_INIT_ENTRYPOINT="retro_boot_main"）
- * WHERE: esp32-retro-ws/firmware/retro-apps/retro_boot.c（真身，
+ * WHERE: retro-ws/firmware/retro-apps/retro_boot.c（真身，
  *        同步到 deps/nuttx-apps/retro/）
  * WHEN : 2026-10-04 新增
  * HOW  : 按架构挑 <board>_retro_start() -> nsh_main()；

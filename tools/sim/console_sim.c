@@ -10,7 +10,7 @@
  * WHY  : CLI 档全系走 AV 视频输出（AGENTS.md 7.3）；README 配图
  *        需要真实渲染路径的 240p 控制台样张（非示意图）
  * WHO  : tools/sim/build.sh 编译；docs/screenshots/ 消费
- * WHERE: esp32-retro-ws/tools/sim/console_sim.c
+ * WHERE: retro-ws/tools/sim/console_sim.c
  * WHEN : 2026-10-05 新增（README 截图需求）
  * HOW  : cvbs_core_fb_alloc(320,240) -> cvbs_console_init -> 写
  *        NSH 风格会话（中文+命令+输出）-> PGM 导出 -> PNG

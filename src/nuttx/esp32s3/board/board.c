@@ -9,7 +9,7 @@
  * WHAT : ESP32-S3 板级初始化
  * WHY  : GPIO/SPI/外设时钟就位
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/esp32s3/board/board.c
+ * WHERE: retro-ws/src/nuttx/esp32s3/board/board.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : 按 hw_esp32s3_devkitc.h 引脚表配置
  */

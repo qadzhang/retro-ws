@@ -10,7 +10,7 @@
  * WHY  : 软件安装不能是"拷一个 ELF 完事"——需要元数据、依赖检查、
  *        维护脚本、安装数据库，支持安装/卸载/查询（参考 /var/lib/dpkg）
  * WHO  : NSH `pkg` 命令（nsh_cmds.c）与后续 GUI 软件中心
- * WHERE: esp32-retro-ws/src/nuttx/common/apps/system/pkg_manager.[ch]
+ * WHERE: retro-ws/src/nuttx/common/apps/system/pkg_manager.[ch]
  * WHEN : 2026-10-04 新增
  * HOW  : .rpk = USTAR tar 容器（512 字节流式解析，适合 ESP32 小内存）：
  *

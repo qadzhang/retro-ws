@@ -6,7 +6,7 @@
 # WHAT : ESP32-C3（合宙核心板，RISC-V）NuttX 编译脚本
 # WHY  : 第三目标需要独立配置与 RISC-V 工具链
 # WHO  : 开发者手动或 build_all.sh 调用
-# WHERE: esp32-retro-ws/scripts/esp32c3/nuttx_build.sh
+# WHERE: retro-ws/scripts/esp32c3/nuttx_build.sh
 # WHEN : 2026-10-04 新增
 # HOW  : 仿 esp32cam 流程，工具链换 riscv32-esp-elf
 #

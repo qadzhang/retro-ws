@@ -8,7 +8,7 @@
  * WHAT : 多语种框架实现
  * WHY  : 中英双语界面（zh_CN 默认 / en_US）
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/lvgl/i18n.c
+ * WHERE: retro-ws/src/lvgl/i18n.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : 键值字符串表 + 当前语言切换，语言设置持久化到存储
  */

@@ -9,7 +9,7 @@
  * WHAT : 策略层（占用拦截）+ 后端层（NuttX 设备驱动）实现
  * WHY  : 教学场景要"能操作"，系统稳定性要"不越界"——两层各司其职
  * WHO  : retro_gpio_{bas,js,berry,py}.c 经 retro_gpio.h 调用
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/retro_gpio.c
+ * WHERE: retro-ws/src/nuttx/common/driver/retro_gpio.c
  * WHEN : 2026-10-04 新增；2026-10-04 按 NuttX 12.12 真实头文件
  *        （include/nuttx/ioexpancer/gpio.h 等）修正 ioctl 用法
  * HOW  : 每个入口先查 g_retro_gpio_occupied（含 reason 提示），

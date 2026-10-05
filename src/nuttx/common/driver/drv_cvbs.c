@@ -10,7 +10,7 @@
  * WHY  : 见 drv_cvbs.h 头注释；信号语义集中在 cvbs_core，
  *        本层只做帧缓冲生命周期与场调度
  * WHO  : lv_port_disp.c / esp32*_retro.c / 宿主机模拟器
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/drv_cvbs.c
+ * WHERE: retro-ws/src/nuttx/common/driver/drv_cvbs.c
  * WHEN : 2026-10-04 新增
  * HOW  : init -> cvbs_core_fb_alloc(显示分辨率)；
  *        send -> 拷贝进帧缓冲；frame -> cvbs_core_generate_frame(

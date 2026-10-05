@@ -9,7 +9,7 @@
  * WHAT : BLE HID 驱动（CAM）
  * WHY  : 蓝牙键鼠（NimBLE），GPIO4 闪光灯状态指示
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/esp32/driver/ble_hid.c
+ * WHERE: retro-ws/src/nuttx/esp32/driver/ble_hid.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : GAP 扫描连接 + HID 报告上报 + Bond 自动重连
  */

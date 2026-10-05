@@ -8,7 +8,7 @@
  * WHAT : RTC 驱动
  * WHY  : 外置 RTC（DS1307/PCF8563/RV-3028）读写
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/drv_rtc.c
+ * WHERE: retro-ws/src/nuttx/common/driver/drv_rtc.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : 软件 I2C（引脚见各板硬件档案）
  */
@@ -110,7 +110,7 @@ static int g_rtc_i2c_port = -1;
  * WHY : NuttX 用户态驱动的标准做法是 I2C 字符设备 + I2CIOC_TRANSFER
  *       （原 I2C_TRANSFER() 宏仅内核侧可用，用户态无该符号）
  * WHO : RTC 驱动内部
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/drv_rtc.c
+ * WHERE: retro-ws/src/nuttx/common/driver/drv_rtc.c
  * WHEN : 2026-10-04 修复编译错误时重写
  * HOW  : open("/dev/i2cN") → ioctl(I2CIOC_TRANSFER, &i2c_transfer_s)
  *       结构体定义见 deps/nuttx/include/nuttx/i2c/i2c_master.h:267

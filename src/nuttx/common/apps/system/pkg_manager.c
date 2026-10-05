@@ -10,7 +10,7 @@
  * WHY  : 软件交付需要元数据+依赖+维护脚本+数据库，而非裸拷 ELF；
  *        GPL 组件经此通道以独立程序形态安装（许可证隔离不变）
  * WHO  : cmd_pkg（nsh_cmds.c）转发用户命令
- * WHERE: esp32-retro-ws/src/nuttx/common/apps/system/pkg_manager.c
+ * WHERE: retro-ws/src/nuttx/common/apps/system/pkg_manager.c
  * WHEN : 2026-10-04 新增；同日修订（安全+健壮性，见 BUILD_FIXES.md）
  * HOW  : 流式解析 tar（512B 块缓冲，不整包载入内存）：
  *        control -> 架构/依赖/已装检查 -> 脚本入库(info/<pkg>.<名>) ->

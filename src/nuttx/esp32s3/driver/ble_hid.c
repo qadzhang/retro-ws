@@ -8,7 +8,7 @@
  * WHAT : BLE HID 驱动（S3）
  * WHY  : 蓝牙键鼠（NimBLE），WS2812 状态指示
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/esp32s3/driver/ble_hid.c
+ * WHERE: retro-ws/src/nuttx/esp32s3/driver/ble_hid.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）；
  *        同日晚 LED 改走 ws2812_rmt（RMT 硬件外设）
  * HOW  : GAP 扫描连接 + HID 报告上报；LED 经 /dev/rmt0 RMT 硬件驱动

@@ -8,7 +8,7 @@
  * WHAT : curl/wget 网络工具
  * WHY  : HTTP 抓取与文件下载（浏览器/脚本共用）
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/common/network_utils.c
+ * WHERE: retro-ws/src/nuttx/common/network_utils.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : socket 直连 HTTP/1.1，分块写文件
  */
@@ -62,7 +62,7 @@
  * WHY : 原实现 strcpy/strncpy 无边界检查，长 URL 直接打爆 256 字节栈缓冲；
  *       且带端口时 path 被截断成 "/"
  * WHO : curl_get / wget_download
- * WHERE: esp32-retro-ws/src/nuttx/common/network_utils.c
+ * WHERE: retro-ws/src/nuttx/common/network_utils.c
  * WHEN : 2026-10-04 重写
  * HOW  : 指针扫描 + snprintf("%.*s") 有界拷贝；超长返回 -ENAMETOOLONG
  * 参数 / Params:

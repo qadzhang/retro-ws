@@ -8,7 +8,7 @@
  * WHAT : Win3.2 简易浏览器
  * WHY  : 复古网页浏览（URL 栏/前进后退/书签/纯文本 HTML 渲染）
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/lvgl/app/app_browser.c
+ * WHERE: retro-ws/src/lvgl/app/app_browser.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : network_utils.c 拉取 HTML，简易解析为文本+链接，LVGL label 渲染
  */

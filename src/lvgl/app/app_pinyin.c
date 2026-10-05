@@ -8,7 +8,7 @@
  * WHAT : 拼音输入法 GUI 组件（LVGL 9.5 重写版）
  * WHY  : GUI 全环境中文输入（REQUIREMENTS 2.1.3）
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/lvgl/app/app_pinyin.c
+ * WHERE: retro-ws/src/lvgl/app/app_pinyin.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 LVGL 9.5 API 全量重写（5W1H, AGENTS.md 4.0）
  * HOW  : 拼音串匹配 pinyin_ime.c 词库，候选框选择后注入 LVGL textarea
  */

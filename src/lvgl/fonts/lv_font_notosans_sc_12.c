@@ -10,7 +10,7 @@
  *        9pt=12px 点阵；拉丁侧 Win3.x MS Sans Serif 8pt≈11px 同级
  *        （字号考证记录见 HARDWARE.md 6.4，2026-10-05）
  * WHO  : RETRO_FONT_DEFAULT（GUI 构建档）全部 UI 控件
- * WHERE: esp32-retro-ws/src/lvgl/fonts/lv_font_notosans_sc_12.c（脚本再
+ * WHERE: retro-ws/src/lvgl/fonts/lv_font_notosans_sc_12.c（脚本再
  *        生成后需补回本头：scripts/convert_font.sh）
  * WHEN : 2026-10-05 新增（用户字号考据需求）
  * HOW  : lv_font_conv 1bpp --no-prefilter，同 16px 档字型与字符集；
@@ -20,7 +20,7 @@
 /*******************************************************************************
  * Size: 12 px
  * Bpp: 1
- * Opts: --no-prefilter --bpp 1 --size 12 --font /tmp/tmp.mDvqPDMgEJ/NotoSansSC-Regular.ttf -r 0x20-0x7F,0x3000-0x303F,0x4E00-0x9FFF,0xFF00-0xFFEF,0x2018-0x201D,0x2026 --format lvgl -o /home/user/esp32-retro-ws/src/lvgl/fonts/lv_font_notosans_sc_12.c
+ * Opts: --no-prefilter --bpp 1 --size 12 --font /tmp/tmp.mDvqPDMgEJ/NotoSansSC-Regular.ttf -r 0x20-0x7F,0x3000-0x303F,0x4E00-0x9FFF,0xFF00-0xFFEF,0x2018-0x201D,0x2026 --format lvgl -o /home/user/retro-ws/src/lvgl/fonts/lv_font_notosans_sc_12.c
  ******************************************************************************/
 
 #ifdef LV_LVGL_H_INCLUDE_SIMPLE

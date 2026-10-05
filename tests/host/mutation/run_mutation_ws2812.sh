@@ -7,7 +7,7 @@
 # WHY  : 测试全绿不等于测试有效——主动改坏时序/顺序/电平，
 #        看 test_ws2812 能否抓到（ai-code-testing 阶段 6）
 # WHO  : tests/host/run_all.sh（或手工执行）
-# WHERE: esp32-retro-ws/tests/host/mutation/run_mutation_ws2812.sh
+# WHERE: retro-ws/tests/host/mutation/run_mutation_ws2812.sh
 # WHEN : 2026-10-04 晚新增
 # HOW  : 对 ws2812_rmt.c 副本逐一注入单点变异（sed 表驱动），
 #        重编 test_ws2812 后运行；退出非零/崩溃 = 变异被杀；

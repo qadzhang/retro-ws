@@ -26,7 +26,7 @@
  * WHAT : CPU 信息接口
  * WHY  : 向 NSH sysinfo 提供核数/架构信息
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/arch/xtensa/src/common/xtensa_cpuinfo.c
+ * WHERE: retro-ws/src/arch/xtensa/src/common/xtensa_cpuinfo.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : Xtensa 特殊寄存器读取
  */

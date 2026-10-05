@@ -9,7 +9,7 @@
  * WHAT : ESP32-CAM 主入口（兼容目标）
  * WHY  : 双核任务装配：Core0 图形音频 / Core1 系统网络
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/esp32/esp32_retro.c
+ * WHERE: retro-ws/src/nuttx/esp32/esp32_retro.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : 与 S3 模板同构，外设按 CAM 硬件档案
  */

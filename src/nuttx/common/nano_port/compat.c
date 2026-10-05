@@ -10,7 +10,7 @@
  * WHY  : deps/nano/src/files.c:1482 原生调用（安全临时文件做
  *        ^O 原子写盘），上游源码不改（AGENTS.md 11.5）
  * WHO  : GNU nano files.c
- * WHERE: esp32-retro-ws/src/nuttx/common/nano_port/compat.c
+ * WHERE: retro-ws/src/nuttx/common/nano_port/compat.c
  * WHEN : 2026-10-04(晚) 新增
  * HOW  : 模板 "XXXXXX" 在后缀前——循环：随机填充 X → O_CREAT|O_EXCL
  *        open 成功即返回 fd（glibc mkstemps 语义）

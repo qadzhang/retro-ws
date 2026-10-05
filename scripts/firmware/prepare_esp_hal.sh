@@ -7,7 +7,7 @@
 # WHY  : NuttX 构建默认 git clone+submodule；本脚本用 GitHub API
 #        tarball 装配同 commit 快照并把补丁步骤幂等化
 # WHO  : scripts/firmware/build_firmware.sh（首次/重建 deps 时调用）
-# WHERE: esp32-retro-ws/scripts/firmware/prepare_esp_hal.sh
+# WHERE: retro-ws/scripts/firmware/prepare_esp_hal.sh
 # WHEN : 2026-10-04 新增
 # HOW  : 对 esp32 / esp32s3 / esp32c3 三处：
 #        1) tarball 拉 HAL @ NuttX Make.defs 锁定的 commit

@@ -7,7 +7,7 @@
 # WHY  : NuttX 只编译 apps/ 内的模块；src/ 是仓库真身，
 #        同步副本进 deps/nuttx-apps/retro（deps 不入库）
 # WHO  : scripts/build_firmware.sh（每次构建前调用）
-# WHERE: esp32-retro-ws/scripts/sync_src_to_apps.sh
+# WHERE: retro-ws/scripts/sync_src_to_apps.sh
 # WHEN : 2026-10-04 新增
 # HOW  : rsync 四棵树到 apps/retro/src/{common,esp32s3,esp32,esp32c3,rp2040}
 #        + lvgl 源到 apps/retro/src/lvgl（CONFIG_RETRO_LVGL 时编译）

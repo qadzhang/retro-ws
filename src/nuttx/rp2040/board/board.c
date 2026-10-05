@@ -8,7 +8,7 @@
  * WHAT : 占用表实例化 + 板信息接口（NuttX raspberrypi-pico 板已
  *        处理时钟/UART/flash 初始化，本文件只补项目层）
  * WHY  : 符号唯一归属；脚本 GPIO 拦截数据源
- * WHERE: esp32-retro-ws/src/nuttx/rp2040/board/board.c
+ * WHERE: retro-ws/src/nuttx/rp2040/board/board.c
  * WHEN : 2026-10-04 新增
  * HOW  : RETRO_GPIO_OCCUPIED_LIST 落表；复位原因走 NuttX 接口
  */

@@ -9,7 +9,7 @@
  * WHAT : BASIC 脚本 retro_i2c/spi/uart_* CALL/函数
  * WHY  : machine 风格总线兼容层（HARDWARE.md 13.3）
  * WHO  : script_engines.c 的 mybasic_init() 调用 retro_bus_bas_register()
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/retro_bus_bas.c
+ * WHERE: retro-ws/src/nuttx/common/driver/retro_bus_bas.c
  * WHEN : 2026-10-04(晚) 新增
  * HOW  : mb_register_func；字节流接口用十进制字符串（BASIC 无
  *        bytes 类型：写=逗号分隔十进制串，读=返回同格式串）

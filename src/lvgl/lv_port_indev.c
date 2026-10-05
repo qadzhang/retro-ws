@@ -16,7 +16,7 @@
  * WHAT : LVGL 输入设备端口
  * WHY  : 把 USB/BLE HID 键鼠接入 LVGL
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/lvgl/lv_port_indev.c
+ * WHERE: retro-ws/src/lvgl/lv_port_indev.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : read 回调轮询 HID 驱动，映射键值与坐标
  */

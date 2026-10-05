@@ -8,7 +8,7 @@
  * WHAT : WiFi/网络
  * WHY  : STA 连接/DHCP/DNS 与 ping/netstat/ifconfig
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/network.c
+ * WHERE: retro-ws/src/nuttx/common/driver/network.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : NuttX 网络栈 + WiFi 驱动封装
  */
@@ -151,7 +151,7 @@ int wifi_get_status(struct wifi_status *status)
  * 功能描述 / WHAT: 查询 WiFi 链路是否已连接 / Query WiFi link state
  * WHY : NTP 同步（ntp.c）等模块需要在动作前确认链路可用
  * WHO : ntp.c / 其他 common 模块 / other common modules
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/network.c
+ * WHERE: retro-ws/src/nuttx/common/driver/network.c
  * WHEN : 2026-10-04 新增（原为 ntp.c 中未定义的 extern bool）
  * HOW  : 读取本模块 g_wifi 状态机的当前值
  * 返回值 / Return: 1=已连接 / 1=connected, 0=未连接 / 0=not connected
@@ -165,7 +165,7 @@ int wifi_is_connected(void)
  * 功能描述 / WHAT: 请求 WiFi 重连 / Request a WiFi reconnect
  * WHY : cron 的 wifi_reconnect 定时任务（cron.c）需要一个真实入口
  * WHO : cron.c / 用户
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/network.c
+ * WHERE: retro-ws/src/nuttx/common/driver/network.c
  * WHEN : 2026-10-04 新增（原为 cron.c 中未定义的 extern）
  * HOW  : 记录重连请求标志；当前固件没有后台网络监控任务消费该标志，
  *       仅置状态为 CONNECTING 后返回 -ENOSYS 提示未完成
@@ -269,7 +269,7 @@ static uint16_t icmp_checksum(const uint16_t *data, int len_bytes)
  * 功能描述 / WHAT: ICMP ping 命令 / ICMP ping command
  * WHY : 网络连通性诊断 / connectivity diagnostics
  * WHO : 用户在 NSH 调用 / NSH user
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/network.c
+ * WHERE: retro-ws/src/nuttx/common/driver/network.c
  * WHEN : 2026-10-04 重写（原实现不发包却累加 sent，统计全是假数据）
  * HOW  : SOCK_RAW + IPPROTO_ICMP，手工组 Echo Request（RFC 792），
  *       sendto/recvfrom 收发并用 gettimeofday 计 RTT；

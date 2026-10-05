@@ -9,7 +9,7 @@
  * WHY  : WS2812 单线协议时序 ns 级，gpio 直驱点不亮（HARDWARE.md 2.8），
  *        RMT 外设硬件生成波形，CPU 零参与——"真外设不软模拟"规范 13.1
  * WHO  : ble_hid.c（蓝牙状态）、esp32s3_retro.c（开机自检）、宿主测试
- * WHERE: esp32-retro-ws/src/nuttx/esp32s3/driver/ws2812_rmt.c
+ * WHERE: retro-ws/src/nuttx/esp32s3/driver/ws2812_rmt.c
  * WHEN : 2026-10-04 晚新增
  * HOW  : 编码 24-bit GRB 为 RMT 符号字（每 bit 两相：高电平相在前，
  *        bit15=第一相电平；第二相电平位=0），尾附复位低电平符号；

@@ -9,7 +9,7 @@
  * WHY  : ai-code-testing 分层守护——RMT 符号字时序错了 LED 全灭/乱色，
  *        且真机上肉眼只能看结果无法看时序，必须宿主端锁死性质
  * WHO  : tests/host/run_all.sh 调度
- * WHERE: esp32-retro-ws/tests/host/test_ws2812.c
+ * WHERE: retro-ws/tests/host/test_ws2812.c
  * WHEN : 2026-10-04 晚新增（随 ws2812_rmt.c 硬件驱动落地）
  * HOW  : 直链被测源（-DWS2812_TEST_HOST 裁掉设备 IO），断言：
  *        L1 契约（数据手册时序窗）+ L3 蜕变（周期守恒/位反转对称/

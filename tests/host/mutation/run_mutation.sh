@@ -6,7 +6,7 @@
 # WHAT : pkg_manager 变异测试 / mutation testing for the .rpk core
 # WHY  : 测试全绿不等于测试有效——主动改坏实现，看测试能否抓到
 # WHO  : tests/host/run_all.sh（或手工执行）
-# WHERE: esp32-retro-ws/tests/host/mutation/run_mutation.sh
+# WHERE: retro-ws/tests/host/mutation/run_mutation.sh
 # WHEN : 2026-10-04 新增
 # HOW  : 对 pkg_manager.c 的副本逐一注入单点变异（sed 表驱动），
 #        用 -DPKG_MGR_SRC 重编 test_pkgmanager 后运行；

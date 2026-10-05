@@ -9,7 +9,7 @@
  * WHAT : 调色板/帧缓冲/绘制/PAL 行与场时序编码的硬件无关实现
  * WHY  : 见 cvbs_core.h 头注释（两板共用 + 宿主机可验证）
  * WHO  : drv_cvbs.c(S3)、drv_cvbs_dac.c(CAM)、tests/host CVBS 模拟器
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/cvbs_core.c
+ * WHERE: retro-ws/src/nuttx/common/driver/cvbs_core.c
  * WHEN : 2026-10-04 新增
  * HOW  : 纯 C 无硬件依赖；帧缓冲堆分配；所有绘制越界裁剪。
  *        场时序为 PAL-B 工程近似（均衡/宽脉冲宽度按 13.5MHz 取整），

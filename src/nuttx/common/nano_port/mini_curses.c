@@ -10,7 +10,7 @@
  * WHY  : NuttX 无 ncurses；AV 控制台（cvbs_console）与 VT100 串口
  *        终端都讲 ANSI CSI——虚拟屏 + diff 刷新即可全屏编辑
  * WHO  : deps/nano/src/*.c（经 nano_port/curses.h）
- * WHERE: esp32-retro-ws/src/nuttx/common/nano_port/mini_curses.c
+ * WHERE: retro-ws/src/nuttx/common/nano_port/mini_curses.c
  * WHEN : 2026-10-04(晚) 新增
  * HOW  : 单元格 = {UTF-32 码点, 属性}，宽字符占双列（第二列标
  *        WCONT 标志）；doupdate 比对虚拟屏/上屏，最小转义输出；

@@ -5,7 +5,7 @@
 # WHAT : UCBLogo 的 NuttX LOADABLE 应用构建规则
 # WHY  : 以独立 ELF 形态产出 GPL 解释器，与固件 ROM 解耦（许可证隔离）
 # WHO  : ESP32-S3 Retro Project Team
-# WHERE: esp32-retro-ws/apps-extra/ucblogo/Makefile（同步到
+# WHERE: retro-ws/apps-extra/ucblogo/Makefile（同步到
 #        deps/nuttx-apps/external/ucblogo/ 后参与构建）
 # WHEN : 2026-10-04 新增
 # HOW  : Application.mk + SPAWN_OBJECT_TYPE=ELF；源码 src/*.c 由

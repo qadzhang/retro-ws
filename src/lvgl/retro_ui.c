@@ -8,7 +8,7 @@
  * WHAT : retro_ui 胶水层 C 核心
  * WHY  : 所有脚本引擎共用的 LVGL 对话框/进度/状态服务
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/lvgl/retro_ui.c
+ * WHERE: retro-ws/src/lvgl/retro_ui.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : LVGL msgbox/键盘/列表控件封装 + i18n 翻译
  */

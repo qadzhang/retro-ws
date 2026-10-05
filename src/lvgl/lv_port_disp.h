@@ -15,7 +15,7 @@
  * WHAT : LVGL 显示端口头文件
  * WHY  : 显示端口对外契约
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/lvgl/lv_port_disp.h
+ * WHERE: retro-ws/src/lvgl/lv_port_disp.h
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : 初始化原型
  */

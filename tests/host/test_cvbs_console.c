@@ -6,7 +6,7 @@
  * WHY  : CLI 档的字形查找是 LVGL 语义复刻——必须与真库逐值一致；
  *        控制台渲染经解码器还原成 PGM 供视觉验收
  * WHO  : tests/host/run_all.sh
- * WHERE: esp32-retro-ws/tests/host/test_cvbs_console.c
+ * WHERE: retro-ws/tests/host/test_cvbs_console.c
  * WHEN : 2026-10-04 新增
  * HOW  : 1) 兼容层 glyph_dsc vs LVGL lv_font_get_glyph_dsc 差分
  *           （ASCII + 抽样 CJK + 边界）

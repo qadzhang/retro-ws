@@ -12,7 +12,7 @@
  *        侵入正文滚动区（rows_eff-1），其他命令照常运行（用户
  *        需求 2026-10-05；REQUIREMENTS 2.1.3 CLI IME / NEXT_STEPS 20）
  * WHO  : cvbs_console 键盘泵 + NSH `ime` 命令 + tests/host/test_ime.c
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/cvbs_ime.c
+ * WHERE: retro-ws/src/nuttx/common/driver/cvbs_ime.c
  * WHEN : 2026-10-05 新增
  * HOW  : 组合键（UART 字节流语义）：Ctrl+Space=0x00 中英切换、
  *        Ctrl+Q=0x11 关闭释放条；引擎=drv_pinyin（整行缓冲）；

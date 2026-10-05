@@ -8,7 +8,7 @@
  * WHAT : 防火墙
  * WHY  : 默认拒入站/放出站/防 ping，规则持久化
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/firewall.c
+ * WHERE: retro-ws/src/nuttx/common/driver/firewall.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : 连接跟踪表 + 规则存 Flash，fw_* NSH 命令管理
  */
@@ -180,7 +180,7 @@ static bool g_log_dropped = true;  /* 记录丢弃的包 */
  *       互相覆盖，打印结果两个都是 dst / shared buffer made both IPs
  *       print as dst
  * WHO : fw_check_packet / fw_print_status
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/firewall.c
+ * WHERE: retro-ws/src/nuttx/common/driver/firewall.c
  * WHEN : 2026-10-04 重构签名
  * HOW  : snprintf 进调用方提供的缓冲
  * 参数 / Params: ip - 主机序 32 位 IP；buf/len - 输出缓冲

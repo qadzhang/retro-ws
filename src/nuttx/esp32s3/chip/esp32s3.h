@@ -9,7 +9,7 @@
  * WHAT : ESP32-S3 寄存器定义
  * WHY  : 直接操作外设所需的基地址/位域
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/esp32s3/chip/esp32s3.h
+ * WHERE: retro-ws/src/nuttx/esp32s3/chip/esp32s3.h
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : 按 ESP-IDF reg_base 验证（HARDWARE.md 第 2 章）
  */

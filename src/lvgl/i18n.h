@@ -8,7 +8,7 @@
  * WHAT : 多语种框架头文件
  * WHY  : i18n 对外契约（i18n_get/i18n_getf/语言查询）
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/lvgl/i18n.h
+ * WHERE: retro-ws/src/lvgl/i18n.h
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : I18N() 宏 + 函数原型
  */

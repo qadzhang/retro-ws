@@ -18,7 +18,7 @@
  * WHAT : Logo 命令解释器（自研）
  * WHY  : 解析 FD/RT/REPEAT/TO 等 Logo 命令驱动海龟
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/lvgl/app/logo/logo_vm.c
+ * WHERE: retro-ws/src/lvgl/app/logo/logo_vm.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : 逐行词法解析 + 命令分发表调用 logo_turtle_* API
  */

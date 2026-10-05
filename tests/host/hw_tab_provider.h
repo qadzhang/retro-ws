@@ -8,7 +8,7 @@
  * WHAT : 供 test_hw_profiles.c 链接的四板占用表导出声明
  * WHY  : 四份硬件档案的 RETRO_GPIO_OCCUPIED_LIST 宏同名，无法在同
  *        一翻译单元重复展开——每板一个 provider .c 各自包含档案落地
- * WHERE: esp32-retro-ws/tests/host/hw_tab_provider.h
+ * WHERE: retro-ws/tests/host/hw_tab_provider.h
  * WHEN : 2026-10-04 晚新增
  */
 

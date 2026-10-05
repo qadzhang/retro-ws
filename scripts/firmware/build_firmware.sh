@@ -6,7 +6,7 @@
 # WHAT : 四板固件构建入口 / firmware build for all four boards
 # WHY  : 真机交付需要交叉编译产物 + ROM 尺寸核查
 # WHO  : 开发者/CI
-# WHERE: esp32-retro-ws/scripts/firmware/build_firmware.sh
+# WHERE: retro-ws/scripts/firmware/build_firmware.sh
 # WHEN : 2026-10-04 新增；同日改为树内构建（NuttX 12 configure.sh 形式）
 # HOW  : 用法: build_firmware.sh <pico|c3|cam|s3|all>
 #        1) sync src -> deps/nuttx-apps/retro

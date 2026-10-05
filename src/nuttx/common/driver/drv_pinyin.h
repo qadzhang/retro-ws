@@ -9,7 +9,7 @@
  * WHY  : cvbs_ime（CCDOS 式状态条 IME）与 NSH `ime` 命令复用本引擎；
  *        原实现散落在 .c 内无头文件（2026-10-05 补）
  * WHO  : cvbs_ime.c / nsh ime 命令
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/drv_pinyin.h
+ * WHERE: retro-ws/src/nuttx/common/driver/drv_pinyin.h
  * WHEN : 2026-10-05 新增（随 CCDOS 式 IME 落地）
  * HOW  : 引擎自持整行编辑缓冲（input_buf）——确认文本经
  *        cli_pinyin_input 累积、Enter（返回 1）后 cli_getline 取整行

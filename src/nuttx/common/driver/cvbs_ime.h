@@ -12,7 +12,7 @@
  * WHY  : CLI 全环境中文输入（REQUIREMENTS 2.1.3）；不启动时完全
  *        不显示、不占用屏幕与按键（NEXT_STEPS 20 落地）
  * WHO  : cvbs_console 键盘泵（拦截）、NSH `ime` 命令（开关）
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/cvbs_ime.h
+ * WHERE: retro-ws/src/nuttx/common/driver/cvbs_ime.h
  * WHEN : 2026-10-05 新增
  * HOW  : 组合键（UART 字节流）：Ctrl+Space=0x00 中英切换、
  *        Ctrl+Q=0x11 关闭 IME 释放状态条；数字 1-9 选字、空格=?

@@ -6,7 +6,7 @@
 # WHAT : 告诉 apps 顶层"retro 模块被 CONFIG_RETRO 启用"
 # WHY  : NuttX apps 只会进入含 Make.defs 且 CONFIGURED_APPS 命中的目录
 # WHO  : deps/nuttx-apps/Make.defs（BUILDIRS/CONFIGURED_APPS 机制）
-# WHERE: esp32-retro-ws/firmware/retro-apps/Make.defs（真身，同步过去）
+# WHERE: retro-ws/firmware/retro-apps/Make.defs（真身，同步过去）
 # WHEN : 2026-10-04 新增
 ############################################################################
 

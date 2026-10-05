@@ -13,7 +13,7 @@ WHY  : 交付"每板一块最小载板"：模块经插接件（母排/FPC座）�
        不直接焊死（用户要求 2026-10-04）；阻容全部做成插接式
        电阻/滤波模块，载板上只有连接器与铜箔
 WHO  : eda/ 目录维护者（改引脚先改 HARDWARE.md 再改本表）
-WHERE: esp32-retro-ws/eda/gen_eda.py
+WHERE: retro-ws/eda/gen_eda.py
 WHEN : 2026-10-04 晚新增
 HOW  : 单位换算 1 unit = 10mil = 0.254mm（EasyEDA 官方文档）；
        模块排针坐标 = 实测几何（DevKitC 2x22@22.86mm、CAM 2x8@22.86、

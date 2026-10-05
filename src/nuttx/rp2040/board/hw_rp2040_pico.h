@@ -8,7 +8,7 @@
  * WHAT : Pico 板全部引脚/外设分配的唯一事实来源（HARDWARE.md 3B 章）
  * WHY  : AGENTS.md 11.1-7：使用新硬件前先落档案，代码严格照抄本表
  * WHO  : src/nuttx/rp2040/ 全部板级代码与 defconfig
- * WHERE: esp32-retro-ws/src/nuttx/rp2040/board/hw_rp2040_pico.h
+ * WHERE: retro-ws/src/nuttx/rp2040/board/hw_rp2040_pico.h
  * WHEN : 2026-10-04 新增（第四目标）；同日晚 CVBS 移脚 GP20-23 ->
  *        GP12-15（GP23=SMPS PS 会耦合电源纹波 + PIO 需连续引脚，
  *        HARDWARE.md 3B.2A 晚间修订）

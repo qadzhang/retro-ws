@@ -8,7 +8,7 @@
  * WHAT : ESP32-CAM AI-Thinker 硬件档案
  * WHY  : 兼容目标引脚唯一事实来源（HARDWARE.md 1.2）
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/esp32/board/hw_esp32cam_aithinker.h
+ * WHERE: retro-ws/src/nuttx/esp32/board/hw_esp32cam_aithinker.h
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : 全部 GPIO 宏 + SD 两种模式 + 摄像头互斥说明 + 分辨率档位
  */

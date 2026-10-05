@@ -9,7 +9,7 @@
  * WHAT : Berry 脚本 retro_i2c/spi/uart_* 全局函数
  * WHY  : machine 风格总线兼容层（HARDWARE.md 13.3）
  * WHO  : script_engines.c 的 berry_init() 调用 retro_bus_berry_init()
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/retro_bus_berry.c
+ * WHERE: retro-ws/src/nuttx/common/driver/retro_bus_berry.c
  * WHEN : 2026-10-04(晚) 新增
  * HOW  : be_regfunc 注册；字节缓冲用 bytes 类型（be_pushbytes /
  *        be_isbytes / be_tobytes）

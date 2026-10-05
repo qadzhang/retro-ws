@@ -15,7 +15,7 @@
  * WHAT : LVGL 应用入口
  * WHY  : LVGL 初始化装配（显示/输入/桌面）
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/lvgl/lvgl_app.c
+ * WHERE: retro-ws/src/lvgl/lvgl_app.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : lv_port_disp + lv_port_indev + retro_desktop_init 顺序装配
  */

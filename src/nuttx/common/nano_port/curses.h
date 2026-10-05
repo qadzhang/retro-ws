@@ -10,7 +10,7 @@
  * WHY  : NuttX 无 ncurses；垫片直接打 ANSI 转义到 stdout，
  *        对 /dev/cvbscon（AV 控制台，CSI 子集）与 VT100 串口终端通用
  * WHO  : deps/nano/src/*.c
- * WHERE: esp32-retro-ws/src/nuttx/common/nano_port/curses.h
+ * WHERE: retro-ws/src/nuttx/common/nano_port/curses.h
  * WHEN : 2026-10-04(晚) 新增
  * HOW  : 实现 mini_curses.c（虚拟屏 diff 刷新 + termios raw +
  *        转义序列解码 + UTF-8 宽字符感知单元格）

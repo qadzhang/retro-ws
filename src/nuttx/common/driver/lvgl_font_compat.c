@@ -9,7 +9,7 @@
  * WHY  : 字体文件引用 lv_font_get_glyph_dsc_fmt_txt/
  *        lv_font_get_bitmap_fmt_txt 两个 LVGL 符号——CLI 固件没有 LVGL
  * WHO  : 字体文件里的函数指针（.get_glyph_dsc = ...）
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/lvgl_font_compat.c
+ * WHERE: retro-ws/src/nuttx/common/driver/lvgl_font_compat.c
  * WHEN : 2026-10-04 新增
  * HOW  : 语义逐行对照 LVGL 9.5 lv_font_fmt_txt.c（FORMAT0_TINY 直查、
  *        FORMAT0_FULL 带 0 偏移哨兵、SPARSE_TINY 二分 unicode_list；

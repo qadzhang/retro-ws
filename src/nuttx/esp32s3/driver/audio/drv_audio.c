@@ -8,7 +8,7 @@
  * WHAT : I2S 音频驱动
  * WHY  : 外部 I2S DAC（GPIO40/41/42）输出与 ADC 输入
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/esp32s3/driver/audio/drv_audio.c
+ * WHERE: retro-ws/src/nuttx/esp32s3/driver/audio/drv_audio.c
  * WHEN : 2026-03~04 初版，2026-10-04 修复寄存器偏移/中断/补齐 API
  * HOW  : I2S DMA 多缓冲环，44100Hz/16bit；寄存器偏移统一取自
  *        src/nuttx/esp32s3/chip/esp32s3.h（不再硬编码）

@@ -15,7 +15,7 @@
  *        MicroPython frozen bytecode——源码常驻 Flash，引擎 parser
  *        直接消费指针，Berry 编译产物落堆、跑完即释放）
  * WHO  : retro_boot（挂载）；NSH 用户（script 命令）
- * WHERE: esp32-retro-ws/src/nuttx/common/script_rom.c
+ * WHERE: retro-ws/src/nuttx/common/script_rom.c
  * WHEN : 2026-10-04(晚) 新增
  * HOW  : 块设备 = 最小 struct block_operations（geometry/read），
  *        512B 扇区只读；镜像数组在 .rodata（Flash XIP 段）；

@@ -8,7 +8,7 @@
  * WHAT : 媒体播放器驱动
  * WHY  : 音频播放的后端通道
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/drv_player.c
+ * WHERE: retro-ws/src/nuttx/common/driver/drv_player.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : WAV 流送音频驱动（DAC/I2S）
  */

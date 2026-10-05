@@ -8,7 +8,7 @@
  * WHAT : retro_ui 的 BASIC 绑定
  * WHY  : my_basic 脚本调用 LVGL UI（AGENTS.md 8.1）
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/lvgl/modules/retro_ui_bas.c
+ * WHERE: retro-ws/src/lvgl/modules/retro_ui_bas.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : 注册 CALL retro_ui_* 原生函数
  */

@@ -9,7 +9,7 @@
  * WHY  : GUI 全环境中文输入（REQUIREMENTS 2.1.3）；组件此前无头文件
  *        （2026-10-05 补，随模拟器截图与键盘路径接线）
  * WHO  : desktop 文本框焦点接线、tools/sim 模拟器
- * WHERE: esp32-retro-ws/src/lvgl/app/app_pinyin.h
+ * WHERE: retro-ws/src/lvgl/app/app_pinyin.h
  * WHEN : 2026-10-05 新增
  * HOW  : init(parent) 建面板；set_target 绑定 textarea（选字注入）；
  *        input(ch) 键盘喂入（字母=拼音、数字=选字、退格、Esc 清）

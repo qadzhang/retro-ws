@@ -11,7 +11,7 @@
  *        三大总线；后端运行时探测：NuttX 硬件驱动(/dev/i2cN 等)
  *        优先，缺驱动的板回退 retro_gpio 位摆软总线
  * WHO  : retro_bus_{bas,js,berry}.c 各引擎绑定转发到本接口
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/retro_bus.[ch]
+ * WHERE: retro-ws/src/nuttx/common/driver/retro_bus.[ch]
  * WHEN : 2026-10-04(晚) 新增（NEXT_STEPS 49 落地）
  * HOW  : 会话表按 id 索引；I2C 硬件后端=ioctl I2CIOC_TRANSFER，
  *        SPI 硬件后端=SPIIOC_TRANSFER 序列，UART=termios 原始流；

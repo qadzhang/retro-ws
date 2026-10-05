@@ -5,7 +5,7 @@
  * WHAT : rpk 命令行驱动壳 / CLI driver around rpkg_* for host tests
  * WHY  : Python 差分/PBT 套件需要一个进程级入口驱动真实安装器
  * WHO  : tests/host/python/test_rpkg_diff.py 以 subprocess 调用
- * WHERE: esp32-retro-ws/tests/host/rpk_tool.c
+ * WHERE: retro-ws/tests/host/rpk_tool.c
  * WHEN : 2026-10-04 新增
  * HOW  : argv[1] = install|remove|list|info|isinstalled；退出码即
  *        rpkg_* 返回值（负值转 byte 为可见差异）

@@ -8,7 +8,7 @@
  * WHAT : 内存监控
  * WHY  : 堆水位监控与三级告警（80/90/95%）
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/common/driver/memmon.c
+ * WHERE: retro-ws/src/nuttx/common/driver/memmon.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : 5 秒巡检，紧急时终止最大非核心任务或触发重启
  */

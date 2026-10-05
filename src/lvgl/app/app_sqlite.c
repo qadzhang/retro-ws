@@ -8,7 +8,7 @@
  * WHAT : Win3.2 SQLite 图形工具
  * WHY  : 数据库查询/结果表格/CSV 导出
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/lvgl/app/app_sqlite.c
+ * WHERE: retro-ws/src/lvgl/app/app_sqlite.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : drv_sqlite.c 封装 SQLite C API，结果渲染为 LVGL 表格
  */

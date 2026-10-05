@@ -8,7 +8,7 @@
  * WHAT : retro_ui 的 Berry 绑定
  * WHY  : Berry 脚本调用 retro_ui_* 统一接口
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/lvgl/modules/retro_ui_berry.c
+ * WHERE: retro-ws/src/lvgl/modules/retro_ui_berry.c
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : be_regfunc 注册全局函数，list 经 be_getindex 迭代（可选编译）
  */

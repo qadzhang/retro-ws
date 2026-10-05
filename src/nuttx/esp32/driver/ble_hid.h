@@ -9,7 +9,7 @@
  * WHAT : BLE HID 头文件（CAM）
  * WHY  : 驱动对上层契约
  * WHO  : ESP32-S3 Retro Project Team
- * WHERE: esp32-retro-ws/src/nuttx/esp32/driver/ble_hid.h
+ * WHERE: retro-ws/src/nuttx/esp32/driver/ble_hid.h
  * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
  * HOW  : 初始化/回调原型
  */

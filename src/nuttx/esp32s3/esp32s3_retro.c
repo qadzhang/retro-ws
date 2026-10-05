@@ -9,7 +9,7 @@
  * WHAT : ESP32-S3 双核任务装配（Core0 图形音频 / Core1 系统网络）
  * WHY  : 复古工作站的显示实时性与网络后台业务分核隔离
  * WHO  : board.c 的 board_late_initialize() 启动本模块任务
- * WHERE: esp32-retro-ws/src/nuttx/esp32s3/esp32s3_retro.c
+ * WHERE: retro-ws/src/nuttx/esp32s3/esp32s3_retro.c
  * WHEN : 2026-03~04 初版；2026-10-04 修订（去除与 board.c 的重复
  *        符号、WDT 溢出、未定义外部函数，见 BUILD_FIXES.md）
  * HOW  : 双核分工（全局规范，2026-10-04 用户确定）：
