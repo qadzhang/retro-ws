@@ -223,31 +223,19 @@ int delwin(WINDOW *win)
  *  UTF-8 编解码 + 宽度
  *==========================*/
 
-/* 码点 → 显示列宽（CJK/全角=2；NuttX wcwidth 的本地保守版） */
+/* 码点 → 显示列宽（等宽网格版：非零宽一律 1 列）
+ * 本项目唯一字号 12px、console 网格 12x14 一字一格（AGENTS.md 7.3），
+ * wcwidth 的"CJK=2 列"半角/全角语义不适用——nano 布局若按 2 列计
+ * 会与 console 实际渲染错位（2026-10-05 与 cvbs_console 同步修正） */
 static int utf8_width(unsigned int cp)
 {
-    if (cp < 0x20)
-        return 1;
-    if (cp == 0)
+    if (cp == 0 || cp < 0x20)
         return 1;
 
     /* 组合用区 / 零宽 */
     if ((cp >= 0x0300 && cp <= 0x036f) ||
         (cp >= 0x200b && cp <= 0x200f) || cp == 0xfeff)
         return 0;
-
-    /* 中日韩谚文全角区 */
-    if ((cp >= 0x1100 && cp <= 0x115f) ||
-        (cp >= 0x2e80 && cp <= 0xa4cf) ||
-        (cp >= 0xac00 && cp <= 0xd7a3) ||
-        (cp >= 0xf900 && cp <= 0xfaff) ||
-        (cp >= 0xfe30 && cp <= 0xfe6f) ||
-        (cp >= 0xff00 && cp <= 0xff60) ||
-        (cp >= 0xffe0 && cp <= 0xffe6) ||
-        (cp >= 0x1f300 && cp <= 0x1f64f) ||
-        (cp >= 0x1f900 && cp <= 0x1f9ff) ||
-        (cp >= 0x20000 && cp <= 0x3fffd))
-        return 2;
 
     return 1;
 }

@@ -252,7 +252,7 @@ static void statusbar_redraw(void)
         }
 
         glyph_put(cp, cell, row);
-        cell += cp >= 0x1100 ? 2 : 1;         /* 与正文同宽进原则 */
+        cell += 1;                             /* 等宽网格一字一格（同正文） */
         p += n;
     }
     g_con.attr = saved_attr;
@@ -526,16 +526,11 @@ void cvbs_console_putc(char c)
                 cursor_draw(false);
                 draw_glyph(g_con.u8_acc, g_con.cx, g_con.cy);
 
-                /* 按字形步进宽度推进（2026-10-05 修复：全角恒 +1 致
-                 * 排版错位——CJK/全角 adv=12 > CELL_W/2 应占 2 格） */
-                int step = 1;
-                lv_font_glyph_dsc_t d;
-                if (retro_compat_glyph_dsc(retro_compat_font(), &d,
-                                           g_con.u8_acc) &&
-                    d.adv_w > CELL_W / 2)
-                    step = 2;
-
-                g_con.cx += step;
+                /* 等宽网格一字一格：唯一字号 12px 与 CELL_W=12 同宽，
+                 * CJK 全角 adv=12 恰占满 1 格（AGENTS.md 7.3）。
+                 * 2026-10-05 修正：旧版按 wcwidth 语义让全角占 2 格
+                 * （步进 24px），中文之间多出整格空白，截图实测确认 */
+                g_con.cx += 1;
                 if (g_con.cx >= g_con.cols)
                     newline();
                 if (g_con.cursor_on)

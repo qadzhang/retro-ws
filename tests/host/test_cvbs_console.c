@@ -95,14 +95,14 @@ static void test_console_basic(void)
     CHECK_EQ_INT(cvbs_console_cursor_x(), 2);
     CHECK_EQ_INT(cvbs_console_cursor_y(), 0);
 
-    /* UTF-8 中文（三字节跨字节流；全角占 2 格——2026-10-05 修复
-     * 全角步进后：AB(2) + 你好(4) = 6） */
+    /* UTF-8 中文（三字节跨字节流；等宽网格一字一格——2026-10-05
+     * 二次修正：12px 全角恰占满 1 格，AB(2) + 你好(2) = 4） */
     cvbs_console_write("\xe4\xbd\xa0\xe5\xa5\xbd", 6);   /* 你好 */
-    CHECK_EQ_INT(cvbs_console_cursor_x(), 6);
+    CHECK_EQ_INT(cvbs_console_cursor_x(), 4);
 
     /* 回车/退格 */
     cvbs_console_putc('\b');
-    CHECK_EQ_INT(cvbs_console_cursor_x(), 5);
+    CHECK_EQ_INT(cvbs_console_cursor_x(), 3);
     cvbs_console_putc('\r');
     CHECK_EQ_INT(cvbs_console_cursor_x(), 0);
 
@@ -204,7 +204,8 @@ static void test_console_render_pgm(const char *path)
  *        - 下伸小写 g/j/p/q/y：底边入 12..13
  *        - 逗号句号：整体在基线下半带（top>=7）
  *        - 引号类：上半带（top<=5）
- *        - 全角 CJK：占 2 格、顶 0..2 底 11..13
+ *        - 全角 CJK：等宽网格一字一格（12px 字面恰满 1 格）、
+ *          顶 0..2 底 11..13
  *        - 全角逗号：右下带
  * HOW  : 表驱动：每项（UTF-8 串, 占格数, top 带, bottom 带）；
  *        写前 init 清屏，从格 (0,0) 起逐项推进并扫描
@@ -212,7 +213,7 @@ static void test_console_render_pgm(const char *path)
 struct glyph_pos_exp_s
 {
     const char *u8;
-    int cells;        /* 占格数：半角 1 / 全角 2 */
+    int cells;        /* 占格数：等宽网格一律 1（2026-10-05 起） */
     int top_min, top_max;
     int bot_min, bot_max;
 };
@@ -244,13 +245,13 @@ static void test_glyph_positions(void)
         {"y", 1, 4, 8, 12, 13},
         /* 数字 */
         {"0", 1, 2, 6, 10, 11}, {"7", 1, 2, 6, 10, 11},
-        /* 中文全角（占 2 格，填满字面） */
-        {"\xe4\xbd\xa0", 2, 0, 3, 10, 13},          /* 你 */
-        {"\xe7\x95\x8c", 2, 0, 3, 10, 13},          /* 界 */
+        /* 中文全角（等宽一字一格，填满 12px 字面） */
+        {"\xe4\xbd\xa0", 1, 0, 3, 10, 13},          /* 你 */
+        {"\xe7\x95\x8c", 1, 0, 3, 10, 13},          /* 界 */
         /* 全角符号 */
-        {"\xef\xbc\x8c", 2, 8, 12, 12, 13},         /* ，右下带 */
-        {"\xef\xbc\x9a", 2, 3, 9, 10, 13},          /* ：两点跨中带 */
-        {"\xe2\x80\x9c", 2, 1, 6, 3, 9},            /* “ 上半带 */
+        {"\xef\xbc\x8c", 1, 8, 12, 12, 13},         /* ，右下带 */
+        {"\xef\xbc\x9a", 1, 3, 9, 10, 13},          /* ：两点跨中带 */
+        {"\xe2\x80\x9c", 1, 1, 6, 3, 9},            /* “ 上半带 */
         /* 半角符号（用户点名的种类） */
         {",", 1, 8, 12, 12, 13},      /* 逗号：基线下 */
         {".", 1, 10, 13, 11, 12},     /* 句号：点在基线上 */
