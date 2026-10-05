@@ -148,11 +148,22 @@
 - [x] WAV 播放支持
 
 #### 2.2.3 输入设备 / Input Devices
-- **ESP32-S3**: USB HID（USB OTG，GPIO19=DM, GPIO20=DP）+ BLE HID
-- **ESP32-CAM**: BLE HID（蓝牙 4.2）
-- **ESP32-C3 / Pico**: 无 HID 驱动——UART 键盘泵（cvbs_console 内 avkbin 任务；
-  C3 经 CH343 串口（经典款）或原生 USB（简约款），Pico 经 UART0/USB-CDC，
-  读入键盘字节流喂 /dev/cvbscon 输入环）
+
+**输入优先级原则（2026-10-05 定稿）**：**USB 键盘（OTG 主机）> 蓝牙 HID > 串口键盘泵**；
+芯片具备哪种能力就必须支持哪种，三者皆备的板（S3）三种都要支持。
+
+> 注意"有 USB"指 **USB 主机（OTG host）** 能力，不是有无 USB 口：
+> - **ESP32-S3**：有 OTG 主机 —— USB HID **已实现**（usb_hid.c）；另有 BLE HID
+>   （ble_hid.c 已写、封存待 NimBLE 解封，NEXT_STEPS 36）+ UART 控制台，三路齐备
+> - **ESP32-CAM**：芯片无 USB 外设 —— 走 **BLE HID（已实现）** + 串口
+> - **ESP32-C3**：芯片 USB 为**设备模式**（内置 USB-Serial-JTAG，仅烧录/调试），
+>   **硬件上接不了普通 USB 键盘**；芯片有 BLE 5 —— 按原则应走 **BLE HID
+>   （待 NimBLE 移植，NEXT_STEPS 36）**；现有实现为 UART 键盘泵（avkbin，
+>   cvbs_console 内嵌，CH343 串口/原生 USB-CDC -> /dev/cvbscon），BLE 就绪后与之并存
+> - **Pico**：**无蓝牙射频**、USB 块仅设备模式（NuttX 树内也只有 rp2040_usbdev
+>   设备驱动）—— 按"没有 USB 和蓝牙才走串口"，**UART 键盘泵即正确且唯一路线**
+>   （UART0/USB-CDC；PIO-USB 软件主机属远期评估，NuttX 无现成驱动）
+
 - **蓝牙状态 LED**: ESP32-S3 (WS2812 RGB，v1.1=GPIO38 / v1.0=GPIO48), ESP32-CAM (GPIO4 Flash LED)
 
 #### 2.2.4 网络功能 / Network Functions

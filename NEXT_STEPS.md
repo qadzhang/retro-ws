@@ -98,7 +98,7 @@ c3（合宙核心板 CLI 档）、pico（本地教学终端 CLI 档）。
 | 33 | ESP-IDF v5.5 -> v6.x 升级评估 | v5.5 LTS 至 2028-01，无迫切性 |
 | 34 | esp32s3.h I2S 寄存器模型对表 | 现有偏移集与 deps esp32s3_i2s.h（INT 块 0x0C-0x18、TX_CLKM 0x34、走 GDMA）存在两说，硬件联调时以 TRM 终裁 |
 | 35 | I2S 13.5MHz 采样实现 | S3 GDMA 分频能否精确到 864 样本/行×15625Hz；CAM 为 APB/6≈13.33MHz（1.25% 偏差），不同步则改 M/D 小数分频 |
-| 36 | BLE NimBLE 移植 | 两板 ble_* 现封存于 CONFIG_RETRO_BLE_STACK_IDF（IDF 路线不适用于 NuttX）；NimBLE 主机 + HID-IN 是正路 |
+| 36 | BLE NimBLE 移植（键鼠 HID） | S3/CAM ble_* 现封存于 CONFIG_RETRO_BLE_STACK_IDF（IDF 路线不适用于 NuttX）；NimBLE 主机 + HID-IN 是正路。**输入优先级原则（2026-10-05）：USB > 蓝牙 > 串口**——S3/CAM/C3 都要有 BLE HID（C3 芯片有 BLE 5 且无 USB 主机，BLE 是其唯一 HID 路线；Pico 无蓝牙不适用） |
 | 37 | FSK 完整成帧 | TX 已接 audio_play_pcm 硬件出声（2026-10-04 深夜）；RX 仍仅载波监测——起止位检测/字节组装待做（需 ADC DMA 输入通道） |
 | 38 | 拼音 GB2312→Unicode 映射表 | 候选字当前按码点显示，需码表才能出正确字形 |
 | 39 | 构建集成 include 路径 | 固件构建需为 my_basic/duktape/berry 补 -I（代码已 __has_include 双路径兼容） |
