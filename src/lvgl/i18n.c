@@ -18,6 +18,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/stat.h>
 #include <errno.h>
 
 #ifdef CONFIG_LVGL
@@ -34,7 +35,7 @@
 #endif
 
 /* 语言配置存储路径 / Language config storage path */
-#define I18N_CONFIG_PATH "/mnt/sd0/lang.conf"
+#define I18N_CONFIG_PATH "/opt/etc/lang.conf"
 
 /* 当前语言 / Current language
  * 初始化时从存储读取，运行时可切换
@@ -50,8 +51,9 @@ static const char *g_current_lang = "zh_CN";  /* 默认值，启动时会被覆�
  * Load language setting from persistent storage
  *
  * 读取优先级 / Read priority (first found wins):
- * 1. /mnt/sd0/lang.conf (SD卡) / SD card
- * 2. /mnt/spiffs0/lang.conf (SPIFFS) / SPIFFS partition
+ * 1. /opt/etc/lang.conf (片上系统配置，无 SD 卡可用，2026-10-05 定稿)
+ * 2. /mnt/sd0/lang.conf (SD卡) / SD card
+ * 3. /mnt/spiffs0/lang.conf (SPIFFS) / SPIFFS partition
  * 3. /mnt/data/lang.conf (数据分区) / Data partition
  * 4. /flash/lang.conf (Flash) / Flash filesystem
  * 5. /etc/lang.conf (系统配置) / System config
@@ -60,6 +62,7 @@ static const char *g_current_lang = "zh_CN";  /* 默认值，启动时会被覆�
 static void i18n_load_from_storage(void)
 {
     const char *paths[] = {
+        "/opt/etc/lang.conf",      /* 片上系统配置（首选，无 SD 卡可用） */
         "/mnt/sd0/lang.conf",      /* SD卡 / SD card */
         "/mnt/spiffs0/lang.conf", /* SPIFFS 分区 / SPIFFS partition */
         "/mnt/data/lang.conf",    /* 数据分区 / Data partition */
@@ -111,8 +114,9 @@ static void i18n_load_from_storage(void)
  * Try to save to multiple locations to ensure it works with or without SD card
  *
  * 保存位置 / Save locations (按优先级):
- * 1. /mnt/sd0/lang.conf (SD卡) / SD card
- * 2. /mnt/spiffs0/lang.conf (SPIFFS) / SPIFFS partition
+ * 1. /opt/etc/lang.conf (片上系统配置，无 SD 卡可用，2026-10-05 定稿)
+ * 2. /mnt/sd0/lang.conf (SD卡) / SD card
+ * 3. /mnt/spiffs0/lang.conf (SPIFFS) / SPIFFS partition
  * 3. /flash/lang.conf (Flash) / Flash filesystem
  * 4. /etc/lang.conf (系统配置) / System config (if writable)
  *
@@ -121,6 +125,7 @@ static void i18n_load_from_storage(void)
 static int i18n_save_to_storage(void)
 {
     const char *paths[] = {
+        "/opt/etc/lang.conf",      /* 片上系统配置（首选，无 SD 卡可用） */
         "/mnt/sd0/lang.conf",      /* SD卡 / SD card */
         "/mnt/spiffs0/lang.conf",  /* SPIFFS 分区 / SPIFFS partition */
         "/mnt/data/lang.conf",     /* 数据分区 / Data partition */
@@ -128,6 +133,8 @@ static int i18n_save_to_storage(void)
         "/etc/lang.conf",           /* 系统配置目录 / System config dir */
         NULL
     };
+
+    mkdir("/opt/etc", 0755);   /* 片上配置目录（可能尚不存在） */
 
     int success_count = 0;
 

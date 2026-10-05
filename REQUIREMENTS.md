@@ -211,12 +211,13 @@
 
 | 优先级 | 路径 | 说明 |
 |--------|------|------|
-| 1 | `/mnt/sd0/lang.conf` | SD卡 |
-| 2 | `/mnt/spiffs0/lang.conf` | SPIFFS 分区 (片上存储) |
-| 3 | `/mnt/data/lang.conf` | 数据分区 (片上存储) |
-| 4 | `/flash/lang.conf` | Flash 文件系统 |
-| 5 | `/etc/lang.conf` | 系统配置目录 |
-| 6 | (编译默认) | CONFIG_LANG |
+| 1 | `/opt/etc/lang.conf` | 片上系统配置（无 SD 卡可用，2026-10-05 定稿） |
+| 2 | `/mnt/sd0/lang.conf` | SD卡 |
+| 3 | `/mnt/spiffs0/lang.conf` | SPIFFS 分区 (片上存储) |
+| 4 | `/mnt/data/lang.conf` | 数据分区 (片上存储) |
+| 5 | `/flash/lang.conf` | Flash 文件系统 |
+| 6 | `/etc/lang.conf` | 系统配置目录 |
+| 7 | (编译默认) | CONFIG_LANG |
 
 ### 2.4 图标资源 / Icon Resources
 

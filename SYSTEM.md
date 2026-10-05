@@ -309,7 +309,7 @@ nsh> ble status   # 显示连接状态
 **功能：**
 - 三个独立硬件看门狗，双核各一个
 - 超时自动硬件复位
-- 看门狗重启记录（`/var/log/reboot.log`）
+- 看门狗重启记录（`/opt/var/log/reboot.log`，片上，安全模式判定用）
 - 连续3次看门狗重启 -> 进入安全模式（CLI Only）
 - 安全模式可恢复出厂设置
 
@@ -552,7 +552,7 @@ cd scripts/esp32s3 && ./build.sh nuttx     # 或 esp32cam / esp32c3
 | 脚本引擎集成 | common/script_engines.c | 649+ | 完成（五引擎可配置：bas/js/be/py/lgo） |
 | curl/wget | common/network_utils.c | 487 | 完成 |
 | NSH 命令 | common/apps/system/nsh_cmds.c | 400 | 完成 |
-| .rpk 包管理器 | common/apps/system/pkg_manager.c | 560 | 完成（deb 风格，待实机验证） |
+| .rpk 包管理器 | common/apps/system/pkg_manager.c | 600+ | 完成（deb 风格 + 双安装根 Root 字段 + DB 片上 /opt，待实机验证） |
 | 脚本 GPIO 接口 | common/driver/retro_gpio.c | 280 | 完成（占用拦截+四引擎绑定） |
 | 防火墙 | common/driver/firewall.c | 623 | 完成 |
 | CVBS 时序核心 | common/driver/cvbs_core.c | - | 完成（宿主解码器差分验证） |

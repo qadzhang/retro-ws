@@ -284,12 +284,13 @@ void my_keypad_read(lv_indev_t *indev, lv_indev_data_t *data)
 ### 7.2 语言存储优先级 / Language Storage Priority
 | 优先级 | 路径 |
 |--------|------|
-| 1 | `/mnt/sd0/lang.conf` |
-| 2 | `/mnt/spiffs0/lang.conf` |
-| 3 | `/mnt/data/lang.conf` |
-| 4 | `/flash/lang.conf` |
-| 5 | `/etc/lang.conf` |
-| 6 | 编译默认值 |
+| 1 | `/opt/etc/lang.conf`（片上系统配置，无 SD 卡可用，2026-10-05 定稿） |
+| 2 | `/mnt/sd0/lang.conf` |
+| 3 | `/mnt/spiffs0/lang.conf` |
+| 4 | `/mnt/data/lang.conf` |
+| 5 | `/flash/lang.conf` |
+| 6 | `/etc/lang.conf` |
+| 7 | 编译默认值 |
 
 > 与 `src/lvgl/i18n.c` 的读取顺序一致（首个存在者生效）。
 

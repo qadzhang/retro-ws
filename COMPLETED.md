@@ -3,8 +3,8 @@
 ### 五板全栈 ROM（2026-10-04 深夜）
 - S3/S3N8/CAM：LVGL GUI + Win3/WMaker 双外壳 + 8 图形程序 + jslogo +
   BASIC/Berry/JS 四解释器 + AV 控制台 + 全量 UTF-8 字库（10%/21%/42%）
-- C3：CLI 全家桶（cle/hexed/dd/tee + 三解释器 + AV 控制台，35%；vi 当晚即按
-  AGENTS.md 7.4 定稿移除，编辑器统一 nano）
+- C3：CLI 全家桶（cle/hexed/dd/tee + 三解释器 + AV 控制台，35%；编辑器当日两度
+  定稿——最终：系统 vi + nano .rpk 包，见 §26）
 - Pico：Berry+BASIC+AV 控制台（60%）
 - RAM 双达标：LVGL 堆/帧缓冲入 SPIRAM（CAM dram0 111%→40%）
 - 栈尺寸按板可配（C3/Pico 小栈防爆 SRAM）
@@ -186,11 +186,10 @@
 
 | 需求 | 实现 | 状态 |
 |------|------|------|
-| TF 卡 FAT32 32GB | `board.c`（SDIO/SPI） | 完成 |
-| 片上 LittleFS | NuttX LittleFS | 完成 |
-| /sdcard 用户数据 | FAT32 挂载点 | 完成 |
-| /usr 系统程序 | 片上 Flash | 完成 |
-| /var 运行时文件 | LittleFS | 完成 |
+| TF 卡 FAT32 32GB（可选硬件） | `board.c`（SDIO/SPI），/sdcard 大容量扩展 | 完成 |
+| 片上可写分区 littlefs 挂 /opt | HARDWARE 12.4 分区定稿（NEXT_STEPS 17b 落地） | 定稿 |
+| /opt 系统区 | 系统包（/opt/bin）+ 配置（/opt/etc）+ 包 DB + 用户数据 | 定稿 |
+| /sdcard 第三方包 | Root: sdcard 缺省根（/sdcard/apps） | 完成 |
 
 ### 8. 编码规范
 
@@ -298,7 +297,7 @@
 - UART 键盘输入泵任务（/dev/console 读入喂输入环）
 - C3/Pico：CONFIG_NSH_ALTCONDEV=/dev/cvbscon——**NSH 与全屏程序跑在 AV 电视屏上**
 
-### 17. 真 GNU nano 8.4 移植（2026-10-04 晚）⭐
+### 17. 真 GNU nano 8.4 移植（2026-10-04 晚）⭐（2026-10-05 翻转：出 ROM 转 .rpk 包，见 §26）
 - deps/nano 上游 nano-8.4 原版源码（GPL，sha256 前 16 位 5ad29222bbd55624）
 - mini-curses 垫片（~700 行）：虚拟屏 diff 刷新 + termios raw + 转义键解码 + UTF-8 宽字符感知单元格（CJK 双列）
 - NuttX 缺口补齐：mkstemps/locale 存根/REG_STARTEND/键码表（config.h autoconf 惯例——关闭项不定义）

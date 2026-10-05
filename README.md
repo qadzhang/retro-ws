@@ -428,6 +428,9 @@ retro-ws/
 |   +-- c3.appconfig / pico.appconfig
 |   +-- scripts/<板名>/    # 板级演示/教学脚本（打包 ROMFS 入固件）
 +-- eda/                   # 五板立创EDA 载板工程（gen_eda.py 自动布线）
++-- apps-extra/            # GPL 独立程序包源（不入固件 ROM）
+|   +-- ucblogo/           #   UCBLogo .rpk 包（GPL-2.0+）
+|   +-- nano/              #   GNU nano .rpk 包（GPL-3.0，2026-10-05 出 ROM）
 +-- tools/                 # 工具和字体资源
 |   +-- fonts/            # 字体文件
 |   +-- sim/              # LVGL 无头模拟器 + CVBS 全链路管线
@@ -632,6 +635,23 @@ _最后更新: 2026-10-05（项目更名 retro-ws，文档全面修正为五板�
 
 五板固件复验：pico 1396KB/c3 1774KB/cam 2130KB/s3/s3n8 2069KB，全部 OK；
 宿主测试套件 ALL PASS（含 ws2812 353 项 + 占用表契约 219 项 + 双变异门 ≥80%）。
+
+## 2026-10-05（下午）四项定稿：编辑器许可 / 包双安装根 / 片上分区 / 输入优先级
+
+- **编辑器（许可证定稿）**：GNU nano（GPL-3.0）出固件 ROM 转 .rpk 包交付
+  （apps-extra/nano），系统默认编辑器回归 NuttX vi（CONFIG_SYSTEM_VI）——
+  固件恢复零 GPL（S3 -86.8KB / C3 -65KB）
+- **包双安装根**：pkg_manager 新增 control `Root` 字段——官方系统包
+  `Root: system` 装片上 `/opt/bin`（无需 SD 卡），第三方缺省装 `/sdcard/apps`；
+  包数据库迁片上 `/opt/var/lib/rpkg`
+- **片上分区布局（HARDWARE 12.4，安卓式）**：固件只读区 + littlefs 可写区
+  （挂 /opt：系统包/配置 crontab·boot.cfg·lang.conf/包 DB/用户数据）+
+  SD 卡为可选硬件；**日志默认只串口输出不落盘**（reboot.log 重启计数例外）
+- **输入优先级原则（REQUIREMENTS 2.2.3）**：USB（OTG 主机）> 蓝牙 HID >
+  串口键盘泵，芯片支持则全支持；新增 common hid_ascii（HID 键码→ASCII +
+  按下沿差分）与 cvbs_console_feed_keys，S3 USB 键盘可直打 AV 控制台
+- 顺带修三 bug：包载荷收集路径错（空载荷 .rpk）、DB manifest 相对路径
+  卸载失效、check_syntax 被 c3 构建产物 arch/ 软链污染
 
 ## 2026-10-05 字号考据定档：GUI=12px / 控制台=16px
 
