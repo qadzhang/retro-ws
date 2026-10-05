@@ -342,15 +342,20 @@ const char *retro_ui_get_lang(void);       // 获取当前语言
 
 | 组件 / Component | 版本 / Version | 许可证 / License | 用途 / Purpose |
 |-------------------|---------------|------------------|----------------|
-| NuttX | 12.12.0 | Apache 2.0 | RTOS 内核 |
-| LVGL | 9.5.0 | MIT | 图形库 |
-| ESP-IDF | v5.5.4 | Apache 2.0 | ESP32/ESP32-S3 SDK |
+| NuttX | 12.12.0 | Apache 2.0 | RTOS 内核（含 RP2040 支持，Pico 免外部 SDK） |
+| LVGL | 9.5.0 | MIT | 图形库（仅图形档） |
+| ESP-IDF | v5.5.4 | Apache 2.0 | 乐鑫 HAL（S3/CAM/C3） |
+| esp-hal-3rdparty | NuttX 配套 | Apache 2.0 | 乐鑫 HAL 装配（mbedtls/WiFi/BLE/PHY） |
 | littlefs | v2.5.1 | BSD-3-Clause | 文件系统 |
+| SQLite | 3.45.1 | Public Domain | 数据库（nuttx-apps） |
+| curl | 8.x | MIT | HTTP 客户端（nuttx-apps） |
 | Duktape | v2.7.0 | MIT | JavaScript 引擎 |
 | my_basic | 1.0.0 | MIT | BASIC 脚本引擎 |
 | Berry | nuttx-apps 固定版本 | MIT | 类 Python 轻量脚本引擎（可选） |
 | CPython | nuttx-apps 固定版本 | PSF | 完整 Python 3（可选，仅 S3） |
 | jslogo | master | Apache 2.0 | UCBLogo 子集海龟画图（可选） |
+| **GNU nano** | **8.4** | **GPL-3.0** | **CLI 编辑器（全系统一，真源码移植）** |
+| NotoSansSC | - | OFL-1.1 | 12px 中文字库点阵源 |
 
 ## 5. 文件结构 / File Structure
 

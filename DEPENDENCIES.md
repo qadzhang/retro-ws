@@ -14,7 +14,14 @@
 | CPython（可选，仅 S3） | nuttx-apps 固定 | nuttx-apps `interpreters/python` | 完整 Python 3，需 ROMFS 标准库镜像 |
 | jslogo（可选） | master | https://github.com/inexorabletash/jslogo | UCBLogo 子集，Apache-2.0，跑在 Duktape 上 |
 | UCBLogo（独立 ELF，不入 ROM） | 6.2.2 | https://sourceforge.net/projects/ucblogo | **GPL-2.0+**，mere aggregation 交付，见下节 |
-| GNU nano | 8.4 | https://www.nano-editor.org/dist/v8/nano-8.4.tar.xz | **GPL-3.0**，CLI 编辑器真源码移植；适配层 `src/nuttx/common/nano_port`（上游不改），sha256 前 16 位 5ad29222bbd55624 |
+| GNU nano | 8.4 | https://www.nano-editor.org/dist/v8/nano-8.4.tar.xz | **GPL-3.0**，CLI 编辑器真源码移植；适配层 `src/nuttx/common/nano_port`（上游不改），sha256 前 16 位 5ad29222bbd55624；**下载脚本未含，需手动解压到 `deps/nano/`** |
+| esp-hal-3rdparty | NuttX 配套 | 随 NuttX 仓库（子模块） | 乐鑫 HAL 装配：mbedtls（pin v3.6.2 单体版）/ esp_wifi / bt / esp_phy / esp_coex，Apache 2.0 |
+| littlefs | v2.5.1 | NuttX 树内 | 文件系统，BSD-3-Clause（独立版本号仅供参考） |
+| SQLite | 3.45.1 | nuttx-apps `database/sqlite` | Public Domain |
+| curl | 8.x | nuttx-apps `netutils/webclient` 等 | MIT |
+| Links（待移植） | 2.30 | https://links.twibright.com | GPL-2.0，下载脚本已支持；板端集成见 NEXT_STEPS 48 |
+| NotoSansSC 字体 | - | 系统字体 / 字体源 NotoSansCJK-Regular.ttc | OFL-1.1（`convert_font.sh` 生成 12px 点阵） |
+| Berry（codegen 副本） | nuttx-apps 同源 | 手动放置 `deps/berry/` | 构建期宿主 gcc 跑 `make prebuild` 生成 be_const_strtab；固件编入走 nuttx-apps |
 
 ## GPL 独立程序包策略（2026-10-04）⭐
 
@@ -119,13 +126,16 @@
 
 ```
 deps/
-+-- nuttx/           # Apache NuttX RTOS
-+-- nuttx-apps/      # NuttX 应用程序（含 interpreters/berry、interpreters/python）
-+-- esp-idf/         # ESP-IDF 开发框架（支持 ESP32 + ESP32-S3）
++-- nuttx/           # Apache NuttX RTOS（含 esp-hal-3rdparty 子模块、RP2040 支持）
++-- nuttx-apps/      # NuttX 应用程序（含 interpreters/berry、interpreters/python、SQLite、curl）
++-- esp-idf/         # ESP-IDF（乐鑫 HAL 源；S3/CAM/C3 用，Pico 不用）
 +-- lvgl/           # LVGL 图形库
 +-- duktape/        # Duktape JavaScript 引擎
 +-- my_basic/       # my_basic 解释器
 +-- jslogo/         # jslogo (UCBLogo 子集, Apache-2.0, 可选)
++-- nano/           # GNU nano 8.4 上游源码（手动放置，下载脚本未含）
++-- berry/          # Berry 副本（手动放置；构建期 codegen 用）
++-- build-pico/     # （空遗留目录，可删）
 +-- esp-idf-tools/  # 工具链（实际布局，与 build_firmware.sh 一致）
     +-- xtensa/bin            # Xtensa 交叉编译器（ESP32 + ESP32-S3）
     +-- riscv/bin             # RISC-V 交叉编译器（ESP32-C3）

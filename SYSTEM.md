@@ -16,6 +16,7 @@
 | 目标芯片 | **ESP32-S3** (LX7) / **ESP32** (CAM, LX6) / **ESP32-C3** (RISC-V, 合宙核心板) / **RP2040** (Pico, Cortex-M0+) |
 | 操作系统 | Apache NuttX RTOS 12.12.0 |
 | 图形引擎 | LVGL 9.5.0（仅图形档 S3/CAM） |
+| CLI 编辑器 | GNU nano 8.4（全系统一，vi 不编入；真源码移植） |
 | 文本浏览器 | Links 2.30（下载脚本已支持；板端移植待办，见 NEXT_STEPS 48） |
 | 状态 | **五板多目标支持已完成** |
 

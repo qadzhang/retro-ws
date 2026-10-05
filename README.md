@@ -462,19 +462,27 @@ retro-ws/
 
 | 组件 / Component | 版本 / Version | 用途 / Purpose | 许可证 / License |
 |------|------|------|--------|
-| Apache NuttX | 12.12.0 | RTOS 内核 / RTOS kernel | Apache 2.0 |
-| LVGL | 9.5.0 | 图形引擎 / Graphics library | MIT |
-| ESP-IDF | v5.5.4 | 乐鑫 HAL（S3/CAM/C3；Pico 用 NuttX 树内 RP2040 支持） | Apache 2.0 |
-| littlefs | v2.5.1 | 文件系统 / Filesystem | BSD-3-Clause |
-| SQLite | 3.45.1 | 数据库引擎 / Database engine | Public Domain |
-| curl | 8.0+ | HTTP 客户端 / HTTP client | MIT |
+| Apache NuttX | 12.12.0 | RTOS 内核（含 RP2040 外设支持，Pico 无需外部 SDK） | Apache 2.0 |
+| LVGL | 9.5.0 | 图形引擎 / Graphics library（仅图形档 S3/CAM） | MIT |
+| ESP-IDF | v5.5.4 | 乐鑫 HAL（Xtensa 与 RISC-V 即 S3/CAM/C3 共用；Pico 不用） | Apache 2.0 |
+| esp-hal-3rdparty | NuttX 配套（mbedtls pin v3.6.2 单体版） | 乐鑫 HAL 装配：WiFi/BLE/PHY/mbedtls 子模块 | Apache 2.0 |
+| littlefs | v2.5.1（NuttX 树内） | 文件系统 / Filesystem | BSD-3-Clause |
+| SQLite | 3.45.1（nuttx-apps） | 数据库引擎 / Database engine | Public Domain |
+| curl | 8.0+（nuttx-apps） | HTTP 客户端 / HTTP client | MIT |
 | Duktape | 2.7.0 | JavaScript 引擎 / JS engine | MIT |
 | my_basic | 1.0.0 | BASIC 解释器 / BASIC interpreter | MIT |
 | Berry（可选） | nuttx-apps 固定 | 类 Python 轻量脚本 / Python-like scripting | MIT |
 | CPython（可选，仅 S3） | nuttx-apps 固定 | 完整 Python 3 / Full Python 3 | PSF |
 | jslogo（可选） | master | UCBLogo 子集海龟画图 / Turtle graphics | Apache 2.0 |
 | Logo Turtle | 自研 | Logo 海龟画图解释器 | MIT |
-| NotoSansSC | - | 中文字体 / Chinese font | OFL-1.1 |
+| **GNU nano** | **8.4** | **CLI 文本编辑器（全系统一，vi 不编入；真源码移植）** | **GPL-3.0** |
+| UCBLogo（.rpk 独立包） | 6.2.2 | Logo 解释器（binfmt 独立进程，不入固件 ROM） | GPL-2.0+ |
+| NotoSansSC | - | 中文字体（全系唯一 12px 点阵源） | OFL-1.1 |
+
+> **许可证注记**：nano 为 GPL-3.0 且按 AGENTS.md 7.4 编入五板固件（独立 builtin
+> 程序，非内核链接）；这与"固件零 GPL"声明（AGENTS.md 11.1 第 9 条）存在张力，
+> 边界划分待项目所有者明确定档，见 DEPENDENCIES.md"GPL 独立程序包策略"。
+> UCBLogo 等 GPL 解释器一律不编入 ROM，以 .rpk 安装包交付（mere aggregation）。
 
 ## 示例程序 / Example Programs
 
