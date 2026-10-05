@@ -25,6 +25,14 @@
 #include <sys/time.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+
+/* 工具链自带 netdb.h（glibc/newlib）的宏门控会遮住 getaddrinfo 原型
+ *（其头先于 nuttx/include 命中），按 NuttX libc 签名显式声明
+ *（flat 模式 FAR 为空，与 <netdb.h> 内实现一致） */
+extern int  getaddrinfo(const char *nodename, const char *servname,
+                        const struct addrinfo *hints,
+                        struct addrinfo **res);
+extern void freeaddrinfo(struct addrinfo *res);
 #include <sys/types.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -144,18 +152,32 @@ static time_t ntp_query(const char *server)
     struct timeval tv = { .tv_sec = 5, .tv_usec = 0 };
     setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 
-    /* 解析服务器地址 */
-    struct hostent *he = gethostbyname(server);
-    if (!he) {
-        syslog(LOG_ERR, "[NTP] cannot resolve %s\n", server);
-        close(sock);
-        return (time_t)-1;
-    }
+    /* 解析服务器地址（getaddrinfo：NuttX netdb 无条件声明；
+     * gethostbyname 在部分工具链头环境下不可见——2026-10-05 编入修复） */
+    {
+        struct addrinfo hints;
+        struct addrinfo *res = NULL;
+        struct sockaddr_in *sin;
+        int gai;
 
-    memset(&dest, 0, sizeof(dest));
-    dest.sin_family = AF_INET;
-    dest.sin_port   = htons(NTP_PORT);
-    dest.sin_addr   = *(struct in_addr *)he->h_addr;
+        memset(&hints, 0, sizeof(hints));
+        hints.ai_family   = AF_INET;
+        hints.ai_socktype = SOCK_DGRAM;
+
+        gai = getaddrinfo(server, NULL, &hints, &res);
+        if (gai != 0 || res == NULL) {
+            syslog(LOG_ERR, "[NTP] cannot resolve %s (%d)\n", server, gai);
+            close(sock);
+            return (time_t)-1;
+        }
+
+        sin = (struct sockaddr_in *)res->ai_addr;
+        memset(&dest, 0, sizeof(dest));
+        dest.sin_family = AF_INET;
+        dest.sin_port   = htons(NTP_PORT);
+        dest.sin_addr   = sin->sin_addr;
+        freeaddrinfo(res);
+    }
 
     /* 构造 NTP 请求包 */
     memset(&packet, 0, sizeof(packet));

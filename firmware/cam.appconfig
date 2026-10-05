@@ -40,6 +40,32 @@ CONFIG_RETRO_AUDIO_DAC=y
 # 编辑器正则支持（vi/nano 通用）
 CONFIG_ALLOW_MIT_COMPONENTS=y
 CONFIG_LIBC_REGEX=y
+# 网络管理层（2026-10-05 全量编入）：network.c + wifi_conf(/opt/etc/network.conf)
+# + ntp + firewall(/opt/etc/firewall.conf)；静态 IP 依赖 netlib+dns（NEXT_STEPS 52 关单）
+# 网络栈基础（板级 nsh defconfig 默认无网络；DNSCLIENT 依赖不会全拖齐）
+CONFIG_NET=y
+CONFIG_NET_IPv4=y
+CONFIG_NET_UDP=y
+CONFIG_NET_TCP=y
+CONFIG_NET_BROADCAST=y
+# 网络栈基础（2026-10-05）：socket/DNS/NTP 管理层全编入；WiFi 硬件驱动
+CONFIG_SCHED_WORKQUEUE=y
+CONFIG_SCHED_LPWORK=y
+CONFIG_SCHED_HPWORK=y
+CONFIG_NETDEV_LATEINIT=y
+CONFIG_NETDEV_PHY_IOCTL=y
+CONFIG_NETDB_DNSCLIENT=y
+CONFIG_NET_ICMP_SOCKET=y
+CONFIG_RETRO_WIFI=y
+CONFIG_RETRO_NTP=y
+CONFIG_NETUTILS_NETLIB=y
+CONFIG_NETUTILS_DNSCLIENT=y
+
+# LEDC PWM 补开（NEXT_STEPS 19a；DEV_GPIO 原已开）；ESP32 芯片层无
+# ADC lower half（NuttX 12.12），ADC 输入走音频 ADC 待实机
+CONFIG_PWM=y
+CONFIG_ESP32_LEDC=y
+
 # 编辑器定稿（2026-10-05）：系统默认 vi（CONFIG_SYSTEM_VI）；GNU nano
 # 为 GPL-3.0 不入 ROM，经 .rpk 包交付（apps-extra/nano，AGENTS 11.1 红线）
 CONFIG_SYSTEM_VI=y

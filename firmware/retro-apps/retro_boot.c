@@ -92,6 +92,18 @@ int retro_boot_main(int argc, char *argv[])
     rp2040_retro_start();
 #endif
 
+#ifdef CONFIG_RETRO_WIFI
+    /* 网络层（2026-10-05 全量编入）：按 /opt/etc/network.conf 自动连网
+     * （无配置静默跳过，首配经 `wifi connect`）；NTP 周期对时启动 */
+    {
+        extern int wifi_auto_connect(void);
+        extern int ntp_sync_start(void);
+
+        wifi_auto_connect();
+        ntp_sync_start();
+    }
+#endif
+
     /* 交棒 NSH：控制台/程序运行都在 CPU0（程序核） */
     return nsh_main(argc, argv);
 }

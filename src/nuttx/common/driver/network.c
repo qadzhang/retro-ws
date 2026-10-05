@@ -24,6 +24,39 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+#include <sys/time.h>
+
+/* 工具链自带 netdb.h 的宏门控会遮住 getaddrinfo 原型（同 ntp.c/
+ * network_utils.c），按 NuttX libc 签名显式声明（flat 模式 FAR 为空） */
+extern int  getaddrinfo(const char *nodename, const char *servname,
+                        const struct addrinfo *hints,
+                        struct addrinfo **res);
+extern void freeaddrinfo(struct addrinfo *res);
+
+/*
+ * WHAT : 域名 -> IPv4（getaddrinfo 适配）
+ * WHY  : gethostbyname 在目标工具链头环境不可见（2026-10-05 修）
+ */
+static int net_resolve_ipv4(const char *host, struct in_addr *ip)
+{
+    struct addrinfo hints;
+    struct addrinfo *res = NULL;
+    struct sockaddr_in *sin;
+    int gai;
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family   = AF_INET;
+    hints.ai_socktype = SOCK_DGRAM;
+
+    gai = getaddrinfo(host, NULL, &hints, &res);
+    if (gai != 0 || res == NULL)
+        return -EHOSTUNREACH;
+
+    sin = (struct sockaddr_in *)res->ai_addr;
+    *ip = sin->sin_addr;
+    freeaddrinfo(res);
+    return 0;
+}
 #include <netinet/in.h>
 #include <sys/types.h>
 #include <stdint.h>
@@ -32,6 +65,11 @@
 #include <errno.h>
 
 #include "wifi_conf.h"   /* /opt/etc/network.conf 读写（2026-10-05） */
+
+#if defined(CONFIG_NET_IPv4) && defined(CONFIG_NETUTILS_NETLIB)
+#  include <netutils/netlib.h>   /* netlib_set_ipv4addr 三件套 */
+#  include <nuttx/net/dns.h>     /* dns_add_nameserver */
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -167,30 +205,55 @@ int wifi_auto_connect(void)
 
 /*
  * WHAT : 静态 IP 应用（ip_mode=static 时在链路 up 后调用）
- * HOW  : 点分十进制转网络序后走 netlib 三件套；失败仅告警不阻断
- *        （DHCP 模式由 wifi_on_dhcp_done 回调填状态，不经本函数）
- * WHEN : 2026-10-05 新增（此前仅 DHCP 一条路）
+ * HOW  : netlib 三件套设置 wlan0 地址/掩码/网关 + dns_add_nameserver
+ *        注册 DNS（NuttX 12.12 真实 API，NEXT_STEPS 52 关单）；
+ *        DHCP 模式由 wifi_on_dhcp_done 回调填状态，不经本函数
+ * WHEN : 2026-10-05 新增；同日接通 netlib/dns（原仅记录状态）
  */
 int wifi_apply_static_ip(const struct wifi_conf_s *cf)
 {
-#ifdef CONFIG_NET_IPv4
+#if defined(CONFIG_NET_IPv4) && defined(CONFIG_NETUTILS_NETLIB)
     struct in_addr addr;
+    struct sockaddr_in sa;
+    int failures = 0;
 
     if (cf == NULL || cf->ip_mode != WIFI_IP_STATIC)
         return -EINVAL;
 
-    if (inet_pton(AF_INET, cf->ip, &addr) == 1)
+    if (inet_pton(AF_INET, cf->ip, &addr) == 1) {
         g_wifi.ip_addr = addr.s_addr;
-    if (inet_pton(AF_INET, cf->gateway, &addr) == 1)
-        g_wifi.gateway = addr.s_addr;
-    if (inet_pton(AF_INET, cf->netmask, &addr) == 1)
-        g_wifi.netmask = addr.s_addr;
-    if (cf->dns[0] != '\0' && inet_pton(AF_INET, cf->dns, &addr) == 1)
-        g_wifi.dns1 = addr.s_addr;
+        if (netlib_set_ipv4addr("wlan0", &addr) != OK)
+            failures++;
+    }
 
-    syslog(LOG_INFO, "[WIFI] static IP applied (netlib ioctl 接线登记"
-                     " NEXT_STEPS，状态已记录)\n");
-    return OK;
+    if (inet_pton(AF_INET, cf->netmask, &addr) == 1) {
+        g_wifi.netmask = addr.s_addr;
+        if (netlib_set_ipv4netmask("wlan0", &addr) != OK)
+            failures++;
+    }
+
+    if (inet_pton(AF_INET, cf->gateway, &addr) == 1) {
+        g_wifi.gateway = addr.s_addr;
+        if (netlib_set_dripv4addr("wlan0", &addr) != OK)
+            failures++;
+    }
+
+    if (cf->dns[0] != '\0' && inet_pton(AF_INET, cf->dns, &addr) == 1) {
+        memset(&sa, 0, sizeof(sa));
+        sa.sin_family = AF_INET;
+        sa.sin_port   = htons(53);
+        sa.sin_addr   = addr;
+        g_wifi.dns1 = addr.s_addr;
+        if (dns_add_nameserver((const struct sockaddr *)&sa,
+                               sizeof(sa)) != OK)
+            failures++;
+    }
+
+    syslog(failures == 0 ? LOG_INFO : LOG_WARNING,
+           "[WIFI] static IP %s (wlan0 ip=%s mask=%s gw=%s)\n",
+           failures == 0 ? "applied" : "partially applied",
+           cf->ip, cf->netmask, cf->gateway);
+    return failures == 0 ? OK : -EIO;
 #else
     (void)cf;
     return -ENOSYS;
@@ -366,7 +429,9 @@ static uint16_t icmp_checksum(const uint16_t *data, int len_bytes)
  *       sendto/recvfrom 收发并用 gettimeofday 计 RTT；
  *       依赖 CONFIG_NET_ICMP 与内核允许 RAW socket
  */
-int cmd_ping(int argc, char **argv)
+/* 原名 cmd_ping：与 NSH 内置命令撞名（NET 开启后 nshlib 自动编入），
+ * 2026-10-05 改名 retro_ping 保留为库 API；NSH `ping` 走内置实现 */
+int retro_ping(int argc, char **argv)
 {
     if (argc < 2) {
         printf("用法: ping <host> [count]\n");
@@ -384,8 +449,9 @@ int cmd_ping(int argc, char **argv)
     printf("PING %s: %d data bytes\n", host, 64);
 
 #ifdef CONFIG_NET
-    struct hostent *he = gethostbyname(host);
-    if (!he) {
+    struct in_addr resolved;
+
+    if (net_resolve_ipv4(host, &resolved) != 0) {
         printf("ping: cannot resolve %s\n", host);
         return -EHOSTUNREACH;
     }
@@ -393,7 +459,7 @@ int cmd_ping(int argc, char **argv)
     struct sockaddr_in dest;
     memset(&dest, 0, sizeof(dest));
     dest.sin_family = AF_INET;
-    dest.sin_addr = *(struct in_addr *)he->h_addr;
+    dest.sin_addr = resolved;
 
     /* ICMP 需要使用 SOCK_RAW 而非 SOCK_DGRAM / raw socket for ICMP */
     int sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
@@ -483,7 +549,8 @@ int cmd_ping(int argc, char **argv)
 /**
  * netstat 命令
  */
-int cmd_netstat(int argc, char **argv)
+/* 原名 cmd_netstat：同上撞名改名，NSH `netstat` 走内置 */
+int retro_netstat(int argc, char **argv)
 {
     (void)argc;
     (void)argv;
@@ -543,7 +610,8 @@ int cmd_netstat(int argc, char **argv)
 /**
  * ifconfig 命令
  */
-int cmd_ifconfig(int argc, char **argv)
+/* 原名 cmd_ifconfig：同上撞名改名，NSH `ifconfig` 走内置 */
+int retro_ifconfig(int argc, char **argv)
 {
     (void)argc;
     (void)argv;

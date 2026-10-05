@@ -9,8 +9,10 @@
  * WHY  : 默认拒入站/放出站/防 ping，规则持久化
  * WHO  : ESP32-S3 Retro Project Team
  * WHERE: retro-ws/src/nuttx/common/driver/firewall.c
- * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
- * HOW  : 连接跟踪表 + 规则存 Flash，fw_* NSH 命令管理
+ * WHEN : 2026-03~04 初版，2026-10-04 5W1H 标准化；2026-10-05 规则
+ *        持久化落地 /opt/etc/firewall.conf（文本 CSV，NEXT_STEPS 51 关单）
+ * HOW  : 连接跟踪表 + 规则存片上 /opt/etc（增删改即存，开机 load，
+ *        无配置文件时加载默认规则），fw_* NSH 命令管理
  */
 
 #include <nuttx/config.h>
@@ -28,6 +30,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 /*==========================
@@ -45,6 +48,14 @@
  *==========================*/
 
 #define FIREWALL_MAX_RULES      32
+
+/* 规则持久化路径（片上可写区；宿主测试可 -D 注入沙箱） */
+#ifndef FW_CONF_PATH
+#  define FW_CONF_PATH  "/opt/etc/firewall.conf"
+#endif
+#ifndef FW_CONF_DIR
+#  define FW_CONF_DIR   "/opt/etc"
+#endif
 #define FIREWALL_MAX_CONNECTIONS 128
 #define FIREWALL_CONN_TIMEOUT   300   /* 5 分钟连接超时 */
 
@@ -96,6 +107,9 @@ struct fw_conn {
     uint32_t     timestamp;  /* 最后活跃时间 */
     uint8_t      state;      /* 连接状态 */
 };
+
+/* 前置声明：增删改钩子调用保存（定义见持久化节） */
+int fw_save_rules(void);
 
 /*==========================
  *  全局变量
@@ -452,7 +466,9 @@ int fw_add_rule(uint8_t action, uint8_t proto, uint8_t dir,
 
     g_rule_count++;
 
-    syslog(LOG_INFO, "[FIREWALL] Rule added: %s\n", desc ?: "unnamed");
+    if (fw_save_rules() < 0)
+        syslog(LOG_WARNING, "[FIREWALL] rule save failed (RAM only)\n");
+    syslog(LOG_INFO, "[FIREWALL] Rule added: %s\n", desc ? desc : "unnamed");
     return OK;
 }
 
@@ -470,6 +486,8 @@ int fw_del_rule(int index)
     }
 
     g_rule_count--;
+    if (fw_save_rules() < 0)
+        syslog(LOG_WARNING, "[FIREWALL] rule save failed (RAM only)\n");
     syslog(LOG_INFO, "[FIREWALL] Rule %d deleted\n", index);
     return OK;
 }
@@ -483,6 +501,8 @@ int fw_rule_enable(int index, bool enable)
         return -EINVAL;
 
     g_rules[index].enabled = enable;
+    if (fw_save_rules() < 0)
+        syslog(LOG_WARNING, "[FIREWALL] rule save failed (RAM only)\n");
     syslog(LOG_INFO, "[FIREWALL] Rule %d %s\n", index, enable ? "enabled" : "disabled");
     return OK;
 }
@@ -501,23 +521,206 @@ void fw_load_default_rules(void)
     syslog(LOG_INFO, "[FIREWALL] Loaded %zu default rules\n", n);
 }
 
-/**
- * 从 Flash 加载规则
- */
-int fw_load_rules(void)
+
+/*==========================
+ *  规则持久化 /opt/etc/firewall.conf（2026-10-05，NEXT_STEPS 51）
+ *==========================*/
+
+/* 逐级建目录（mkdir 只建末级） */
+static void fw_mkdirs(const char *path)
 {
-    /* TODO: 从 LittleFS /var/fw/rules.dat 加载 */
-    /* 格式: 二进制规则列表 */
-    fw_load_default_rules();
+    char tmp[64];
+    char *p;
+
+    snprintf(tmp, sizeof(tmp), "%s", path);
+    for (p = tmp + 1; *p; p++) {
+        if (*p == '/') {
+            *p = '\0';
+            mkdir(tmp, 0755);
+            *p = '/';
+        }
+    }
+    mkdir(tmp, 0755);
+}
+
+/* 点分十进制 <-> u32（高位在前；与自身编码对称，roundtrip 无损） */
+static int fw_ip_parse(const char *s, uint32_t *out)
+{
+    unsigned a, b, c, d;
+
+    if (s == NULL || sscanf(s, "%u.%u.%u.%u", &a, &b, &c, &d) != 4)
+        return -EINVAL;
+    if (a > 255 || b > 255 || c > 255 || d > 255)
+        return -EINVAL;
+    *out = (a << 24) | (b << 16) | (c << 8) | d;
     return OK;
 }
 
-/**
- * 保存规则到 Flash
+static void fw_ip_str(uint32_t ip, char *buf, size_t bufsz)
+{
+    snprintf(buf, bufsz, "%u.%u.%u.%u",
+             (ip >> 24) & 0xff, (ip >> 16) & 0xff,
+             (ip >> 8) & 0xff, ip & 0xff);
+}
+
+/*
+ * WHAT : 解析一行规则 CSV（action,proto,dir,src,dst,sport,dport,enabled,desc）
+ * HOW  : 逐字段逗号切分；desc 取余下整段（可含空格不含逗号）；非法行
+ *        返回 -EINVAL 由调用方跳过
+ */
+static int fw_rule_parse_line(struct fw_rule *rule, const char *line)
+{
+    char act[8], proto[8], dir[8];
+    char src[20], dst[20];
+    int sport, dport, enabled;
+    int consumed = 0;
+
+    memset(rule, 0, sizeof(*rule));
+
+    if (sscanf(line, "%7[^,],%7[^,],%7[^,],%19[^,],%19[^,],%d,%d,%d,%n",
+               act, proto, dir, src, dst, &sport, &dport, &enabled,
+               &consumed) < 8)
+        return -EINVAL;
+
+    if (strcmp(act, "allow") == 0)
+        rule->action = FW_ACTION_ALLOW;
+    else if (strcmp(act, "deny") == 0)
+        rule->action = FW_ACTION_DENY;
+    else if (strcmp(act, "log") == 0)
+        rule->action = FW_ACTION_LOG;
+    else
+        return -EINVAL;
+
+    if (strcmp(proto, "any") == 0)
+        rule->proto = FW_PROTO_ANY;
+    else if (strcmp(proto, "tcp") == 0)
+        rule->proto = FW_PROTO_TCP;
+    else if (strcmp(proto, "udp") == 0)
+        rule->proto = FW_PROTO_UDP;
+    else if (strcmp(proto, "icmp") == 0)
+        rule->proto = FW_PROTO_ICMP;
+    else
+        return -EINVAL;
+
+    if (strcmp(dir, "in") == 0)
+        rule->dir = FW_DIR_IN;
+    else if (strcmp(dir, "out") == 0)
+        rule->dir = FW_DIR_OUT;
+    else if (strcmp(dir, "any") == 0)
+        rule->dir = FW_DIR_ANY;
+    else
+        return -EINVAL;
+
+    if (fw_ip_parse(src, &rule->src_ip) != OK ||
+        fw_ip_parse(dst, &rule->dst_ip) != OK)
+        return -EINVAL;
+    if (sport < 0 || sport > 65535 || dport < 0 || dport > 65535)
+        return -EINVAL;
+    rule->src_port = (uint16_t)sport;
+    rule->dst_port = (uint16_t)dport;
+    rule->enabled = enabled != 0;
+
+    {
+        const char *desc = line + consumed;
+        size_t len = strlen(desc);
+
+        while (len > 0 && (desc[len - 1] == '\n' || desc[len - 1] == '\r'))
+            len--;
+        if (len >= sizeof(rule->desc))
+            len = sizeof(rule->desc) - 1;
+        memcpy(rule->desc, desc, len);
+        rule->desc[len] = '\0';
+    }
+
+    return OK;
+}
+
+static const char *fw_action_str(int a)
+{
+    return a == FW_ACTION_ALLOW ? "allow" :
+           a == FW_ACTION_DENY ? "deny" : "log";
+}
+
+static const char *fw_proto_str(int p)
+{
+    return p == FW_PROTO_TCP ? "tcp" : p == FW_PROTO_UDP ? "udp" :
+           p == FW_PROTO_ICMP ? "icmp" : "any";
+}
+
+static const char *fw_dir_str(int d)
+{
+    return d == FW_DIR_IN ? "in" : d == FW_DIR_OUT ? "out" : "any";
+}
+
+/*
+ * WHAT : 从 /opt/etc/firewall.conf 加载规则（无文件/空文件 -> 默认规则）
+ * WHY  : 规则持久化片上可写区（HARDWARE 12.4）——重启不丢、无 SD 卡可用
+ * 返回 : OK / 负错误码（文件存在但全部行非法 = -EINVAL 且回退默认）
+ */
+int fw_load_rules(void)
+{
+    FILE *fp = fopen(FW_CONF_PATH, "r");
+    char line[192];
+    int loaded = 0;
+
+    if (fp == NULL) {
+        fw_load_default_rules();          /* 首次开机：默认规则 */
+        return OK;
+    }
+
+    while (fgets(line, sizeof(line), fp) != NULL) {
+        if (line[0] == '#' || line[0] == '\n' || line[0] == '\r')
+            continue;
+        if (g_rule_count >= FIREWALL_MAX_RULES)
+            break;
+        if (fw_rule_parse_line(&g_rules[g_rule_count], line) == OK) {
+            g_rule_count++;
+            loaded++;
+        }
+    }
+    fclose(fp);
+
+    if (loaded == 0) {
+        g_rule_count = 0;
+        fw_load_default_rules();
+        return -EINVAL;
+    }
+
+    syslog(LOG_INFO, "[FIREWALL] Loaded %d rules from %s\n", loaded,
+           FW_CONF_PATH);
+    return OK;
+}
+
+/*
+ * WHAT : 保存全部规则到 /opt/etc/firewall.conf（CSV 文本）
+ * 返回 : OK / 负错误码
  */
 int fw_save_rules(void)
 {
-    /* TODO: 保存到 LittleFS /var/fw/rules.dat */
+    FILE *fp;
+
+    fw_mkdirs(FW_CONF_DIR);
+    fp = fopen(FW_CONF_PATH, "w");
+    if (fp == NULL)
+        return -errno;
+
+    fprintf(fp, "# retro-ws firewall.conf（fw_save_rules 生成）\n");
+    fprintf(fp, "# action,proto,dir,src,dst,sport,dport,enabled,desc\n");
+
+    for (int i = 0; i < g_rule_count; i++) {
+        struct fw_rule *r = &g_rules[i];
+        char src[20], dst[20];
+
+        fw_ip_str(r->src_ip, src, sizeof(src));
+        fw_ip_str(r->dst_ip, dst, sizeof(dst));
+        fprintf(fp, "%s,%s,%s,%s,%s,%u,%u,%d,%s\n",
+                fw_action_str(r->action), fw_proto_str(r->proto),
+                fw_dir_str(r->dir), src, dst,
+                r->src_port, r->dst_port, r->enabled ? 1 : 0,
+                r->desc[0] ? r->desc : "-");
+    }
+    fclose(fp);
+
     return OK;
 }
 

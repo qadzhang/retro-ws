@@ -25,6 +25,39 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <netdb.h>
+
+/* 工具链自带 netdb.h 的宏门控会遮住 getaddrinfo 原型（同 ntp.c），
+ * 按 NuttX libc 签名显式声明（flat 模式 FAR 为空） */
+extern int  getaddrinfo(const char *nodename, const char *servname,
+                        const struct addrinfo *hints,
+                        struct addrinfo **res);
+extern void freeaddrinfo(struct addrinfo *res);
+
+/*
+ * WHAT : 域名 -> IPv4（getaddrinfo 适配，AF_INET 首结果）
+ * WHY  : 旧 gethostbyname 路径在目标工具链头环境不可见（2026-10-05
+ *        网络层首次编入修复）；返回 0 成功且 *ip 已填
+ */
+static int net_resolve_ipv4(const char *host, struct in_addr *ip)
+{
+    struct addrinfo hints;
+    struct addrinfo *res = NULL;
+    struct sockaddr_in *sin;
+    int gai;
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family   = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+
+    gai = getaddrinfo(host, NULL, &hints, &res);
+    if (gai != 0 || res == NULL)
+        return -EHOSTUNREACH;
+
+    sin = (struct sockaddr_in *)res->ai_addr;
+    *ip = sin->sin_addr;
+    freeaddrinfo(res);
+    return 0;
+}
 #include <arpa/inet.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -187,8 +220,8 @@ ssize_t curl_get(const char *url, char *data, size_t len)
     }
 
     /* DNS 解析 */
-    struct hostent *he = gethostbyname(host);
-    if (!he) {
+    struct in_addr resolved;
+    if (net_resolve_ipv4(host, &resolved) != 0) {
         syslog(LOG_ERR, "[CURL] Cannot resolve host: %s\n", host);
         return -EHOSTUNREACH;
     }
@@ -212,7 +245,7 @@ ssize_t curl_get(const char *url, char *data, size_t len)
     memset(&dest, 0, sizeof(dest));
     dest.sin_family = AF_INET;
     dest.sin_port = htons(port);
-    dest.sin_addr = *(struct in_addr *)he->h_addr;
+    dest.sin_addr = resolved;
 
     if (connect(sock, (struct sockaddr *)&dest, sizeof(dest)) < 0) {
         close(sock);
@@ -487,8 +520,8 @@ int wget_download(const char *url, const char *output, bool continue_download)
             return uret;
         }
 
-        struct hostent *he = gethostbyname(host);
-        if (!he) {
+        struct in_addr resolved;
+        if (net_resolve_ipv4(host, &resolved) != 0) {
             syslog(LOG_ERR, "[WGET] Cannot resolve host: %s\n", host);
             free(buf);
             close(fd);
@@ -506,7 +539,7 @@ int wget_download(const char *url, const char *output, bool continue_download)
         memset(&dest, 0, sizeof(dest));
         dest.sin_family = AF_INET;
         dest.sin_port = htons(port);
-        dest.sin_addr = *(struct in_addr *)he->h_addr;
+        dest.sin_addr = resolved;
 
         if (connect(sock, (struct sockaddr *)&dest, sizeof(dest)) < 0) {
             close(sock);

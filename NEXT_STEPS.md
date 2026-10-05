@@ -53,7 +53,7 @@ c3（合宙核心板 CLI 档）、pico（本地教学终端 CLI 档）。
 | ~~2a~~ | ~~ESP32-C3 编译验证~~ 已完成(2026-10-04) | `build_firmware.sh c3`；236.5KB/4MB |
 | 2b | C3 控制台双款验证 | esp32c3 | 经典款 UART0 (GPIO20/21) 与简约款原生 USB 各烧一遍 |
 | ~~3~~ | ~~WS2812 状态 LED RMT 驱动~~ 已完成(2026-10-04 深夜) | esp32s3 | ws2812_rmt.c 经 /dev/rmt0（CONFIG_RMT+RMTCHAR+ESP_RMT）硬件驱动；宿主 353 测试+变异 100%；剩实机点灯验证 |
-| 4 | Kconfig 板本/容量选项 | esp32s3 | 新增 `CONFIG_RETRO_DEVKITC_V10`（LED 引脚选择）与 `CONFIG_RETRO_FLASH_8MB`（N8R8 分区表） |
+| ~~4~~ | ~~Kconfig 板本/容量选项~~ 已完成(2026-10-05) | esp32s3 | 直写树内 choice：s3/s3n8 `ESP32S3_DEVKITC_1_V11=y`（v1.1 量产 WS2812=GPIO38，纠正树内 v1.0 默认）+ 模组 `ARCH_CHIP_ESP32S3WROOM1N16R8/N8R8`（联动 Flash/PSRAM）；wrapper select 方案因 Kconfig 违规（select choice 报错）废弃 |
 | 5 | QEMU 模拟运行 | esp32s3 | Espressif 专用 QEMU |
 | 6 | ESP32-S3 开发板烧录（N16R8/N8R8） | esp32s3 | I2S 驱动实机验证 |
 | 7 | 验证串口输出和 NSH | 全板 | 115200 8N1，S3 用 UART0 GPIO43/44（JTAG 已让渡给音频） |
@@ -70,13 +70,13 @@ c3（合宙核心板 CLI 档）、pico（本地教学终端 CLI 档）。
 | 13 | CAM 摄像头模式（可选功能） | OV2640 与 CVBS/音频互斥，按需切换启用 |
 | 14 | Berry 编译验证 | `RETRO_SCRIPT_BERRY=y`：核对 be_getindex/be_loadfile 与 nuttx-apps 固定 berry 版本的 API 一致性 |
 | 15 | CPython 编译验证 | `RETRO_SCRIPT_PYTHON=y`（仅 S3 N16R8）：配置 ROMFS 标准库镜像（`esp32s3-devkit:python` 配置可参考），核对 `<Python.h>` 包含路径 |
-| 16 | jslogo 集成验证 | 下载 deps/jslogo 后：把 JS 源码拷入 SD `/sdcard/scripts/logo/lib/`，将 jslogo 前端 canvas 获取处改为全局 RetroCanvas（预计一处改动） |
+| ~~16~~ | ~~jslogo 集成验证~~ 已完成(2026-10-04 晚) | logo_jslogo.c 内置 boot JS 生成 RetroCanvas（2d 上下文子集），jslogo 已入 S3/CAM ROM；剩实机运行验证（归 M13） |
 | 17 | binfmt/LOADABLE 链路验证 | defconfig 开 `CONFIG_ELF`+`CONFIG_BUILD_LOADABLE`+`CONFIG_EXTERNAL_UCBLOGO`，先跑通 NuttX 官方 hello ELF 再跑 ucblogo.elf |
 | 17a | nano .rpk LOADABLE 编译验证 | `CONFIG_EXTERNAL_NANO=y`（apps-extra/nano）：deps/nano + nano_port 以独立 ELF 构建（2026-10-05 nano 出 ROM 转包交付，HARDWARE 13.2）；宿主 mini-curses 链路 2026-10-04 已验证，剩交叉 LOADABLE 编译 + 实机 |
 | 17b | 片上可写数据分区落地（littlefs 挂 /opt） | 安卓式分区（HARDWARE 12.4）：固件只读区 + 可写数据区承载系统包（/opt/bin）、包数据库（/opt/var/lib/rpkg）、用户数据（/opt/home）；分区 offset 按板 flash 总量定（S3 16/8MB、CAM/C3 4MB、Pico 2MB）+ mkfs + 开机挂接——`Root: system`、DB/crontab/boot.cfg 迁址 /opt 的实机前提（机制侧代码已就绪并有宿主测试） |
 | 18 | .rpk 包管理器实机验证 | `pkg install` 全链路：ustar 解析/CRC/维护脚本（需 CONFIG_SYSTEM 与 NSH 脚本支持）；格式契约已经主机端模拟验证通过 |
 | 19 | UCBLogo NuttX 适配 | 核对 src/*.c 文件清单、终端 IO（-termios/textscreen 依赖需换 NSH stdin/stdout）、Makefile 通配符改显式列表 |
-| ~~19a~~ | ~~retro_gpio 后端验证~~ 已完成(2026-10-04) | ioctl 已按真实头修正（ioexpander/gpio.h，WRITE=0/1、READ=bool*、SETPINTYPE=枚举）；占用拦截 29 项宿主测试全绿；剩：defconfig 开 CONFIG_DEV_GPIO/ADC/PWM 实机验证 |
+| ~~19a~~ | ~~retro_gpio 后端验证~~ 已完成(2026-10-05 全关) | ioctl 按真实头修正 + 占用拦截宿主测试全绿（10-04）；五板 defconfig 已按芯片能力开 DEV_GPIO/ADC/PWM（S3 全三件、CAM GPIO+LEDC、C3 GPIO、Pico 全三件——ESP32/C3 芯片层无 ADC/PWM lower half）；剩实机点灯/读值 |
 | ~~19b~~ | ~~WindowMaker 外壳编译验证~~ 已完成(2026-10-04) | 真实 LVGL9.5 头语法矩阵 + 无头模拟渲染（两种外壳截图 + glm 视觉审查）通过；剩实机 Dock/根菜单操作验证 |
 | ~~20~~ | ~~CLI `ime` 命令~~ 已完成(2026-10-05) | CCDOS 式：ime on 底部常驻反色条（cvbs_ime.c）+ Ctrl+Space 切换 + Ctrl+Q 退出；宿主 38 检查 + glm53f 验收 pass |
 | 20a | GUI 词组完整上屏 | 候选机制现为单字（词组取首字）；升级 candidates 为码点串以整词上屏（你好）；CLI 侧已整词 |
@@ -99,11 +99,11 @@ c3（合宙核心板 CLI 档）、pico（本地教学终端 CLI 档）。
 | 32 | NuttX 12.12 -> 13.0 升级评估 | 需重做 esp-hal-3rdparty 配对与补丁 workaround |
 | 33 | ESP-IDF v5.5 -> v6.x 升级评估 | v5.5 LTS 至 2028-01，无迫切性 |
 | 34 | esp32s3.h I2S 寄存器模型对表 | 现有偏移集与 deps esp32s3_i2s.h（INT 块 0x0C-0x18、TX_CLKM 0x34、走 GDMA）存在两说，硬件联调时以 TRM 终裁 |
-| 35 | I2S 13.5MHz 采样实现 | S3 GDMA 分频能否精确到 864 样本/行×15625Hz；CAM 为 APB/6≈13.33MHz（1.25% 偏差），不同步则改 M/D 小数分频 |
+| ~~35~~ | ~~I2S 13.5MHz 采样实现~~ 已被 6.2 定稿取代(2026-10-04) | 每板整数分频表落定：S3/CAM/C3=13.3333MHz 853 样本/行、Pico=13.5063MHz 864 样本/行（HARDWARE 6.2），无小数分频需求 |
 | 36 | BLE NimBLE 移植（键鼠 HID） | S3/CAM ble_* 现封存于 CONFIG_RETRO_BLE_STACK_IDF（IDF 路线不适用于 NuttX）；NimBLE 主机 + HID-IN 是正路。**输入优先级原则（2026-10-05）：USB > 蓝牙 > 串口**——S3/CAM/C3 都要有 BLE HID（C3 芯片有 BLE 5 且无 USB 主机，BLE 是其唯一 HID 路线；Pico 无蓝牙不适用） |
 | 37 | FSK 完整成帧 | TX 已接 audio_play_pcm 硬件出声（2026-10-04 深夜）；RX 仍仅载波监测——起止位检测/字节组装待做（需 ADC DMA 输入通道） |
-| 38 | 拼音 GB2312→Unicode 映射表 | 候选字当前按码点显示，需码表才能出正确字形 |
-| 39 | 构建集成 include 路径 | 固件构建需为 my_basic/duktape/berry 补 -I（代码已 __has_include 双路径兼容） |
+| ~~38~~ | ~~拼音 GB2312→Unicode 映射表~~ 已完成(2026-10-05) | 词库 GB2312 码已原地重写为 Unicode（§24），CLI 侧整词上屏；无独立码表需求 |
+| ~~39~~ | ~~构建集成 include 路径~~ 已完成(2026-10-04) | 五板全编译持续通过（引擎源经 $(ENGINES) 路径接入），__has_include 双路径兜底未再触发 |
 | 40 | 崩溃计数持久化 | 看门狗重启计数需写 Flash（RTC 内存或易失文件），安全模式逻辑才真正生效 |
 | 41 | Pico 文件 IO 服务实义化 | rp2040 Core1 服务当前为心跳占位；接 SD/SPI0 驱动后挂真实作业 |
 | 42 | 五板实机烧录验证 | esptool(ESP 系)/UF2 拖入(Pico)；验 NSH 控制台、双核日志、pkg 命令 |
@@ -111,12 +111,13 @@ c3（合宙核心板 CLI 档）、pico（本地教学终端 CLI 档）。
 | 44 | WiFi/BLE 档 | RETRO_WIFI/BLE 默认关（体积优先）；开启需重验 ROM |
 | 45 | C3/Pico CVBS 硬件钩子 | **已完成（2026-10-04 晚）**：C3=I2S0 PDM raw 单脚 sigma-delta、Pico=PIO 4-bit + DMA 逐行（Core1 生成） |
 | 46 | NSH 全输出上屏 | **已完成（2026-10-04 晚）**：/dev/cvbscon + UART 键盘泵 + NSH_ALTCONDEV（C3/Pico） |
-| 47 | C3 网络 + ping/telnetd | C3 有 WiFi（未开 NET 栈）；开启后加 ping/telnetd/w3m |
+| ~~47~~ | ~~C3 网络栈开启~~ 代码侧完成(2026-10-05) | c3.appconfig 已开 RETRO_WIFI/NTP/NETLIB/DNSCLIENT（网络管理层+静态 IP 全编入）；WiFi 驱动 bring-up 与 telnetd/w3m 归实机阶段（M13） |
 | 48 | 浏览器（Links 2.30 移植） | nuttx-apps 无现成浏览器；需移植（webclient 库已有；w3m 弃议）|
 | 49 | GPIO 兼容层扩总线 | **已完成（2026-10-04 晚）**：retro_bus（硬后端探测 + 软总线回退 + 三引擎绑定） |
 | 50 | 脚本 XIP（ROM 直跑） | **已完成（2026-10-04 晚）**：mkromfs.py + /rom/scripts + script 命令（长度型接口直吃 Flash 指针）|
-| 51 | firewall 规则持久化 | RAM 态 -> /opt/etc/firewall.conf（load 于 init、save 于增删；格式同 network.conf key=value 或逐行规则） |
-| 52 | 静态 IP netlib 接线 | wifi_apply_static_ip 现仅记录状态；接 netlib_set_ipv4addr/netmask/dripv4addr + dns_add_server（实机联调时做） |
+| ~~51~~ | ~~firewall 规则持久化~~ 已完成(2026-10-05) | /opt/etc/firewall.conf CSV 文本（action,proto,dir,src,dst,sport,dport,enabled,desc）；load 于 init（无文件载默认）、增/删/启停即存；语法矩阵通过 |
+| ~~52~~ | ~~静态 IP netlib 接线~~ 已完成(2026-10-05) | netlib 三件套 + dns_add_nameserver 真实调用（NuttX 12.12 API 已核对）；WiFi 板 appconfig 开 NETUTILS_NETLIB/DNSCLIENT；剩实机 wlan0 联调 |
+| 53 | WiFi 硬件驱动 bring-up（esp_wifi） | 网络管理层已全链入五板（2026-10-05）；开 ESPRESSIF_WIFI 会拖 esp-hal mbedtls 补丁链（补丁按 espressif pin 的 tf-psa 拆分结构写，对上游 v3.6.2 单体源 apply 不上——即构建日志里的 framework/tests 报错）；需按 pin 结构取 mbedtls 或写适配补丁，与实机联调一并做 |
 
 | 51 | 真机联调（示波器） | AV 各板首板联调：S3 LCD PCLK 13.3333MHz、C3 PDM 位率/位序、Pico SM 时钟校准（代码已按 TRM 推导，标注见各驱动头注释）|
 | 52 | C3/Pico 硬件 I2C/SPI 驱动 | C3=NuttX 无 esp32c3 i2c/spi 驱动（现走位摆软总线）；Pico=rp2040_i2c 已有可接 /dev/i2c0（注：S3/CAM 已于 2026-10-04 深夜开硬件 I2C0，见 HARDWARE.md 13.1） |

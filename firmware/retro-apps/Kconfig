@@ -48,6 +48,15 @@ config RETRO_MEMMON
     bool "内存水位监控（80/90/95%）"
     default y if !RETRO_BOARD_RP2040
 
+# ---- S3 板本/模组容量（NEXT_STEPS 4，2026-10-05）----
+# 板本与 Flash 容量直接使用 NuttX 树内 choice 符号（appconfig 直写，
+# 不可用 select 包一层——select choice 是 Kconfig 违规，olddefconfig 报错）：
+#   板本：CONFIG_ESP32S3_DEVKITC_1_V11=y（v1.1 量产 WS2812=GPIO38，
+#         本项目默认）/ _V10（v1.0 早期 WS2812=GPIO48，树内默认值）
+#   模组：CONFIG_ARCH_CHIP_ESP32S3WROOM1N16R8=y（s3，16M+8M Octal）
+#         CONFIG_ARCH_CHIP_ESP32S3WROOM1N8R8=y（s3n8，8M+8M Octal）
+# 详见 HARDWARE.md 2.8 / 12.4
+
 config RETRO_NANO
     bool "GNU nano 8.4 编入固件（实验选项，默认关闭）"
     default n

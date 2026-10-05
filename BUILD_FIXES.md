@@ -6,6 +6,35 @@
 
 ---
 
+## 2026-10-05（续6）：网络管理层全量编入五板（连环六修）
+
+### 问题
+RETRO_WIFI 此前从未进固件（五板 appconfig 均未开），首次编入连环暴露六层问题。
+
+### 修复链
+1. Kconfig select choice 违规（RETRO_DEVKITC_V10/RETRO_FLASH_8MB wrapper
+   select 树内 choice 符号，olddefconfig 致命报错）→ 废 wrapper，appconfig
+   直写 ESP32S3_DEVKITC_1_V11 + ARCH_CHIP_ESP32S3WROOM1N16R8/N8R8
+   （并纠正树内默认 v1.0/GPIO48 → 本项目 v1.1/GPIO38，HARDWARE 2.8）
+2. gethostbyname/getaddrinfo 目标工具链头门控（三文件统一 getaddrinfo +
+   显式原型：ntp.c / network_utils.c / network.c）
+3. esp 三板板级 defconfig 无网络 → 对照树内 c3 wifi defconfig 补权威符号集
+   （NET/IPv4/TCP/UDP/BROADCAST/ICMP_SOCKET/NETDB_DNSCLIENT/SCHED_LPWORK/
+   HPWORK/NETDEV_LATEINIT/PHY_IOCTL）
+4. network.c cmd_ping/netstat/ifconfig 与 nshlib 内置撞名 → 改名 retro_*
+5. 网络层是库内死代码（无人引用，c3 假成功）→ retro_boot 接
+   wifi_auto_connect + ntp_sync_start
+6. ESPRESSIF_WIFI 拖 esp-hal mbedtls 补丁链（补丁按 espressif pin 的
+   tf-psa 拆分结构写，对上游 v3.6.2 单体源 apply 不上，即长期可见的
+   framework/tests 报错真身）→ bring-up 暂缓，登记 NEXT_STEPS 53
+
+### 验证
+五板全编译通过：pico 1105.4 / c3 1497.3 / cam 1852.0 / s3·s3n8 1855.3 KB
+（S3 较无网络版 +67KB = 网络栈+DNS+NTP+防火墙实链入）；宿主全套 ALL PASS；
+语法矩阵 90/90。
+
+---
+
 ## 2026-10-05（续5）：语法矩阵被构建产物污染（arch/ 软链）
 
 ### 问题

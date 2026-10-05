@@ -338,6 +338,34 @@
 - 板卡几何经官方 DXF/wiki 核实（DevKitC 22.86mm/CAM 22.86/合宙 21.0
   非 2.54 网格/Pico 17.78）
 
+### 28. 无实机代码项批量关单（2026-10-05 晚，用户方针：代码先写好跑通，实测日后）⭐
+- **firewall 持久化（NEXT_STEPS 51 关）**：/opt/etc/firewall.conf CSV 文本，
+  init 载入（无文件→默认规则）、增/删/启停即存；点分 IP 互转对称可回读
+- **静态 IP 真接线（52 关）**：wifi_apply_static_ip 接 netlib 三件套 +
+  dns_add_nameserver（NuttX 12.12 真实 API）；WiFi 板开 NETUTILS_NETLIB/DNSCLIENT
+- **网络管理层全量编入（47 代码侧）**：s3/s3n8/cam/c3 开 RETRO_WIFI/NTP
+  （此前 network.c 从未进固件）；WiFi 驱动 bring-up 归实机
+- **Kconfig 板本/容量（4 关）**：RETRO_DEVKITC_V10→select 树内
+  ESP32S3_DEVKITC_1_V10（WS2812=48）；RETRO_FLASH_8MB→ESP32S3_FLASH_8M
+- **retro_gpio /dev 后端全开（19a 关）**：五板按芯片能力 DEV_GPIO/ADC/PWM
+  （S3 全三件、CAM GPIO+LEDC、C3 GPIO、Pico 全三件；ESP32/C3 芯片层
+  无 ADC/PWM lower half 属 NuttX 12.12 现状）
+- **复核关单**：16 jslogo（RetroCanvas shim 已备）、35（被 HARDWARE 6.2
+  整数分频表取代）、38（词库已重写 Unicode）、39（五板持续编译通过）
+- **网络栈编入连环修（同日）**：①select choice 违规（板本/模组 wrapper
+  改 appconfig 直写树内 choice，并纠正树内默认 v1.0→本项目 v1.1/GPIO38）；
+  ②gethostbyname/getaddrinfo 在目标工具链头环境被宏门控（ntp.c/
+  network_utils.c/network.c 三处统一改 getaddrinfo+显式原型）；③esp 三板
+  板级 defconfig 无网络（补 NET/IPv4/TCP/UDP/ICMP_SOCKET/NETDB_DNSCLIENT/
+  WORKQUEUE 权威符号集，对照树内 c3 wifi defconfig）；④network.c 三个
+  cmd_* 与 NSH 内置网络命令撞名（改名 retro_* 库 API）；⑤retro_boot 接
+  wifi_auto_connect+ntp_sync_start（此前网络层是库内死代码）；⑥WiFi 硬件
+  驱动（ESPRESSIF_WIFI→esp-hal mbedtls 补丁链对不上 v3.6.2 单体源）bring-up
+  暂缓登记 NEXT_STEPS 53
+- 验证：**五板全编译通过**（pico 1105.4 / c3 1497.3 / cam 1852.0 /
+  s3·s3n8 1855.3 KB，网络管理层+DNS+NTP+防火墙全链入）+ 宿主全套
+  ALL PASS + 语法矩阵 90/90
+
 ### 27. 网络配置文件化 + 持久化状态盘点收口（2026-10-05）⭐
 - **盘点结果**：WiFi 凭据原本无任何配置文件（调用方传入）、firewall 规则
   纯 RAM（文档曾失实声称存 Flash）、BLE bond 存 SD 卡（无卡不可用）
