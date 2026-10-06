@@ -121,13 +121,19 @@ echo "[sim] OK: /tmp/retro_sim/{lvgl_sim,cvbs_pipeline,lvgl_sim_color,console_si
 BOARDS="pico s3 s3n8 cam c3"
 for b in $BOARDS; do
     case "$b" in
-        pico) BDEF=RETRO_SIM_BOARD_PICO;  BINC="$ROOT/src/nuttx/rp2040/board" ;;
-        s3)   BDEF=RETRO_SIM_BOARD_S3;    BINC="$ROOT/src/nuttx/esp32s3/board" ;;
-        s3n8) BDEF=RETRO_SIM_BOARD_S3N8;  BINC="$ROOT/src/nuttx/esp32s3/board" ;;
-        cam)  BDEF=RETRO_SIM_BOARD_CAM;   BINC="$ROOT/src/nuttx/esp32/board" ;;
-        c3)   BDEF=RETRO_SIM_BOARD_C3;    BINC="$ROOT/src/nuttx/esp32c3/board" ;;
+        pico) BDEF=RETRO_SIM_BOARD_PICO;  BINC="$ROOT/src/nuttx/rp2040/board";  BCFG="-DCONFIG_ARCH_CHIP_RP2040" ;;
+        s3)   BDEF=RETRO_SIM_BOARD_S3;    BINC="$ROOT/src/nuttx/esp32s3/board"; BCFG="-DCONFIG_ARCH_CHIP_ESP32S3 -DCONFIG_ESP32S3_SPIRAM" ;;
+        s3n8) BDEF=RETRO_SIM_BOARD_S3N8;  BINC="$ROOT/src/nuttx/esp32s3/board"; BCFG="-DCONFIG_ARCH_CHIP_ESP32S3 -DCONFIG_ESP32S3_SPIRAM" ;;
+        cam)  BDEF=RETRO_SIM_BOARD_CAM;   BINC="$ROOT/src/nuttx/esp32/board";   BCFG="-DCONFIG_ARCH_CHIP_ESP32 -DCONFIG_ESP32_SPIRAM" ;;
+        c3)   BDEF=RETRO_SIM_BOARD_C3;    BINC="$ROOT/src/nuttx/esp32c3/board"; BCFG="-DCONFIG_ARCH_CHIP_ESP32C3" ;;
     esac
     echo "[sim] building board_cli_$b..."
+    # 真包模块 sysinfo_mod.c（-Dmain= 改名避免与模拟器 main 冲突；
+    # 板 CONFIG 快照与固件包构建同口径，14.5）
+    gcc -Wall -g -c $BCFG -Dmain=sysinfo_mod_main \
+        -I "$ROOT/tests/host/stubs" -I "$ROOT/src/nuttx/common" \
+        "$ROOT/src/nuttx/common/apps/pkg_mods/sysinfo_mod.c" \
+        -o "/tmp/lvgl_obj/sysinfo_$b.o"
     gcc -Wall -Wextra -g -DCONFIG_RETRO_PINYIN_CLI=1 "-D$BDEF=1" \
         -I "$ROOT/tests/host/stubs" \
         -I "$ROOT/src/nuttx/common" -I "$ROOT/src/nuttx/common/driver" \
@@ -135,6 +141,7 @@ for b in $BOARDS; do
         -I "$ROOT/src/lvgl/fonts" -I /tmp/fontbridge \
         -I "$ROOT/deps/my_basic/core" -I "$ROOT/deps/duktape/src" \
         "$ROOT/tools/sim/board_cli_sim.c" \
+        "/tmp/lvgl_obj/sysinfo_$b.o" \
         "$ROOT/src/nuttx/common/driver/cvbs_console.c" \
         "$ROOT/src/nuttx/common/driver/cvbs_ime.c" \
         "$ROOT/src/nuttx/common/driver/drv_pinyin.c" \

@@ -63,6 +63,30 @@
 #define CON_W        320          /* 全系 CLI 控制台档 320x240（各板 */
 #define CON_H        240          /* hw 档案 RES_CONSOLE_*，HARDWARE 6.4） */
 
+/*==== ROM 预装名单（firmware/packages/<板>.list，14.5 离线安装）====
+ * control 字段（Name/Version/Description）与 rpkg_list 三列格式同源 */
+
+struct pkg_row_s {
+    const char *name;
+    const char *ver;
+    const char *desc;
+};
+
+static const struct pkg_row_s PKGS_CLI[] = {
+    { "sysinfo", "1.0.0-1", "系统信息（机型/CPU/内存/网络/时间）" },
+};
+
+static const struct pkg_row_s PKGS_GUI[] = {
+    { "sysinfo",     "1.0.0-1", "系统信息（机型/CPU/内存/网络/时间）" },
+    { "editor",      "1.0.0-1", "GUI 文本编辑器（行号/搜索/多标签）" },
+    { "browser",     "1.0.0-1", "简易网页浏览器（URL 栏 + HTML 渲染）" },
+    { "terminal",    "1.0.0-1", "命令行终端（16 个内置命令）" },
+    { "sqlite",      "1.0.0-1", "SQL 查询/执行/结果导出" },
+    { "player",      "1.0.0-1", "WAV 音频播放（进度条/音量控制）" },
+    { "recorder",    "1.0.0-1", "音频录制（波形显示）" },
+    { "minesweeper", "1.0.0-1", "经典扫雷游戏（9x9）" },
+};
+
 /*==== 板 profile：板间差异唯一注入点（引脚事实仍以 hw 档案为源）====*/
 
 struct board_profile_s {
@@ -71,6 +95,11 @@ struct board_profile_s {
     const char *banner3;        /* 横幅行 3：控制台/无线/键盘 */
     const char *uname1;         /* uname -a 行 1 */
     const char *uname2;         /* uname -a 行 2 */
+    int         arena_kb;       /* XIP 模块可写段 arena（14.4：
+                                 * s3/s3n8/cam=128KB 入 PSRAM
+                                 * .ext_ram.bss；c3=16KB/pico=8KB 入 SRAM） */
+    const struct pkg_row_s *pkgs;   /* ROM 预装名单（firmware/packages/） */
+    int         pkg_count;
     const char *sram_label;     /* free 标题 */
     int         sram_budget;    /* free 预算基数（字节） */
     bool        fb_psram;       /* 帧缓冲驻 PSRAM（HARDWARE 12.3/12.5：
@@ -100,12 +129,13 @@ static const struct board_profile_s g_board = {
     "AV 控制台 320x240 | WiFi+BLE | USB HID 键盘",
     "NuttX 12.12.0 esp32s3-devkitc:nsh xtensa",
     "ESP32-S3 N16R8 16MB flash + 8MB psram",
+    128, PKGS_GUI, 8,
     "ESP32-S3 SRAM 预算 / budget: 512KB",
     512 * 1024,
     true,
     64,
-    "PSRAM 8MB: 帧缓冲 75.0KB 驻留",
-    "  GUI 档资产(LVGL堆/字库/色32KB)另计",
+    "PSRAM 8MB: 帧缓冲 75.0KB + arena 128KB 驻留",
+    "  arena=.ext_ram.bss(14.4) | GUI 资产另计",
     { "  PID 状态  任务",
       "    1 就绪  nsh (Core0)",
       "    2 运行  video LCD_CAM 逐行 (Core1)",
@@ -129,12 +159,13 @@ static const struct board_profile_s g_board = {
     "AV 控制台 320x240 | WiFi+BLE | USB HID 键盘",
     "NuttX 12.12.0 esp32s3-devkitc:nsh xtensa",
     "ESP32-S3 N8R8 8MB flash + 8MB psram",
+    128, PKGS_GUI, 8,
     "ESP32-S3 SRAM 预算 / budget: 512KB",
     512 * 1024,
     true,
     64,
-    "PSRAM 8MB: 帧缓冲 75.0KB 驻留",
-    "  GUI 档资产(LVGL堆/字库/色32KB)另计",
+    "PSRAM 8MB: 帧缓冲 75.0KB + arena 128KB 驻留",
+    "  arena=.ext_ram.bss(14.4) | GUI 资产另计",
     { "  PID 状态  任务",
       "    1 就绪  nsh (Core0)",
       "    2 运行  video LCD_CAM 逐行 (Core1)",
@@ -158,12 +189,13 @@ static const struct board_profile_s g_board = {
     "AV 控制台 320x240 | WiFi+BT/BLE | BLE HID 键盘",
     "NuttX 12.12.0 esp32-aithinker:cam xtensa",
     "ESP32 4MB flash + 4MB psram + OV2640(可选)",
+    128, PKGS_GUI, 8,
     "ESP32-CAM SRAM 预算 / budget: 396KB 可用",
     396 * 1024,
     true,
     64,
-    "PSRAM 4MB: 帧缓冲 75.0KB 驻留",
-    "  GUI 档资产(LVGL堆/字符缓存)另计(12.5)",
+    "PSRAM 4MB: 帧缓冲 75.0KB + arena 128KB 驻留",
+    "  arena=.ext_ram.bss(14.4) | GUI 资产另计(12.5)",
     { "  PID 状态  任务",
       "    1 就绪  nsh (Core0)",
       "    2 运行  video DAC1 逐行 (Core1)",
@@ -187,6 +219,7 @@ static const struct board_profile_s g_board = {
     "AV 控制台 320x240 | WiFi+BLE | UART 键盘泵",
     "NuttX 12.12.0 luatos-esp32c3:nsh risc-v",
     "ESP32-C3 RV32IMC 160MHz 4MB flash 无PSRAM",
+    16, PKGS_CLI, 1,
     "ESP32-C3 SRAM 预算 / budget: 400KB",
     400 * 1024,
     false,
@@ -216,6 +249,7 @@ static const struct board_profile_s g_board = {
     "AV 控制台 320x240 | SD SPI0 | PIO-USB 键盘",
     "NuttX 12.12.0 raspberrypi-pico arm",
     "RP2040 Cortex-M0+ x2 @133MHz 2MB flash",
+    8, PKGS_CLI, 1,
     "RP2040 SRAM 预算 / budget: 264KB",
     264 * 1024,
     false,
@@ -500,10 +534,11 @@ static void cmd_help(void)
     printf("CLI 命令 / commands:\n");
     printf("  uname free ps ls cat echo clear\n");
     printf("  script <file>    运行 BASIC/JS 教学脚本\n");
+    printf("  run <模块>       执行 ROM 预装模块（XIP, 14.5）\n");
     printf("  ime on|off|<拼音> CCDOS 式输入法\n");
     printf("  gpio config|write|read|release <pin> [arg]\n");
     printf("  led on|off       板载指示灯（系统直控）\n");
-    printf("  pkg list         .rpk 软件包（arch=%s）\n", g_board.pkg_arch);
+    printf("  pkg list         ROM 预装包（两级 DB 合并）\n");
     printf("  selftest shot exit\n");
 }
 
@@ -529,6 +564,8 @@ static void cmd_free(void)
                g_board.kernel_kb);
         printf("  NSH栈 ~8KB 估算\n");
         printf("  脚本引擎堆 ~16KB 估算\n");
+        printf("  XIP arena %dKB (14.4, .ext_ram.bss)\n",
+               g_board.arena_kb);
         printf("  空闲      ~%6.1fKB\n",
                (g_board.sram_budget - CON_STATIC_BYTES -
                 (long)g_board.kernel_kb * 1024 - 24 * 1024) / 1024.0);
@@ -539,10 +576,13 @@ static void cmd_free(void)
         printf("  视频帧缓冲 %6.1fKB 实测 320x240 L8\n", fb / 1024.0);
         printf("  控制台静态 %6.1fKB 位图640B+输入环64B\n",
                CON_STATIC_BYTES / 1024.0);
+        printf("  XIP arena %dKB (14.4 模块可写段)\n",
+               g_board.arena_kb);
         printf("  内核+NSH栈 ~%4.0fKB 估算\n", (double)g_board.kernel_kb);
         printf("  脚本引擎堆 ~16KB 估算\n");
         printf("  空闲      ~%6.1fKB\n",
                (g_board.sram_budget - fb - CON_STATIC_BYTES -
+                (long)g_board.arena_kb * 1024 -
                 (long)g_board.kernel_kb * 1024 - 16 * 1024) / 1024.0);
     }
 }
@@ -628,9 +668,42 @@ static void cmd_led(int argc, char **argv)
 
 static void cmd_pkg(void)
 {
-    printf("/opt 包 / packages (arch=%s):\n", g_board.pkg_arch);
-    printf("  nano     8.4-1    .rpk 待装 (apps-extra GPL 隔离)\n");
-    printf("  ucblogo  6.2.2-1  已装\n");
+    int i;
+
+    /* 镜像 rpkg_list 三列格式；枚举 = 两级 DB 合并（14.5）：
+     * ROM 预装层（本名单，构建期离线安装）+ 片上覆盖层（默认空） */
+    printf("%-16s %-12s %s\n", "Package", "Version", "Description");
+    printf("%-16s %-12s %s\n", "-------", "-------", "-----------");
+    for (i = 0; i < g_board.pkg_count; i++)
+        printf("%-16s %-12s %s\n",
+               g_board.pkgs[i].name, g_board.pkgs[i].ver,
+               g_board.pkgs[i].desc);
+    printf("覆盖层 /opt/var/lib/rpkg: 空（nano 8.4 走 .rpk 后装）\n");
+}
+
+/* 真模块源码（src/nuttx/common/apps/pkg_mods/sysinfo_mod.c，构建期
+ * 按板 CONFIG 快照编译；-Dmain=sysinfo_mod_main 避免符号冲突） */
+extern int sysinfo_mod_main(int argc, char *argv[]);
+
+static void cmd_run(int argc, char **argv)
+{
+    int i;
+
+    if (argc < 2) {
+        printf("用法: run <模块名> [参数...]    # 执行 /rom/pkg/bin/<名> 模块\n");
+        return;
+    }
+    for (i = 0; i < g_board.pkg_count; i++)
+        if (strcmp(g_board.pkgs[i].name, argv[1]) == 0)
+            break;
+    if (i == g_board.pkg_count ||
+        strcmp(argv[1], "sysinfo") != 0) {
+        printf("run: 模块未找到或装载失败: %s（/rom/pkg/bin/%s）\n",
+               argv[1], argv[1]);
+        return;
+    }
+    /* XIP 装载（ROMFS 只读段原址执行）+ 内联调用，返回即释放引用 */
+    sysinfo_mod_main(argc - 1, argv + 1);
 }
 
 static void cmd_ime(const char *arg)
@@ -921,6 +994,8 @@ static void dispatch(char *line)
     } else if (strcmp(argv[0], "pkg") == 0 && argc >= 2 &&
                strcmp(argv[1], "list") == 0) {
         cmd_pkg();
+    } else if (strcmp(argv[0], "run") == 0) {
+        cmd_run(argc, argv);
     } else if (strcmp(argv[0], "wifi") == 0) {
         cmd_wifi();
     } else if (strcmp(argv[0], "selftest") == 0) {

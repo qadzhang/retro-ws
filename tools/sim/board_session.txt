@@ -26,13 +26,20 @@ clear
 wifi
 shot 09_wifi
 clear
+pkg list
+shot 10_pkg
+clear
+run nosuch
+run sysinfo
+shot 11_run
+clear
 ime on
 ime shijie
-shot 10_ime
+shot 12_ime
 ime 1
-shot 11_commit
+shot 13_commit
 ime off
 clear
 selftest
-shot 12_selftest
+shot 14_selftest
 exit

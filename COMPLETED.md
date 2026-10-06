@@ -663,7 +663,7 @@ tools/fonts/
 |----|------|
 | 新增 | `tools/sim/board_cli_sim.c`（当日由 pico_cli_sim.c 泛化）：五板 CLI 档宿主模拟器，逐命令解释执行（非硬编码样张）；渲染/IME/GPIO 策略层/脚本引擎全部链接板上同款源码（cvbs_console/cvbs_ime/drv_pinyin/retro_gpio + my_basic + duktape），占用表由 hw_rp2040_pico.h 实例化 |
 | 机制 | 命令层 printf -> tmpfile+dup2 捕获（对应板上 /dev/console -> /dev/cvbscon）-> cvbs_console_write 上屏；`shot` 抓帧 PGM、`selftest` 15 项机器化断言（stderr 镜像供 CI） |
-| 会话 | `tools/sim/board_session.txt` 12 幕（横幅/help/free/ps/SD/BASIC/JS/GPIO/wifi/IME/选字/selftest），截图 docs/screenshots/board_cli/<板>/（320x240，glm53f 像素验收 12/12 PASS/板） |
+| 会话 | `tools/sim/board_session.txt` 14 幕（含 pkg list/run sysinfo）（横幅/help/free/ps/SD/BASIC/JS/GPIO/wifi/IME/选字/selftest），截图 docs/screenshots/board_cli/<板>/（320x240，glm53f 像素验收 12/12 PASS/板） |
 | 验收 | selftest 15/15 PASS；ASAN+UBSan 完整会话本仓库代码零报错；tests/host/run_all.sh 14 项 ALL PASS；scripts/verify.sh 58 项绿 |
 | 内存实测 | 帧缓冲 320x240 L8=76800B；控制台 .bss 840B / cvbs_core 802B / IME 80B / 拼音 424B；Noto 字库 ~600KB flash(XIP)、Fusion ascii6+fullwidth ≈6KB flash、拼音词典 ≈24KB flash |
 | 发现 | deps/my_basic：UBSan 42 条非对齐访问（2 字节对齐池设计，Cortex-M0+ 真机复核项）；`;` 分隔符=换行、PRINT 无语句尾换行（examples/hello.bas 按经典语义书写需适配）；DIM S(n) 0 基、下标 n 越界返回 3；drv_pinyin 词典无"nihao"，多字条目受尾部截断逻辑约束可达候选受限 |
@@ -676,6 +676,7 @@ tools/fonts/
 | 验收 | 四板 selftest 各 15/15 PASS（占用表 S3=34/CAM=26/C3=21 项与 hw 档案一致；EBUSY 脚 S3=GP2/GP38、CAM=GP25/GP33、C3=GP1/GP12）；ASAN+UBSan 本仓库代码零报错；glm53f 像素验收 4×12 张全 PASS（pico 回归 12/12 同批通过） |
 | 内存实测 | 双池模型（HARDWARE 12.3/12.5）：S3/S3N8/CAM 帧缓冲 76800B 驻 PSRAM、SRAM 只计内核 ~64KB+NSH栈 ~8KB+脚本堆 ~16KB+静态 0.7KB → 空闲 S3/S3N8 ~423.3KB、CAM ~307.3KB，PSRAM 池余 7.9/3.9MB；C3/Pico 无 PSRAM，fb 75KB 计 SRAM → 空闲 ~292.3/~156.3KB |
 | 板间差异落地 | wifi：S3/S3N8/CAM/C3 显示就绪状态、pico 拒绝；ps：双核板 Core0=程序/Core1=媒体（LCD_CAM/DAC1/PIO），C3 单核无 Core 标注；键盘：S3=USB HID、CAM=BLE HID、C3=UART 泵、pico=PIO-USB/UART；pkg arch=xtensa/riscv/arm |
+| 9447001 同步 | 会话扩至 14 幕：pkg list 镜像 rpkg_list 三列格式与两级 DB（ROM 预装 pico/c3=sysinfo、s3 系=8 包 GUI 应用；覆盖层空/nano 走 .rpk 后装）；run nosuch 报真实错误文案、run sysinfo 直链真 sysinfo_mod.c（板 CONFIG 快照编译，-Dmain 改名）；free 记 XIP arena（14.4：s3/s3n8/cam=128KB 入 .ext_ram.bss→PSRAM 池、c3=16KB/pico=8KB 入 SRAM）；固件体积（提交口径）pico 1155/c3 1569/cam 2111/s3·s3n8 2115KB |
 
 ---
 
