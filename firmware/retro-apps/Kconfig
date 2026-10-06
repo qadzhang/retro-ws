@@ -36,6 +36,42 @@ config RETRO_PKG_MANAGER
     bool ".rpk 包管理器（pkg install/remove/list）"
     default y
 
+config RETRO_PKG_STORE
+    bool "ROM 包存储 + 首启自动安装（应用/系统分离）"
+    default y
+    select RETRO_ROMMOD
+    help
+      各板默认应用名单（firmware/packages/<板>.list）在构建期打包
+      .rpk 入固件 ROM（/rom/pkg），系统第一次运行时自动安装（seed，
+      幂等）。.rmo 载荷常驻 Flash 原址执行（XIP），只读段零拷贝、
+      可写段按需入 RAM（rommod）。GUI 桌面与 run 命令均经模块装载。
+
+config RETRO_ROMMOD
+    bool "ROM XIP 模块加载器（rommod）"
+    default n
+    help
+      ET_DYN 应用模块装载器：只读段 flash 原址执行（XIP），可写段
+      RAM 镜像 + 重定位（ARM/RISC-V 动态档；Xtensa 构建期静态绑定
+      档，重定位归零）。由 RETRO_PKG_STORE 选中，普通用户无需手改。
+
+config RETRO_ROMAPP_STACKSZ
+    int "ROM 模块应用（run 命令）任务栈（字节）"
+    default 16384
+
+config RETRO_ROMMOD_ARENA_SIZE
+    int "静态绑定档模块 arena（字节；0=禁用模块功能）"
+    default 131072 if RETRO_BOARD_ESP32S3
+    default 131072 if RETRO_BOARD_ESP32
+    default 16384 if RETRO_BOARD_ESP32C3
+    default 8192 if RETRO_BOARD_RP2040
+    default 0
+    help
+      全板静态绑定档（2026-10-06 定稿）：模块 .data/.bss 链接在本
+      arena 的构建期固定偏移（build_romapps.sh 自动规划），加载器只
+      做镜像拷贝（重定位归零——PC 相对 GOT 使运行时补丁不可行，
+      见 HARDWARE.md 14 章）。S3/CAM 有 SPIRAM 时 arena 入
+      .ext_ram.bss；C3/Pico 按名单用量给小 arena。
+
 config RETRO_GPIO_SCRIPT
     bool "脚本 GPIO 访问（系统占用脚拦截 -EBUSY）"
     default y

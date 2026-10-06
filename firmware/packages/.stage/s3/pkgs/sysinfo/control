@@ -1,0 +1,9 @@
+Package: sysinfo
+Version: 1.0.0-1
+Arch: all
+License: Apache-2.0
+Root: system
+Type: cli
+Xip: bin/sysinfo
+Description: 系统信息（机型/CPU/内存/网络/时间）
+Maintainer: Retro WS Project

@@ -1,0 +1,16 @@
+btn_play_cb
+btn_record_cb
+btn_save_cb
+btn_stop_cb
+create_win3_btn
+generate_filename
+g_rec
+recorder_app_create
+recorder_create
+rec_set_status
+rec_timer_cb
+rec_update_time
+rec_update_waveform
+retro_gui_app_info
+win_close_cb
+write_wav_header

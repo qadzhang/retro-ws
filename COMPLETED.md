@@ -657,6 +657,57 @@ tools/fonts/
 | 4.x 性能需求 | 双核分工 + 内存管理 | 完成 |
 | 5.x 安全需求 | 防火墙 + 安全模式 | 完成 |
 
+### 30. Pico CLI 交互模拟器与全量模拟验收（2026-10-06）
+
+| 项 | 内容 |
+|----|------|
+| 新增 | `tools/sim/board_cli_sim.c`（当日由 pico_cli_sim.c 泛化）：五板 CLI 档宿主模拟器，逐命令解释执行（非硬编码样张）；渲染/IME/GPIO 策略层/脚本引擎全部链接板上同款源码（cvbs_console/cvbs_ime/drv_pinyin/retro_gpio + my_basic + duktape），占用表由 hw_rp2040_pico.h 实例化 |
+| 机制 | 命令层 printf -> tmpfile+dup2 捕获（对应板上 /dev/console -> /dev/cvbscon）-> cvbs_console_write 上屏；`shot` 抓帧 PGM、`selftest` 15 项机器化断言（stderr 镜像供 CI） |
+| 会话 | `tools/sim/board_session.txt` 12 幕（横幅/help/free/ps/SD/BASIC/JS/GPIO/wifi/IME/选字/selftest），截图 docs/screenshots/board_cli/<板>/（320x240，glm53f 像素验收 12/12 PASS/板） |
+| 验收 | selftest 15/15 PASS；ASAN+UBSan 完整会话本仓库代码零报错；tests/host/run_all.sh 14 项 ALL PASS；scripts/verify.sh 58 项绿 |
+| 内存实测 | 帧缓冲 320x240 L8=76800B；控制台 .bss 840B / cvbs_core 802B / IME 80B / 拼音 424B；Noto 字库 ~600KB flash(XIP)、Fusion ascii6+fullwidth ≈6KB flash、拼音词典 ≈24KB flash |
+| 发现 | deps/my_basic：UBSan 42 条非对齐访问（2 字节对齐池设计，Cortex-M0+ 真机复核项）；`;` 分隔符=换行、PRINT 无语句尾换行（examples/hello.bas 按经典语义书写需适配）；DIM S(n) 0 基、下标 n 越界返回 3；drv_pinyin 词典无"nihao"，多字条目受尾部截断逻辑约束可达候选受限 |
+
+### 31. ESP32 系列四板 CLI 模拟验收（2026-10-06）
+
+| 项 | 内容 |
+|----|------|
+| 范围 | s3（N16R8）/ s3n8（N8R8）/ cam（AI-Thinker）/ c3（合宙）四板 CLI 档，与 §30 的 pico 共用 `tools/sim/board_cli_sim.c` 编译期 profile（横幅/free 预算/ps 核分工/占用表/LED/wifi/键盘路径按板注入，引脚事实来自各板 hw_*.h） |
+| 验收 | 四板 selftest 各 15/15 PASS（占用表 S3=34/CAM=26/C3=21 项与 hw 档案一致；EBUSY 脚 S3=GP2/GP38、CAM=GP25/GP33、C3=GP1/GP12）；ASAN+UBSan 本仓库代码零报错；glm53f 像素验收 4×12 张全 PASS（pico 回归 12/12 同批通过） |
+| 内存实测 | 双池模型（HARDWARE 12.3/12.5）：S3/S3N8/CAM 帧缓冲 76800B 驻 PSRAM、SRAM 只计内核 ~64KB+NSH栈 ~8KB+脚本堆 ~16KB+静态 0.7KB → 空闲 S3/S3N8 ~423.3KB、CAM ~307.3KB，PSRAM 池余 7.9/3.9MB；C3/Pico 无 PSRAM，fb 75KB 计 SRAM → 空闲 ~292.3/~156.3KB |
+| 板间差异落地 | wifi：S3/S3N8/CAM/C3 显示就绪状态、pico 拒绝；ps：双核板 Core0=程序/Core1=媒体（LCD_CAM/DAC1/PIO），C3 单核无 Core 标注；键盘：S3=USB HID、CAM=BLE HID、C3=UART 泵、pico=PIO-USB/UART；pkg arch=xtensa/riscv/arm |
+
 ---
 
-_最后更新: 2026-10-05（项目更名 retro-ws：五板多架构定位全面修订）_
+_最后更新: 2026-10-06（ESP32 系列四板 CLI 模拟验收 + free 双池内存模型修正，board_cli_sim 五板通用化）_
+
+## 2026-10-06 应用/系统分离：ROM 包存储 + XIP 模块体系
+
+- [x] ROM XIP 模块加载器 rommod.c（静态绑定档全板 + RAM 窗口动态档保留通道；
+      宿主真实模块端到端/dlopen 差分/蜕变/拒绝路径 93 项 + 模糊 2 万轮 0 崩溃）
+- [x] ROM 包存储 pkg_rom.c（/rom/pkg 挂载、树直查零拷贝、.rpk control 直读、
+      首启 seeder 幂等安装；test_pkgstore 40 项含 CRC 篡改拒绝与自愈闭环）
+- [x] pkg_manager 扩展：Xip/Type/Title-Zh/Title-En/Icon control 字段 + ROM 载荷
+      CRC 校验登记 + 卸载不删 ROM 文件（旧 141 项测试全绿）
+- [x] 七个 GUI 应用 + sysinfo 抽离为 .rpk 包（firmware/packages/pkgs/ 8 配方，
+      desktop.c 注册表驱动 + retro_desk_win_create 窗口 API + 末窗关闭卸载）
+- [x] mkromfs.py 目录树模式（bin/ 载荷 4096 对齐、--print-offsets、段属性）
+      + python 差分测试（独立解析器 oracle，抓到名字区错位真 bug）
+- [x] build_romapps.sh 两遍构建流水线（pass0 定尺寸 -> pass1 定地址 -> defsym
+      烘焙重链 -> pass2 收口；尺寸稳定性断言）接入 build_firmware.sh 五板入口
+- [x] `run` 命令（CLI 模块统一入口）+ retro_boot 挂载/XIP 接线；
+      arena 接线；Kconfig（RETRO_PKG_STORE/RETRO_ROMMOD/ARENA_SIZE）五板 appconfig
+- [x] glm53f：GUI 桌面截图重生成（外壳零回归，差异限于注册表图标区）；
+      wav_decoder 宿主测试 66318 项（修复截断头死循环 + 负数左移 UB 两个真 bug）；
+      五板 CLI 截图逐像素复核 0 差异
+- [x] 五板固件编译全绿（固定槽两遍构建：pico 1155KB / c3 1569KB /
+      cam 2111KB / s3·s3n8 2115KB）；宿主 19 项套件 ALL PASS；verify 86 项
+- [x] 策略修订（同日）：构建期离线安装——tools/gen_pkgdb.py 直接安装到位
+      （db/ 随镜像分发，首启零安装动作，去 .rpk 中间态）；pkg_manager 两级
+      DB（ROM 预装层 + 片上覆盖层/墓碑，rpkg_iter_installed 统一枚举）；
+      desktop 注册表/卸载/列表全走两级视图；test_pkgstore 重写为预装语义
+      （35 项：预装即已安装/墓碑停用/第三方通道回归）；五板重编全绿
+- [x] Xtensa 静态绑定攻坚（BUILD_FIXES 1-22）：固定槽填充根治两遍布局
+      漂移（pad 到 align(size+4096,4096)，落槽断言）；符号保持器
+      （rom_keep.c，gc 根链）；跨模块符号表（recorder->player 同款）；
+      CONFIG_XTENSA_EXTMEM_BSS（arena 入 PSRAM）

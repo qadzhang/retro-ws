@@ -1,0 +1,2 @@
+/home/user/retro-ws/firmware/packages/.stage/s3n8/obj/editor/firmware_packages_pkgs_editor_module.c.o
+/home/user/retro-ws/firmware/packages/.stage/s3n8/obj/editor/src_lvgl_app_app_editor.c.o

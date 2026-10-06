@@ -1,0 +1,12 @@
+Package: browser
+Version: 1.0.0-1
+Arch: all
+License: Apache-2.0
+Root: system
+Type: gui
+Xip: bin/browser
+Title-Zh: 浏览器
+Title-En: Browser
+Icon: [W]
+Description: 简易网页浏览器（URL 栏 + HTML 渲染）
+Maintainer: Retro WS Project

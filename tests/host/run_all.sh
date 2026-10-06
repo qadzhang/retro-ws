@@ -43,6 +43,61 @@ else
     echo ">>> FAIL (see /tmp/ra1.log)"; FAIL=1
 fi
 
+step "build+unit rommod（ROM XIP 模块加载器：端到端/蜕变/dlopen 差分/静态绑定全流程）"
+if $CC -Wall -Wextra -Wno-unused-parameter $SAN -I "$STUBS" -I "$ROOT/src/nuttx/common" \
+      -I "$ROOT/src/lvgl/app" -rdynamic -Wl,--no-as-needed -ldl \
+      "$ROOT/tests/host/test_rommod.c" "$ROOT/src/nuttx/common/rommod.c" \
+      -o "$OUT/test_rommod" 2>/tmp/ra_rommod.log \
+   && ASAN_OPTIONS=detect_leaks=0 "$OUT/test_rommod" 2>&1 | grep -q '0 failed'; then
+    echo ">>> PASS"
+else
+    echo ">>> FAIL (see /tmp/ra_rommod.log)"; FAIL=1
+fi
+
+step "prep+build+unit pkgstore（ROM 包存储 + 构建期离线安装）"
+PSOUT=/tmp/retro_test/pkgstore
+if python3 "$ROOT/tests/host/prep_pkgstore_fixture.py" "$PSOUT/rom" >/dev/null 2>&1 \
+   && $CC -Wall -Wextra -Wno-unused-parameter $SAN \
+      -I "$STUBS" -I "$ROOT/src/nuttx/common" -I "$APPINC" \
+      -DPKG_INSTALL_PREFIX="\"$PSOUT/sd\"" \
+      -DPKG_SYSTEM_PREFIX="\"$PSOUT/opt\"" \
+      -DPKG_DB_ROOT="\"$PSOUT/db\"" \
+      -DPKG_ROM_ROOT="\"$PSOUT/rom\"" \
+      -DCONFIG_RETRO_ARCH='"xtensa-esp32s3"' \
+      -DCONFIG_RETRO_ARCH_VAL='"xtensa-esp32s3"' \
+      -DCONFIG_RETRO_FAMILY_VAL='"xtensa"' \
+      -DCONFIG_RETRO_CHIP_VAL='"esp32s3"' \
+      -DCONFIG_RETRO_PKG_STORE=1 -DCONFIG_RETRO_PKG_ROM_HOST_TEST=1 \
+      "$ROOT/tests/host/test_pkgstore.c" \
+      "$ROOT/src/nuttx/common/pkg_rom.c" "$APPINC/pkg_manager.c" \
+      "$ROOT/src/nuttx/common/rommod.c" \
+      -o "$OUT/test_pkgstore" 2>/tmp/ra_pkgstore.log \
+   && rm -rf "$PSOUT/db" "$PSOUT/opt" && mkdir -p "$PSOUT/db" "$PSOUT/opt" \
+   && ASAN_OPTIONS=detect_leaks=0 "$OUT/test_pkgstore" 2>&1 | grep -q '0 failed'; then
+    echo ">>> PASS"
+else
+    echo ">>> FAIL (see /tmp/ra_pkgstore.log)"; FAIL=1
+fi
+
+step "fuzz rommod（畸形 ELF：截断/位翻转/指野 ×20k，0 崩溃门）"
+if $CC -Wall -Wextra -Wno-unused-parameter $SAN -I "$STUBS" \
+      -I "$ROOT/src/nuttx/common" \
+      "$ROOT/tests/host/fuzz_rommod.c" "$ROOT/src/nuttx/common/rommod.c" \
+      -o "$OUT/fuzz_rommod" 2>/tmp/ra_fuzz2.log \
+   && ASAN_OPTIONS=detect_leaks=0 "$OUT/fuzz_rommod" 2>&1 | grep -q '0 崩溃'; then
+    echo ">>> PASS"
+else
+    echo ">>> FAIL (see /tmp/ra_fuzz2.log)"; FAIL=1
+fi
+
+step "python 差分：ROMFS 树回读（独立解析器 oracle）+ 五板名单一致性"
+if python3 "$ROOT/tests/host/python/test_romfs_tree.py" > /tmp/ra_pytree.log 2>&1 \
+   && grep -q "ALL PASS" /tmp/ra_pytree.log; then
+    echo ">>> PASS"
+else
+    echo ">>> FAIL (see /tmp/ra_pytree.log)"; FAIL=1
+fi
+
 step "build+unit retro_gpio"
 if $CC -Wall -Wextra $SAN -I "$STUBS" -I "$DRVINC" -I "$ROOT/src/lvgl/fonts" \
       "$ROOT/tests/host/test_retro_gpio.c" "$DRVINC/retro_gpio.c" \
@@ -82,6 +137,18 @@ if $CC -Wall -Wextra -g -fsanitize=address,undefined -I "$STUBS" \
     echo ">>> PASS"
 else
     echo ">>> FAIL (see /tmp/ra3b.log)"; FAIL=1
+fi
+
+step "build+unit wav_decoder（WAV 解析/转换：正常+蜕变+拒绝，player 包组件）"
+if $CC -Wall -Wextra $SAN -DCONFIG_LVGL=1 -I "$STUBS" \
+      -I "$ROOT/src/lvgl/audio" -I "$DRVINC" -I /tmp/fontbridge \
+      "$ROOT/tests/host/test_wav_decoder.c" \
+      "$ROOT/src/lvgl/audio/wav_decoder.c" \
+      -o "$OUT/test_wav" 2>/tmp/ra3w.log \
+   && "$OUT/test_wav" 2>&1 | grep -q '0 failed'; then
+    echo ">>> PASS"
+else
+    echo ">>> FAIL (see /tmp/ra3w.log)"; FAIL=1
 fi
 
 step "build+unit hid_ascii（USB/BLE 键盘桥映射，输入优先级原则）"

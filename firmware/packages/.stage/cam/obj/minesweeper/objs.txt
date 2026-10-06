@@ -1,0 +1,1 @@
+/home/user/retro-ws/firmware/packages/.stage/cam/obj/minesweeper/src_lvgl_app_app_minesweeper.c.o

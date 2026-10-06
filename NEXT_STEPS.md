@@ -127,6 +127,10 @@ c3（合宙核心板 CLI 档）、pico（本地教学终端 CLI 档）。
 | 54 | 五板载板打样验证 | eda/ 立创EDA 工程已生成（零交叉校验）；打开后补铺铜/泪滴/DRC 收尾再下单；合宙 C3 需先在核心板焊公排 |
 | 55a | 240p 实机 CRT 抽验 12px | cvbs_console 240p 档（53x17 半格网格）的 12px 中文在宿主验收为可读下限——实机 CRT TV 上抽验密笔画字（警/编类），发糊则评估该档行距/字重微调 |
 | 55 | RMT/I2C 实机验证 | s3/s3n8 appconfig 已开 RMT+I2C0；上机验 /dev/rmt0 点灯与 /dev/i2c0 探测 RTC |
+| 56 | ROM 模块实机验证（应用/系统分离） | 上机验：首启 seed 自动安装名单包（/rom/pkg）、`run sysinfo` XIP 原址执行、桌面注册表装配 GUI 应用图标、末窗关闭释放 arena 槽复用；四板（s3/cam/c3/pico）各抽一包 |
+| 57 | /opt littlefs 挂载与墓碑联动 | 片上可写分区挂接（17b）落地后验证两级 DB 闭环：预装包卸载写墓碑 -> 重启保持停用 -> 片上同名 .rpk 后装覆盖 -> 常规卸载 |
+| 58 | 动态档 RAM 窗口板评估 | rommod_load_from_mem_inline（整段 vaddr 布置）为未来"RAM 窗口"架构保留；如引入 MMU/MPU 板再评估运行时重定位收益（当前全板静态绑定零重定位） |
+| 59 | 脚本引擎模块化评估 | rommod 基础设施可承载 berry/duktape 引擎模块（按需装载省 RAM ~100KB+）；评估引擎 API 面与静态绑定符号数量后立项 |
 | 53 | nano 增强 | nanorc 语法定义（现裁剪 ENABLE_COLOR=0）、bracketed paste、undo 加深测试 |
 
 ---

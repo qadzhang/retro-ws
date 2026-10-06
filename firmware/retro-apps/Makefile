@@ -23,6 +23,34 @@ ifeq ($(CONFIG_RETRO_PKG_MANAGER),y)
 CSRCS += src/common/apps/system/pkg_manager.c
 endif
 
+# ---- ROM XIP 模块加载器 + ROM 包存储（应用/系统分离，2026-10-06） ----
+ifeq ($(CONFIG_RETRO_ROMMOD),y)
+CSRCS += src/common/rommod.c
+endif
+
+ifeq ($(CONFIG_RETRO_PKG_STORE),y)
+CSRCS += src/common/pkg_rom.c
+# ROMFS 包存储镜像（build_romapps.sh 生成；缺失=空存储构建）
+ifneq ($(wildcard pkg_romfs.c),)
+CSRCS += pkg_romfs.c
+endif
+# 基础符号表（动态档：固件 pass1 后生成）
+ifneq ($(wildcard rom_symtab.c),)
+CSRCS += rom_symtab.c
+endif
+# 符号保持器（stage 生成：模块所需而固件无引用的符号，防 gc-sections 回收）
+ifneq ($(wildcard rom_keep.c),)
+CSRCS += rom_keep.c
+endif
+endif
+
+# 静态绑定档 arena（Xtensa；RETRO_ROMMOD_ARENA_SIZE=0 时不编）
+ifneq ($(CONFIG_RETRO_ROMMOD_ARENA_SIZE),)
+ifneq ($(CONFIG_RETRO_ROMMOD_ARENA_SIZE),0)
+CSRCS += rommod_arena.c
+endif
+endif
+
 ifeq ($(CONFIG_RETRO_GPIO_SCRIPT),y)
 CSRCS += src/common/driver/retro_gpio.c
 endif
@@ -103,15 +131,14 @@ LVGL := $(ENGINES)lvgl
 LVGL_SRCS := $(shell find $(LVGL)/src -name '*.c' 2>/dev/null)
 CSRCS += $(LVGL_SRCS)
 
-# 我们的 GUI 树（装配 + 桌面 + 外壳 + 图形程序 + 输入法）
+# 我们的 GUI 树（装配 + 桌面 + 外壳 + 输入法；2026-10-06 应用/系统
+# 分离：editor/browser/terminal/player/recorder/sqlite/minesweeper 七
+# 应用改 .rpk 包交付=ROM XIP 模块，不再静态链编——构建见
+# firmware/packages/pkgs/，桌面注册表见 desktop.c）
 GUI_SRCS := src/lvgl/lvgl_app.c src/lvgl/lv_port_disp.c src/lvgl/lv_port_indev.c \
             src/lvgl/i18n.c src/lvgl/retro_ui.c \
             src/lvgl/app/desktop.c src/lvgl/app/wmaker_shell.c \
-            src/lvgl/app/app_browser.c src/lvgl/app/app_editor.c \
-            src/lvgl/app/app_pinyin.c src/lvgl/app/app_player.c \
-            src/lvgl/app/app_recorder.c src/lvgl/app/app_sqlite.c \
-            src/lvgl/app/app_terminal.c src/lvgl/fonts/pinyin_ime.c \
-            src/lvgl/audio/wav_decoder.c
+            src/lvgl/app/app_pinyin.c src/lvgl/fonts/pinyin_ime.c
 CSRCS += $(GUI_SRCS)
 
 # 引擎的 GUI 绑定（随引擎走）
@@ -323,9 +350,18 @@ PROGNAME += pkg
 MAINSRC  += src/common/apps/system/cmd_pkg_main.c
 endif
 
-# sysinfo：系统信息
+# sysinfo：系统信息（2026-10-06 起默认 .rpk 包交付 `run sysinfo`；
+# 无包存储档的裁剪构建回退为 builtin）
+ifeq ($(CONFIG_RETRO_PKG_STORE),)
 PROGNAME += sysinfo
 MAINSRC  += src/common/apps/system/cmd_sysinfo_main.c
+endif
+
+# run：执行 ROM 模块应用（XIP 原址执行）
+ifeq ($(CONFIG_RETRO_ROMMOD),y)
+PROGNAME += run
+MAINSRC  += src/common/apps/system/cmd_run_main.c
+endif
 
 # shell：GUI 外壳切换（无 GUI 时提示）
 PROGNAME += shell

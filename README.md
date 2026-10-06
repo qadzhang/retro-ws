@@ -42,8 +42,9 @@ ARM 三种架构——项目早已不只是"ESP32 项目"。
 | **当前阶段** | 五板固件**全部编译通过**；宿主测试 + glm 多模态视觉验收闭环；待实机烧录验证 |
 | **代码规模** | 手写 C 源码 **~42,400 行** + 自研测试 **~3,700 行** + EDA/工具脚本 **~2,100 行**（另有生成的 12px 全量中文字库点阵 ~15 万行） |
 | **多目标支持** | **五板**：ESP32-S3 N16R8 / N8R8 + ESP32-CAM + 合宙 C3（CLI）+ Raspberry Pi Pico（CLI） |
-| **编译验证** | **五板全部通过**（2026-10-05：pico 1181KB / c3 1559KB / cam 1912KB / s3·s3n8 1852KB） |
-| **宿主验证** | 单元/蜕变/差分/PBT/模糊/双变异门 ALL PASS（12 项套件，语法矩阵 85/85） |
+| **编译验证** | **五板全部通过**（2026-10-06 应用/系统分离后：pico 1155KB / c3 1569KB / cam 2111KB / s3·s3n8 2115KB，两遍构建全链路） |
+| **宿主验证** | 单元/蜕变/差分/PBT/模糊/双变异门 ALL PASS（19 项套件，语法矩阵 85/85） |
+| **应用交付** | **应用/系统分离（2026-10-06）**：应用全部包化，板级名单构建期离线安装入 ROM（db/ 随镜像分发、首启零动作），.rmo 模块 Flash 原址执行（XIP，HARDWARE 14 章） |
 | **EDA 载板** | 五板立创EDA工程已生成（自动布线 + 零交叉校验 PASS） |
 | **多语种支持** | **中英双语**（全系唯一 12px 字号；console 半角 6px/全角 12px 宋体 9pt 点阵体系） |
 | **依赖下载** | **完成** |
@@ -76,7 +77,9 @@ cvbs_console（12px 点阵、半角 6px/全角 12px 半格网格，半角与全�
   `Ctrl+Space` 中英切换、`Ctrl+Q` 退出释放；Enter 整行回放给终端
 
 > 截图再生成：`bash tools/sim/build.sh && /tmp/retro_sim/lvgl_sim_color
-> && /tmp/retro_sim/console_sim`（宿主机渲染管线，与固件同一份 UI 源码）。
+> && /tmp/retro_sim/console_sim`（宿主机渲染管线，与固件同一份 UI 源码）；
+> 五板 CLI 全套截图另经 `/tmp/retro_sim/board_cli_{pico,s3,s3n8,cam,c3}
+> tools/sim/board_session.txt` 生成（docs/screenshots/board_cli/<板>/）。
 
 ### 已完成里程碑 / Completed Milestones
 
@@ -93,6 +96,7 @@ cvbs_console（12px 点阵、半角 6px/全角 12px 半格网格，半角与全�
 - [x] M14: AV 输出全真硬件化 / True-hardware AV（LCD_CAM/DAC/PDM/PIO + DMA，2026-10-04）
 - [x] M15: WS2812 RMT / FSK I2S / 硬件 I2C 收口 + 字号定档 12px（2026-10-05）
 - [x] M16: 立创EDA 五板载板工程 / LCEDA carrier boards（2026-10-05）
+- [x] M17: 应用/系统分离 / ROM 包存储 + XIP 模块体系（2026-10-06）
 - [ ] M11: QEMU 模拟验证 / QEMU simulation
 - [ ] M12: 开发板烧录 / Board flashing
 - [ ] M13: 实机测试 / Hardware testing
@@ -147,7 +151,7 @@ source scripts/setup_tools.sh
 
 ```bash
 # 五板固件统一入口（s3/s3n8/cam/c3/pico/all）
-./scripts/build_firmware.sh all
+./scripts/firmware/build_firmware.sh all
 # 产物：dist/firmware/<板>/nuttx.bin（Pico 额外生成 nuttx.uf2）
 
 # 固件（Apache-2.0，零 GPL）+ 可选安装包（GPL 组件为独立 ELF）
@@ -206,12 +210,31 @@ nsh> pkg remove ucblogo                              # 卸载（执行 prerm/pos
 nsh> /opt/bin/ucblogo                               # 运行（binfmt 独立进程；Root: system 装片上）
 ```
 
+### ROM 默认软件名单 + 构建期离线安装（2026-10-06，应用/系统分离）
+
+应用软件不再编入固件：每板一份默认名单（`firmware/packages/<板>.list`），
+构建期把名单内应用编成 **.rmo XIP 模块**，并由 `tools/gen_pkgdb.py`
+**直接安装到位**——安装数据库（`db/`：control 快照 + manifest）随固件
+ROM 镜像分发（`/rom/pkg`，`scripts/build_romapps.sh`），**设备首启零
+安装动作**；模块代码常驻 Flash **原址执行**（只读段零拷贝、可写段
+arena 固定槽，运行时零重定位——HARDWARE.md 14 章）：
+
+```bash
+nsh> run sysinfo        # CLI 模块应用（XIP 原址执行，返回即释放引用）
+nsh> pkg list           # 预装层 + 片上后装包合并视图
+nsh> pkg remove editor  # 预装包卸载 = 停用（片上墓碑；ROM 载荷常驻）
+# GUI 应用（记事本/浏览器/终端/SQLite/播放器/录音机/扫雷）由桌面
+# 注册表按两级 DB 的 Type: gui 包动态装配图标，末窗关闭即卸载模块
+```
+
 ### 五板固件编译（统一入口）
 
 ```bash
 # 用法: build_firmware.sh <s3|s3n8|cam|c3|pico|all>；产物 dist/firmware/<板>/
-./scripts/build_firmware.sh s3
-./scripts/build_firmware.sh all
+# （内部两遍构建：pass1 定地址 -> ROM 应用模块静态绑定重链 -> pass2 收口，
+#   全自动；机制见 HARDWARE.md 14.3）
+./scripts/firmware/build_firmware.sh s3
+./scripts/firmware/build_firmware.sh all
 ```
 
 ### 烧录
@@ -261,6 +284,9 @@ cd scripts/esp32s3 && ./nuttx_build.sh defconfig && ./build.sh nuttx && ./build.
 | 脚本引擎 | script_engines.c | 649 | 完成 |
 | curl/wget | network_utils.c | 487 | 完成 |
 | NSH 命令 | nsh_cmds.c | 275 | 完成 |
+| **ROM XIP 模块加载器** | rommod.c | ~700 | 完成（静态绑定档全板 + RAM 窗口档；宿主端到端/差分 dlopen/模糊全绿） |
+| **ROM 包存储 + 构建期离线安装** | pkg_rom.c + gen_pkgdb.py + build_romapps.sh | ~500+脚本 | 完成（/rom/pkg + db/ 预装层 + 五板名单） |
+| **run 命令** | cmd_run_main.c | 70 | 完成（CLI 模块应用统一入口） |
 | LVGL 桌面 | desktop.c | 1136 | 完成 |
 | 记事本编辑器 | app_editor.c | 636 | 完成 |
 | 浏览器 | app_browser.c | 564 | 完成 |
@@ -273,6 +299,10 @@ cd scripts/esp32s3 && ./nuttx_build.sh defconfig && ./build.sh nuttx && ./build.
 | 控制面板 | desktop.c | 内嵌 | 完成 |
 
 ## 图形界面应用 / GUI Applications
+
+> 2026-10-06 应用/系统分离：下表应用全部改为 **.rpk 包交付**（ROM 名单
+> 默认安装 + 桌面注册表动态装配），不再编入固件 builtin；外壳组件
+> （控制面板/文件管理器/设置）与窗口管理留在固件。
 
 | 应用 / App | 图标 / Icon | 说明 / Description |
 |------|------|------|
@@ -429,6 +459,8 @@ retro-ws/
 |   +-- firmware/          # 五板固件统一构建入口
 |   |   +-- build_firmware.sh   # <s3|s3n8|cam|c3|pico|all>
 |   |   +-- prepare_esp_hal.sh  # NuttX esp-hal 准备
+|   +-- build_romapps.sh        # ROM 应用模块构建（.rmo/.rpk/镜像/两遍链接）
+|   +-- gen_romsymtab.py        # 动态档符号表生成（tools/）
 |   +-- esp32s3/           # ESP32-S3 编译脚本（旧入口）
 |   |   +-- build.sh
 |   |   +-- nuttx_build.sh
@@ -442,6 +474,9 @@ retro-ws/
 |   +-- s3.appconfig / s3n8.appconfig / cam.appconfig
 |   +-- c3.appconfig / pico.appconfig
 |   +-- scripts/<板名>/    # 板级演示/教学脚本（打包 ROMFS 入固件）
+|   +-- packages/          # ROM 应用包（应用/系统分离 2026-10-06）
+|   |   +-- <板>.list      #   每板默认安装软件名单（构建期打包入 ROM）
+|   |   +-- pkgs/<名>/     #   包配方（control + recipe.conf + 模块描述符）
 +-- eda/                   # 五板立创EDA 载板工程（gen_eda.py 自动布线）
 +-- apps-extra/            # GPL 独立程序包源（不入固件 ROM）
 |   +-- ucblogo/           #   UCBLogo .rpk 包（GPL-2.0+）
@@ -449,6 +484,7 @@ retro-ws/
 +-- tools/                 # 工具和字体资源
 |   +-- fonts/            # 字体文件
 |   +-- sim/              # LVGL 无头模拟器 + CVBS 全链路管线
+|   |                   #   + 五板 CLI 交互模拟器（board_cli_sim）
 +-- configs/               # 配置文件
 |   +-- nuttx-defconfig           # NuttX 内核配置
 |   +-- nuttx-defconfig-combined  # 组合配置
@@ -600,7 +636,7 @@ CALL retro_ui_status("处理中")
 
 ```bash
 # 五板全编译（统一入口）
-./scripts/build_firmware.sh all
+./scripts/firmware/build_firmware.sh all
 
 # 单板（旧入口，s3 / cam / c3 三板）
 cd scripts/esp32s3 && ./build.sh nuttx
@@ -727,3 +763,30 @@ _最后更新: 2026-10-05（项目更名 retro-ws，文档全面修正为五板�
   （240p 的 12px 为可读下限，实机 CRT 抽验登记 NEXT_STEPS）
 - 体积收益：字体 .o 从 911KB（16px）降到约 0.6MB（12px），五板 CLI 档
   固件全体缩小
+
+## 2026-10-06 应用/系统分离：ROM 包存储 + XIP 模块体系
+
+- **应用全部包化**：sysinfo + 7 个 GUI 应用（记事本/浏览器/终端/SQLite/
+  播放器/录音机/扫雷）从固件抽离为 .rpk 包；每板默认名单
+  （firmware/packages/<板>.list）构建期打包入 ROM（/rom/pkg）
+- **构建期离线安装**（同日策略修订：直接安装到位）：gen_pkgdb.py 在
+  编译期生成 db/ 预装数据库随镜像分发，设备首启零安装动作；pkg_manager
+  两级 DB（ROM 预装层 + 片上覆盖层/卸载墓碑），第三方 .rpk 片上通道不变
+- **XIP 原址执行**：rommod 加载器——只读段 flash 零拷贝、可写段 arena
+  固定槽直拷；**静态绑定档**（构建期 defsym 烘焙，运行时零重定位）。
+  设计修订记录：宿主端到端测试实证 PC 相对 GOT 使"RO 在 flash / RW 搬
+  RAM"分段放置不可行（x86-64/ARM/RISC-V 通杀），原按架构分档方案收敛
+  为全板静态绑定（HARDWARE 14.3）
+- **两遍构建**：pass0 定模块尺寸 -> 固件 pass1 定镜像/arena 地址 ->
+  重链烘焙 -> pass2 收口（4096 对齐保证布局稳定，构建器断言尺寸全等）
+- **测试**（ai-code-testing）：test_rommod（真实 x86-64 模块端到端 +
+  dlopen 差分 + 静态绑定全流程复刻 + 拒绝路径，93 项）、test_pkgstore
+  （seed 幂等/CRC 篡改拒绝自愈，40 项）、fuzz_rommod（2 万轮 0 崩溃）、
+  python ROMFS 树回读差分（独立解析器 oracle，抓到名字区错位真 bug）；
+  glm53f 完成 GUI 截图重生成（外壳零回归）与 wav_decoder 新测试
+  （66318 项，抓到截断头死循环与负数左移 UB 两个真 bug）
+- 五板编译全绿（固定槽两遍构建流水线：pico 1155KB / c3 1569KB /
+  cam 2111KB / s3·s3n8 2115KB），宿主 19 项套件 ALL PASS
+- **构建攻坚记录**（BUILD_FIXES 问题 1-22）：Xtensa 窗口调用跨 1GB
+  硬错误、ld relax 地址敏感漂移（最终以固定槽填充方案根治）、符号
+  gc 回收（保持器）、跨模块符号表、mawk 无 strtonum 等 22 项

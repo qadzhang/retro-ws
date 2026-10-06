@@ -52,6 +52,28 @@
 #  define PKG_DB_ROOT            "/opt/var/lib/rpkg"
 #endif
 
+/* ROM 包存储根（XIP 载荷 + 预装数据库，pkg_rom.c 提供；2026-10-06） */
+#ifndef PKG_ROM_ROOT
+#  define PKG_ROM_ROOT           "/rom/pkg"
+#endif
+
+/* ROM 预装层数据库（构建期 gen_pkgdb.py 离线安装产物，随固件镜像
+ * 只读分发——2026-10-06 策略修订：编译 ROM 时直接安装到位，首启零
+ * 安装动作；片上 PKG_DB_ROOT 为可写覆盖层：后装包 + 预装包卸载墓碑
+ * （removed/<包名>）+ 预装包升级覆盖快照） */
+#ifndef PKG_ROM_DB_ROOT
+#  define PKG_ROM_DB_ROOT        PKG_ROM_ROOT "/db"
+#endif
+
+/*
+ * WHAT : 枚举"有效已安装"包（两级合并：ROM 预装层 + 片上覆盖层；
+ *        墓碑过滤；同名片上优先），桌面注册表与 pkg list 共用
+ * 返回 : 枚举包数；cb 返回负数中止并透传
+ */
+int rpkg_iter_installed(int (*cb)(const char *pkg,
+                                  const char *control_path, void *arg),
+                        void *arg);
+
 /* .rpk 容器内保留路径（不可作为载荷名） */
 #define PKG_PATH_CONTROL       "control"
 #define PKG_PATH_MANIFEST      "manifest"
@@ -60,7 +82,7 @@
 /* 单个 control 字段最大长度 */
 #define PKG_FIELD_MAX          256
 
-/* control 支持的字段（deb 子集） */
+/* control 支持的字段（deb 子集 + ROM 包存储扩展，2026-10-06） */
 enum rpkg_control_field_e {
     PKG_FLD_PACKAGE = 0,    /* Package: 包名（[a-z0-9+-]） */
     PKG_FLD_VERSION,        /* Version: 版本（语义化建议 x.y.z-rev） */
@@ -71,6 +93,11 @@ enum rpkg_control_field_e {
     PKG_FLD_DESCRIPTION,    /* Description: 一行描述 */
     PKG_FLD_INSTALLED_SIZE, /* Installed-Size: KB 估算 */
     PKG_FLD_MAINTAINER,     /* Maintainer: 维护者 */
+    PKG_FLD_XIP,            /* Xip: ROM 直跑载荷清单（逗号分隔，如 bin/editor）*/
+    PKG_FLD_TYPE,           /* Type: cli | gui（桌面注册表分类） */
+    PKG_FLD_TITLE_ZH,       /* Title-Zh: 中文标题（GUI 应用名） */
+    PKG_FLD_TITLE_EN,       /* Title-En: 英文标题 */
+    PKG_FLD_ICON,           /* Icon: 图标文本（LVGL symbol / ASCII） */
     PKG_FLD_COUNT
 };
 

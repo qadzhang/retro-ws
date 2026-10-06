@@ -1,0 +1,38 @@
+shot 01_boot
+clear
+help
+shot 02_help
+clear
+uname -a
+free
+shot 03_free
+clear
+ps
+shot 04_ps
+clear
+ls
+cat readme.txt
+shot 05_sd
+clear
+script board_demo.bas
+shot 06_bas
+clear
+script board_demo.js
+shot 07_js
+clear
+led on
+shot 08_led
+clear
+wifi
+shot 09_wifi
+clear
+ime on
+ime shijie
+shot 10_ime
+ime 1
+shot 11_commit
+ime off
+clear
+selftest
+shot 12_selftest
+exit

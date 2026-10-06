@@ -114,3 +114,39 @@ gcc -Wall -Wextra -g -DCONFIG_RETRO_PINYIN_CLI=1 \
     -o /tmp/retro_sim/console_sim
 
 echo "[sim] OK: /tmp/retro_sim/{lvgl_sim,cvbs_pipeline,lvgl_sim_color,console_sim}"
+
+# 7. 五板 CLI 通用模拟器（真实 cvbs_console/retro_gpio/my_basic/duktape；
+#    板间差异由 -DRETRO_SIM_BOARD_* 编译期 profile 注入，引脚事实来自
+#    各板 hw_*.h 占用表——与各板 board.c 同源）
+BOARDS="pico s3 s3n8 cam c3"
+for b in $BOARDS; do
+    case "$b" in
+        pico) BDEF=RETRO_SIM_BOARD_PICO;  BINC="$ROOT/src/nuttx/rp2040/board" ;;
+        s3)   BDEF=RETRO_SIM_BOARD_S3;    BINC="$ROOT/src/nuttx/esp32s3/board" ;;
+        s3n8) BDEF=RETRO_SIM_BOARD_S3N8;  BINC="$ROOT/src/nuttx/esp32s3/board" ;;
+        cam)  BDEF=RETRO_SIM_BOARD_CAM;   BINC="$ROOT/src/nuttx/esp32/board" ;;
+        c3)   BDEF=RETRO_SIM_BOARD_C3;    BINC="$ROOT/src/nuttx/esp32c3/board" ;;
+    esac
+    echo "[sim] building board_cli_$b..."
+    gcc -Wall -Wextra -g -DCONFIG_RETRO_PINYIN_CLI=1 "-D$BDEF=1" \
+        -I "$ROOT/tests/host/stubs" \
+        -I "$ROOT/src/nuttx/common" -I "$ROOT/src/nuttx/common/driver" \
+        -I "$BINC" \
+        -I "$ROOT/src/lvgl/fonts" -I /tmp/fontbridge \
+        -I "$ROOT/deps/my_basic/core" -I "$ROOT/deps/duktape/src" \
+        "$ROOT/tools/sim/board_cli_sim.c" \
+        "$ROOT/src/nuttx/common/driver/cvbs_console.c" \
+        "$ROOT/src/nuttx/common/driver/cvbs_ime.c" \
+        "$ROOT/src/nuttx/common/driver/drv_pinyin.c" \
+        "$ROOT/src/nuttx/common/driver/cvbs_core.c" \
+        "$ROOT/src/nuttx/common/driver/lvgl_font_compat.c" \
+        "$ROOT/src/nuttx/common/driver/retro_gpio.c" \
+        "$ROOT/src/lvgl/fonts/lv_font_notosans_sc_12.c" \
+        "$ROOT/src/lvgl/fonts/lv_font_ascii_6.c" \
+        "$ROOT/src/lvgl/fonts/lv_font_fullwidth.c" \
+        "$ROOT/deps/my_basic/core/my_basic.c" \
+        "$ROOT/deps/duktape/src/duktape.c" \
+        -lm -o "/tmp/retro_sim/board_cli_$b"
+done
+
+echo "[sim] OK: /tmp/retro_sim/{lvgl_sim,cvbs_pipeline,lvgl_sim_color,console_sim,board_cli_{pico,s3,s3n8,cam,c3}}"

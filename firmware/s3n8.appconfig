@@ -95,3 +95,16 @@ CONFIG_ESP32S3_I2C=y
 CONFIG_ESP32S3_I2C0=y
 CONFIG_ESP32S3_I2C0_SCLPIN=5
 CONFIG_ESP32S3_I2C0_SDAPIN=6
+
+# ROM 包存储 + 首启自动安装（应用/系统分离，2026-10-06）：
+# 名单 firmware/packages/EOF
+
+# ROM 包存储 + 首启自动安装（应用/系统分离，2026-10-06）：各板默认
+# 应用名单（firmware/packages/<板>.list）构建期打包 .rpk 入 ROM，
+# 首启 seed 自动安装；.rmo 模块 XIP 原址执行（HARDWARE.md 14 章）
+CONFIG_RETRO_PKG_STORE=y
+
+# ROM 模块 arena 入 PSRAM（2026-10-06 应用/系统分离）：开 NuttX
+# XTENSA_EXTMEM_BSS 后 .ext_ram.bss 才会被链接脚本路由进 extern_ram_seg
+# （PSRAM），否则 arena 大数组会孤儿段漂进 rtc_slow_seg 溢出
+CONFIG_XTENSA_EXTMEM_BSS=y

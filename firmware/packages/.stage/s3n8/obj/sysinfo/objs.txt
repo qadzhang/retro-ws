@@ -1,0 +1,1 @@
+/home/user/retro-ws/firmware/packages/.stage/s3n8/obj/sysinfo/src_nuttx_common_apps_pkg_mods_sysinfo_mod.c.o

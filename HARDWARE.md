@@ -1136,10 +1136,104 @@ script <名字>   → 引擎从 Flash 指针直接执行（script_exec_buffer）
 
 ---
 
+## 14. ROM 包存储与 XIP 模块体系（2026-10-06 定稿）⭐
+
+应用/系统分离重构的硬件事实基础：应用以 .rpk 包交付、构建期打包入
+ROM、构建期离线安装、模块代码 Flash 原址执行（XIP）。规范先于代码。
+
+### 14.1 ROM 包存储布局（/rom/pkg）
+
+| 项 | 内容 |
+|----|------|
+| 载体 | `pkg_romfs.c`（tools/mkromfs.py --tree 生成，C 数组编入固件） |
+| 挂载 | /dev/rom1 -> **/rom/pkg**（ROMFS 只读；直查 API 免挂载可用） |
+| 布局 | `bin/<模块名>`（.rmo XIP 载荷，数据 4096 对齐）+ `db/`（预装数据库：`<pkg>.control` + `manifest/<pkg>` + `info/<pkg>.*`——构建期 gen_pkgdb.py 离线安装产物） |
+| 名单 | `firmware/packages/<板>.list`（每板默认安装软件名单，构建期决定打包内容） |
+| 对齐 | 镜像数组 `aligned(4096)`；bin/ 载荷数据 4096 对齐——静态绑定档烘焙地址的稳定性前提（14.3） |
+
+### 14.2 镜像数组的段放置（可执行 flash）
+
+| 板 | 段 | 说明 |
+|----|------|------|
+| S3/S3N8/CAM (Xtensa) | `.flash.text`（IROM，0x42000000 映射区） | mkromfs `--section .flash.text`；模块代码经 flash cache IROM 原址取指 |
+| C3 (RISC-V) | `.flash.text`（irom0_0_seg RX） | 同上 |
+| Pico (RP2040) | 默认 `.text/.rodata`（XIP flash 0x10000000 整区可执行） | 无需段属性 |
+
+### 14.3 静态绑定档（全板统一，运行时零重定位）⭐
+
+**设计修订记录**：原方案按架构分两档（ARM/RISC-V 运行时重定位 +
+Xtensa 静态绑定）。宿主端到端测试（test_rommod.c）实证推翻动态档在
+"RO 段 flash 原址 + RW 段搬 RAM"分段放置下的可行性：**x86-64/ARM/
+RISC-V 的 GOT 访问均为 PC 相对寻址**（实测 `mov 0x2fa4(%rip),%rax`
+读 GOT），分段放置会打断寻址；NuttX NXFLAT 以寄存器基址 PIC +
+GPL 专用 ldnxflat 工具链解决（许可证红线不入，AGENTS 11.1）。故
+**五板统一静态绑定档**：
+
+- **pass0**：模块以互异占位地址（0x40000000|crc32(符号名)，同
+  0x40000000-0x4FFFFFFF 象限——Xtensa 窗口长调用跨界为硬错误）链接，
+  测定段布局与尺寸；随后 **pad 到固定槽** align(size+4096, 4096)
+  （一页余量）——镜像内占位钉死
+- **pass1**：固件带 pkg_romfs.c（pass0 槽镜像）链接，取得镜像数组
+  地址 F 与 arena 基址
+- **finalize 重链**：全部外部符号以 pass1 真实地址 `--defsym` 烘焙
+  （固件符号表 + 跨模块符号表两级解析）、text 段链接于
+  `F + 镜像内偏移 + 段文件偏移`、RW 段链接于 arena 固定槽；
+  **重定位归零、产物落槽即 pad 回槽尺寸**（尾零填充对 rommod 无害：
+  ELF 解析按节表偏移走）——镜像布局/F/烘焙地址一次收敛，无迭代
+- **pass2**：固件带最终镜像增量链接（同尺寸 → F 不漂移）
+- **链接旗标**：`-Wl,--no-relax`（Xtensa relax/蹦床依赖最终地址，
+  两遍松弛机会不同会致尺寸漂移；禁用换确定性，模块略大为一次性成本）
+- 装载（rommod.c）：RO 段 XIP 零拷贝（运行期地址 == 链接期地址，
+  漂移即 -EFAULT）；RW 段镜像直拷 arena（区间校验防固件布局漂移）
+
+| 模块旗标 | Xtensa | RISC-V (C3) | ARM (Pico) |
+|----------|--------|-------------|------------|
+| 编译 | `-mlongcalls -fno-pic` | `-fno-pic -msmall-data-limit=0 -mno-relax` | `-fno-pic -mcpu=cortex-m0plus -mthumb` |
+| 链接 | ET_EXEC 直链（`-shared` 会引入 PLT，Thumb-1 无 PLT） | 同左 | 同左 |
+
+### 14.4 模块数据竞技场（arena）
+
+静态绑定档模块的 .data/.bss 链接在构建期分配的 arena 固定槽：
+`CONFIG_RETRO_ROMMOD_ARENA_SIZE`（s3/s3n8/cam=128KB / c3=16KB /
+pico=8KB，含每模块 RW 槽一页余量；S3/CAM 有 SPIRAM 时入
+`.ext_ram.bss` 避开 SRAM）。
+arena 常驻固件（与旧 builtin 静态 .bss 同成本，无回归）；名单外
+应用不占任何 RAM/flash。
+
+### 14.5 构建期离线安装与执行入口（2026-10-06 定稿：直接安装到位）
+
+- **离线安装**（tools/gen_pkgdb.py，finalize 末尾执行）：名单包在
+  编译 ROM 时即完成安装——`db/` 预装数据库（control 快照 +
+  manifest[Xip 载荷最终 CRC] + info/ 维护脚本）随镜像只读分发；
+  **设备首启零安装动作**（无 seed/打包/重试面，不依赖片上可写区
+  先于包管理可用；镜像只含 bin/ 载荷 + db/ 数据库，无 .rpk 中间态）
+- **两级数据库**（pkg_manager）：ROM 预装层（/rom/pkg/db）+ 片上
+  覆盖层（/opt/var/lib/rpkg：后装包、预装包卸载墓碑 removed/<名>、
+  升级覆盖快照）；查询 = 墓碑过滤后两级合并（片上优先），
+  `rpkg_iter_installed` 统一枚举（pkg list 与桌面注册表共用）
+- **卸载语义**：预装包 remove = 停用（prerm + 片上墓碑；ROM 文件
+  只读不可删、.rmo 载荷常驻 Flash 不占 RAM）；片上同名 .rpk 后装
+  可覆盖，覆盖后走常规卸载
+- **执行**：CLI 模块 `run <名>`（NSH builtin，XIP 装载 + 内联调用，
+  返回即释放引用）；GUI 模块经桌面注册表（desktop.c 按两级 DB 的
+  Type: gui 包装配图标，末窗关闭卸载）
+- **动态档保留通道**：`rommod_load_from_mem_inline`（RAM 窗口整段
+  vaddr 布置，dlopen 同款语义）供宿主测试与未来 RAM 窗口板；
+  flash XIP 板不经过该入口
+
+### 14.6 装载器容量红线（rommod）
+
+- 模块注册表 8 个并发；动作槽 48；start menu 24 项；prog icons 24
+- ROMFS 载荷单文件上限 = 镜像尺寸；tar 条目/脚本 8KB（pkg_manager 同限）
+- 静态档装载期校验：RO 段运行期地址 != 链接期地址 -> -EFAULT
+  （固件布局漂移防护）；RW 段越出 arena -> -EFAULT
+
 ## 变更记录 / Changelog
 
 | 日期 | 内容 |
 |------|------|
+| **2026-10-06（同日修订）** | **14.5 策略定稿：构建期离线安装（gen_pkgdb.py 直接安装到位，db/ 随镜像分发，首启零安装动作）；14.1 布局去 .rpk 中间态（bin/ + db/）；pkg_manager 两级 DB（ROM 预装层 + 片上覆盖层/墓碑）** |
+| **2026-10-06** | **新增 14 章 ROM 包存储与 XIP 模块体系（应用/系统分离）：ROMFS 树镜像段放置表（14.2）、静态绑定档全板统一（14.3，含 PC 相对 GOT 设计修订记录与 pass0/pass1/finalize/pass2 两遍构建流程）、arena 配置（14.4）、seeder 与执行入口（14.5）、装载器容量红线（14.6）** |
 | **2026-10-05** | **文档全面修正为 retro-ws 五板定位：标题/开发策略去 ESP32 单板前缀；1.1 目标表补 s3n8 与 pico；1.2 档案表补 hw_rp2040_pico.h；6.4 支持范围表补 C3/Pico（320x240 字符控制台档）；12.1/12.2 核间分工改为全局规范（CPU0=程序核 / CPU1=媒体核，与代码 sched_setaffinity 实现同步，原"Core0 图形/Core1 系统"旧表作废）** |
 | **2026-10-05** | **字号定稿（6.4）：全系唯一 12px（lv_font_notosans_sc_12，CLI/GUI 共用，嵌入式体积优先）；cvbs_console 网格 16x18→12x14（320x240→26x17、640x480→53x34）；16px 档废除；LVGL 默认字体 montserrat_12；glm53f 验收 640/240p 两档控制台+双桌面全 pass（240p 为可读下限，实机 CRT 抽验登记 NEXT_STEPS）** |
 | **2026-10-05（晚）** | **控制台半格网格+点阵字体二次定稿（6.4）：半格步进体系（半角 6px/全角 12px，1 汉字=2 字母宽；320x240→53 半格列、640x480→106 半格列）；半角+全角标点换源 Fusion Pixel 12px 等宽（OFL-1.1，lv_font_ascii_6/lv_font_fullwidth；Noto 比例字形光栅化后半角溢出/全角标点过细弃用于 console，汉字主体仍 Noto）；全角右半位图退格、行末先折后画；glm53f 像素级验收 0/266 失配** |

@@ -82,6 +82,24 @@ for item in "${ITEMS[@]}"; do
     fi
 done
 
+# ===== 1.5 应用/系统分离资产（2026-10-06） =====
+for f in src/nuttx/common/rommod.c src/nuttx/common/rommod.h \
+         src/nuttx/common/pkg_rom.c src/nuttx/common/pkg_rom.h \
+         src/nuttx/common/apps/system/cmd_run_main.c \
+         src/nuttx/common/apps/pkg_mods/sysinfo_mod.c \
+         src/lvgl/app/retro_app_module.h src/lvgl/app/app_minesweeper.c \
+         scripts/build_romapps.sh tools/gen_romsymtab.py \
+         tests/host/test_rommod.c tests/host/test_pkgstore.c \
+         tests/host/fuzz_rommod.c tests/host/python/test_romfs_tree.py; do
+    if [ -f "$f" ]; then log_pass "存在 $f"; else log_fail "缺失 $f"; fi
+done
+for b in s3 s3n8 cam c3 pico; do
+    if [ -f "firmware/packages/$b.list" ]; then log_pass "名单 firmware/packages/$b.list"; else log_fail "缺名单 $b.list"; fi
+done
+for pkg in sysinfo editor browser terminal player recorder sqlite minesweeper; do
+    if [ -f "firmware/packages/pkgs/$pkg/control" ]; then log_pass "包配方 $pkg"; else log_fail "缺配方 $pkg"; fi
+done
+
 # ===== 2. 检查依赖目录 =====
 log_info "检查依赖目录..."
 

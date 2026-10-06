@@ -1,0 +1,8 @@
+bin/browser 0
+bin/editor 0
+bin/minesweeper 0
+bin/player 0
+bin/recorder 0
+bin/sqlite 0
+bin/sysinfo 0
+bin/terminal 0

@@ -1,0 +1,12 @@
+Package: minesweeper
+Version: 1.0.0-1
+Arch: all
+License: Apache-2.0
+Root: system
+Type: gui
+Title-Zh: 扫雷
+Title-En: Minesweeper
+Icon: [#]
+Xip: bin/minesweeper
+Description: 经典扫雷游戏（9x9）
+Maintainer: Retro WS Project

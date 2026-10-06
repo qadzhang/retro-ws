@@ -1,0 +1,11 @@
+# cam 板 ROM 默认安装软件名单（build_romapps.sh 逐行读取；# 注释）
+# WHAT : 应用/系统分离（2026-10-06）——名单内包在构建期打包入 ROM
+#        （/rom/pkg），系统第一次运行时自动安装（seed）
+sysinfo
+editor
+browser
+terminal
+sqlite
+player
+recorder
+minesweeper

@@ -33,6 +33,39 @@ extern int  wmaker_shell_create(lv_obj_t *parent);
 extern void wmaker_shell_destroy(void);
 extern bool wmaker_shell_active(void);
 
+/* ROM 模块应用注册表（应用/系统分离 2026-10-06）：
+ * 桌面图标/菜单按已安装（或 ROM 直读回退）的 Type: gui 包装配，
+ * 启动经 rommod 装载 .rmo 模块（XIP 原址执行），末窗关闭即卸载。
+ * 表体在无包存储档（CONFIG_RETRO_PKG_STORE 未定义）时恒空，
+ * 菜单/图标循环安全退化为仅外壳组件 */
+#define DESK_MAX_MODAPPS 12
+
+struct modapp_s {
+    char id[32];          /* app_id（= Package 名） */
+    char modname[32];     /* 模块名（Xip 条目 bin/ 之后） */
+    char title_zh[48];
+    char title_en[48];
+    char icon[12];
+};
+
+static struct modapp_s g_modapps[DESK_MAX_MODAPPS];
+static int g_nmodapps;
+
+static void modapp_action(void *arg);
+static const char *modapp_title(const struct modapp_s *a);
+static void modapp_registry_init(void);
+
+#ifdef CONFIG_RETRO_PKG_STORE
+#include <dirent.h>
+#include "rommod.h"
+#include "pkg_rom.h"
+#include "pkg_manager.h"
+#include "retro_app_module.h"
+
+/* 模块窗口删除回调：末窗关闭释放模块 RAM 镜像（XIP 段本就不占 RAM） */
+static void modwin_delete_cb(lv_event_t *e);
+#endif /* CONFIG_RETRO_PKG_STORE */
+
 /* 当前外壳模式 / current shell mode */
 static int g_shell_mode = RETRO_SHELL_WIN3;
 #define CAPTION_X        18        /* 标题文字 X 偏移(留位置给图标按钮) */
@@ -80,8 +113,15 @@ static win_info_t *g_progman   = NULL;  /* 程序管理器主窗口 / Program Ma
 typedef struct {
     const char *name;     /* 显示名称 */
     const char *icon;     /* 图标符号(ASCII art 用字符表示) */
-    void (*action)(void); /* 点击动作 */
+    void (*action)(void *arg); /* 点击动作（可携带参数：模块注册表条目等） */
+    void *arg;            /* 动作参数 */
 } icon_entry_t;
+
+/* 桌面动作槽：菜单项/图标的 user_data 指向此结构（fn+arg 成对分发） */
+typedef struct {
+    void (*fn)(void *arg);
+    void *arg;
+} desk_action_t;
 
 /* 内部函数声明 */
 static void   taskbar_clock_update(void);
@@ -93,16 +133,9 @@ static void   win_set_active(win_info_t *wi);
 static void   titlebar_event_cb(lv_event_t *e);
 static void   menu_item_cb(lv_event_t *e);
 static void   create_progman(void);
-static void   create_minesweeper(void);
-static void   create_notepad(void);
-static void   create_browser(void);
-static void   create_terminal(void);
-static void   create_control_panel(void);
-static void   create_settings(void);
-static void   create_file_manager(void);
-static void   create_player(void);
-static void   create_recorder(void);
-static void   create_sqlite(void);
+static void   create_control_panel(void *arg);
+static void   create_settings(void *arg);
+static void   create_file_manager(void *arg);
 static void   desktop_icon_dblck(lv_event_t *e);
 static void   win_close_cb(lv_event_t *e);
 static void   win_min_cb(lv_event_t *e);
@@ -110,13 +143,8 @@ static void   win_max_cb(lv_event_t *e);
 static void   lang_zh_cb(lv_event_t *e);
 static void   lang_en_cb(lv_event_t *e);
 
-/* External app launchers */
-extern lv_obj_t *editor_create(void);       /* Notepad */
-extern lv_obj_t *browser_create(void);      /* Browser */
-extern lv_obj_t *terminal_create(void);     /* Terminal */
-extern lv_obj_t *player_create(void);       /* Media Player */
-extern lv_obj_t *recorder_create(void);      /* Recorder */
-extern lv_obj_t *sqlite_gui_create(void);     /* SQLite Browser */
+/* External app launchers（2026-10-06 应用/系统分离：七应用改为 ROM 模块
+ * .rpk 交付，桌面经 rommod 装载；此处不再静态链编 app_*.c） */
 
 /* (3D drawing helpers - use LVGL native borders instead) */
 
@@ -190,8 +218,24 @@ static void start_menu_cb(lv_event_t *e)
     }
 }
 
+/* 动作槽池：菜单/图标 user_data 指向槽（fn+arg 成对，静态存活；
+ * 2026-10-06 引入——模块应用启动动作需携带注册表条目参数） */
+#define DESK_MAX_ACTIONS 48
+static desk_action_t g_desk_actions[DESK_MAX_ACTIONS];
+static int g_ndesk_actions;
+
+static desk_action_t *desk_action_alloc(void (*fn)(void *arg), void *arg)
+{
+    if (g_ndesk_actions >= DESK_MAX_ACTIONS || fn == NULL)
+        return NULL;
+
+    g_desk_actions[g_ndesk_actions].fn = fn;
+    g_desk_actions[g_ndesk_actions].arg = arg;
+    return &g_desk_actions[g_ndesk_actions++];
+}
+
 static void add_start_menu_item(const char *text, const char *sub,
-                                  void (*cb)(void))
+                                  void (*cb)(void *arg), void *arg)
 {
     if (g_start_menu_count >= 24) return;
 
@@ -224,7 +268,7 @@ static void add_start_menu_item(const char *text, const char *sub,
     }
 
     if (cb) {
-        lv_obj_set_user_data(item, (void(*)(void))cb);
+        lv_obj_set_user_data(item, desk_action_alloc(cb, arg));
         lv_obj_add_event_cb(item, menu_item_cb, LV_EVENT_CLICKED, NULL);
     }
 
@@ -266,24 +310,22 @@ static void build_start_menu(void)
     lv_obj_set_pos(sep, 30, 22);
     lv_obj_set_style_bg_color(sep, WIN3_BORDER_HI, LV_PART_MAIN);
 
-    /* 菜单项 - 使用 i18n / Menu items - use i18n */
-    add_start_menu_item(i18n_get("START_MENU_PROGRAMS"), "▶", NULL);
-    add_start_menu_item(i18n_get("START_MENU_ACCESSORIES"), "▶", NULL);
-    add_start_menu_item(i18n_get("START_MENU_GAMES"), "▶", NULL);
-    add_start_menu_item("", "", NULL); /* 分隔线 */
-    add_start_menu_item(i18n_get("APP_NOTEPAD"), NULL, create_notepad);
-    add_start_menu_item(i18n_get("APP_BROWSER"), NULL, create_browser);
-    add_start_menu_item(i18n_get("APP_TERMINAL"), NULL, create_terminal);
-    add_start_menu_item(i18n_get("APP_SQLITE"), NULL, create_sqlite);
-    add_start_menu_item(i18n_get("APP_MINESWEEPER"), NULL, create_minesweeper);
-    add_start_menu_item(i18n_get("APP_MEDIA_PLAYER"), NULL, create_player);
-    add_start_menu_item(i18n_get("APP_RECORDER"), NULL, create_recorder);
-    add_start_menu_item("", "", NULL);
-    add_start_menu_item(i18n_get("APP_FILE_MANAGER"), NULL, create_file_manager);
-    add_start_menu_item(i18n_get("APP_CONTROL_PANEL"), NULL, create_control_panel);
-    add_start_menu_item("", "", NULL);
-    add_start_menu_item(i18n_get("START_MENU_RUN"), NULL, NULL);
-    add_start_menu_item(i18n_get("START_MENU_SHUTDOWN"), NULL, NULL);
+    /* 菜单项 - 使用 i18n / Menu items - use i18n
+     * 应用条目（记事本/浏览器/终端/SQLite/扫雷/播放器/录音机）自
+     * 2026-10-06 起 .rpk 包交付，经 ROM 模块注册表动态装配 */
+    add_start_menu_item(i18n_get("START_MENU_PROGRAMS"), "▶", NULL, NULL);
+    add_start_menu_item(i18n_get("START_MENU_ACCESSORIES"), "▶", NULL, NULL);
+    add_start_menu_item(i18n_get("START_MENU_GAMES"), "▶", NULL, NULL);
+    add_start_menu_item("", "", NULL, NULL); /* 分隔线 */
+    for (int i = 0; i < g_nmodapps; i++)
+        add_start_menu_item(modapp_title(&g_modapps[i]), NULL,
+                            modapp_action, &g_modapps[i]);
+    add_start_menu_item("", "", NULL, NULL);
+    add_start_menu_item(i18n_get("APP_FILE_MANAGER"), NULL, create_file_manager, NULL);
+    add_start_menu_item(i18n_get("APP_CONTROL_PANEL"), NULL, create_control_panel, NULL);
+    add_start_menu_item("", "", NULL, NULL);
+    add_start_menu_item(i18n_get("START_MENU_RUN"), NULL, NULL, NULL);
+    add_start_menu_item(i18n_get("START_MENU_SHUTDOWN"), NULL, NULL, NULL);
 
     lv_obj_add_flag(g_start_menu, LV_OBJ_FLAG_HIDDEN);
 
@@ -464,6 +506,21 @@ static win_info_t *win_create(const char *title, int x, int y, int w, int h)
     return wi;
 }
 
+/*
+ * WHAT : 桌面窗口 API（导出给 ROM 模块应用，经固件符号表解析）
+ * WHY  : 模块应用不链编 desktop 内部符号，需公开入口创建受桌面
+ *        窗口管理器托管的窗口（标题栏/关闭按钮/层级/激活跟踪）
+ * HOW  : 薄封装 win_create；返回窗口根 lv_obj_t（NULL = 窗口满）
+ */
+lv_obj_t *retro_desk_win_create(const char *title, int x, int y,
+                                int w, int h)
+{
+    win_info_t *wi = win_create(title, x, y, w, h);
+
+    return wi ? wi->win : NULL;
+}
+
+
 static void win_set_active(win_info_t *wi)
 {
     if (g_active_win == wi) return;
@@ -629,10 +686,10 @@ static void win_max_cb(lv_event_t *e)
 static void menu_item_cb(lv_event_t *e)
 {
     lv_obj_t *item = lv_event_get_target(e);
-    void (*cb)(void) = (void(*)(void))lv_obj_get_user_data(item);
-    if (cb) {
+    desk_action_t *act = (desk_action_t *)lv_obj_get_user_data(item);
+    if (act && act->fn) {
         start_menu_hide();
-        cb();
+        act->fn(act->arg);
     }
 }
 
@@ -651,7 +708,8 @@ typedef struct {
     lv_obj_t *icon;
     lv_obj_t *label;
     const char *name;
-    void (*action)(void);
+    void (*action)(void *arg);
+    void *arg;
     int grid_x, grid_y;
 } prog_icon_t;
 
@@ -661,7 +719,8 @@ static int         g_prog_icon_count = 0;
 
 static void add_prog_icon(win_info_t *parent, const char *name,
                           const char *ascii_sym,
-                          void (*action)(void),
+                          void (*action)(void *arg),
+                          void *action_arg,
                           int gx, int gy)
 {
     if (g_prog_icon_count >= MAX_PROG_ICONS) return;
@@ -703,6 +762,7 @@ static void add_prog_icon(win_info_t *parent, const char *name,
 
     pi->name = name;
     pi->action = action;
+    pi->arg = action_arg;
     pi->grid_x = gx;
     pi->grid_y = gy;
 
@@ -716,88 +776,198 @@ static void desktop_icon_dblck(lv_event_t *e)
 {
     prog_icon_t *pi = (prog_icon_t *)lv_obj_get_user_data(lv_event_get_target(e));
     if (pi && pi->action) {
-        pi->action();
+        pi->action(pi->arg);
     }
 }
 
 /*======================================
- *  应用程序窗口
+ *  应用程序窗口（外壳组件 + ROM 模块应用注册表）
  *======================================*/
 
-/*----- Notepad -----*/
-static void create_notepad(void)
+/*
+ * WHAT : 读取一个已安装包的 control 快照，是 gui 应用则入注册表
+ * HOW  : 逐行匹配 Package/Type/Title/Xip/Icon 字段（与 pkg_manager
+ *        的 g_field_names 同名约定）；Xip 取 "bin/<名>" 的名字段
+ * 返回 : true = 已入表（或表满忽略）；false = 非 gui 包
+ */
+static bool modapp_add_entry(const char *pkg, const char *type,
+                             const char *title_zh, const char *title_en,
+                             const char *icon, const char *xip)
 {
-    /* 使用完整的 Notepad 应用 */
-    lv_obj_t *editor_win = editor_create();
-    if (editor_win) {
-        win_move_to_front(editor_win);
+    if (g_nmodapps >= DESK_MAX_MODAPPS)
+        return true;                /* 表满：静默忽略（装机数受名单控制） */
+    if (type == NULL || strcmp(type, "gui") != 0)
+        return false;
+    if (xip == NULL || title_zh == NULL)
+        return false;
+
+    const char *slash = strrchr(xip, '/');
+    struct modapp_s *a = &g_modapps[g_nmodapps];
+
+    snprintf(a->id, sizeof(a->id), "%s", pkg);
+    snprintf(a->modname, sizeof(a->modname), "%s",
+             slash ? slash + 1 : xip);
+    snprintf(a->title_zh, sizeof(a->title_zh), "%s", title_zh);
+    snprintf(a->title_en, sizeof(a->title_en), "%s",
+             title_en ? title_en : title_zh);
+    snprintf(a->icon, sizeof(a->icon), "%s",
+             (icon && icon[0]) ? icon : "[A]");
+    g_nmodapps++;
+    return true;
+}
+
+#ifdef CONFIG_RETRO_PKG_STORE
+
+/*
+ * WHAT : 从包 DB（/opt/var/lib/rpkg 目录的 .control 快照）扫 gui 应用
+ * HOW  : 只读 control 快照文件（seed 完成后即权威来源）；无 DB 或
+ *        扫描为空时由调用方走 ROM 直读回退
+ */
+/*
+ * WHAT : 包 DB 枚举回调：读一个 control 快照，gui 应用入注册表
+ * HOW  : 字段匹配 Package/Type/Title/Xip/Icon（与 pkg_manager 的
+ *        g_field_names 同名约定）；Xip 取 "bin/<名>" 的名字段
+ */
+static int modapp_scan_one(const char *pkg, const char *control_path,
+                           void *arg)
+{
+    char type[32] = "", tzh[64] = "", ten[64] = "";
+    char icon[16] = "", xip[64] = "";
+
+    (void)arg;
+
+    FILE *f = fopen(control_path, "r");
+    if (f == NULL)
+        return OK;
+
+    char line[160];
+    while (fgets(line, sizeof(line), f)) {
+        char *nl = strchr(line, '\n');
+        if (nl)
+            *nl = '\0';
+        if (strncmp(line, "Type:", 5) == 0)
+            sscanf(line + 5, "%31s", type);
+        else if (strncmp(line, "Title-Zh:", 9) == 0)
+            snprintf(tzh, sizeof(tzh), "%s", line + 9 + strspn(line + 9, " "));
+        else if (strncmp(line, "Title-En:", 9) == 0)
+            snprintf(ten, sizeof(ten), "%s", line + 9 + strspn(line + 9, " "));
+        else if (strncmp(line, "Icon:", 5) == 0)
+            sscanf(line + 5, "%15s", icon);
+        else if (strncmp(line, "Xip:", 4) == 0)
+            sscanf(line + 4, "%63s", xip);
     }
+    fclose(f);
+
+    modapp_add_entry(pkg, type, tzh, ten, icon, xip);
+    return OK;
 }
 
-/*----- Browser -----*/
-static void create_browser(void)
+/*
+ * WHAT : 填充注册表：枚举"有效已安装"包（ROM 预装层 + 片上覆盖层，
+ *        墓碑过滤——构建期离线安装与后装包统一视图）
+ */
+static void modapp_scan_db(void)
 {
-    lv_obj_t *browser_win = browser_create();
-    if (browser_win) {
-        win_move_to_front(browser_win);
+    rpkg_iter_installed(modapp_scan_one, NULL);
+}
+
+/*
+ * WHAT : 填充模块应用注册表（DB 优先，ROM 直读回退）
+ * WHEN : 桌面初始化时一次；i18n 语言在此时取样（标题不再随语言热切）
+ */
+static void modapp_registry_init(void)
+{
+    g_nmodapps = 0;
+    modapp_scan_db();
+
+    if (g_nmodapps > 0)
+        syslog(LOG_INFO, "[desktop] %d 个 ROM 模块应用入注册表\n",
+               g_nmodapps);
+}
+
+/* 注册表条目显示名（按当前 i18n 语言取中/英标题） */
+static const char *modapp_title(const struct modapp_s *a)
+{
+    const char *lang = i18n_get_lang();
+
+    return (lang && strncmp(lang, "zh", 2) == 0) ? a->title_zh : a->title_en;
+}
+
+/* 模块窗口删除回调：末窗关闭释放模块 RAM 镜像（XIP 段本就不占 RAM） */
+static void modwin_delete_cb(lv_event_t *e)
+{
+    struct rommod_s *mod = lv_event_get_user_data(e);
+
+    rommod_put(mod);
+}
+
+/*
+ * WHAT : 启动一个 ROM 模块应用（装载 .rmo -> 校验描述符 -> create）
+ * HOW  : rommod_load 同名复用（多窗口共享 RAM 镜像）；描述符
+ *        magic/ABI 校验防误装非应用模块；窗口 LV_EVENT_DELETE
+ *        归还引用，末窗关闭即卸载——应用不跑不占 RAM
+ */
+static void modapp_action(void *arg)
+{
+    struct modapp_s *a = arg;
+    struct rommod_s *mod = NULL;
+    void *sym = NULL;
+
+    if (rommod_load(a->modname, &mod) != OK) {
+        printf("[desktop] 模块装载失败 / cannot load module: %s\n",
+               a->modname);
+        return;
     }
-}
 
-/*----- Terminal -----*/
-static void create_terminal(void)
-{
-    lv_obj_t *term_win = terminal_create();
-    if (term_win) {
-        win_move_to_front(term_win);
+    if (rommod_getsym(mod, RETRO_APP_INFO_SYMBOL, &sym) != OK || sym == NULL) {
+        printf("[desktop] 模块缺 %s / no app descriptor\n",
+               RETRO_APP_INFO_SYMBOL);
+        rommod_put(mod);
+        return;
     }
-}
 
-/*----- Minesweeper -----*/
-static void create_minesweeper(void)
-{
-    win_info_t *wi = win_create("Minesweeper", 120, 80, 240, 280);
-    if (!wi) return;
+    const struct retro_gui_app_info_s *info = sym;
 
-    /* 游戏区 - 9x9 网格 */
-    lv_obj_t *game_area = lv_obj_create(wi->client);
-    lv_obj_set_size(game_area, 200, 200);
-    lv_obj_set_pos(game_area, 20, 20);
-    lv_obj_set_style_bg_color(game_area, WIN3_LTGRAY, LV_PART_MAIN);
-    lv_obj_set_style_border_width(game_area, 2, LV_PART_MAIN);
-    lv_obj_set_style_border_color(game_area, WIN3_BORDER_HI, LV_PART_MAIN);
-
-    lv_obj_t *info_lbl = lv_label_create(wi->client);
-    lv_label_set_text(info_lbl, "Mines: 10\nTimer: 000");
-    lv_obj_set_pos(info_lbl, 20, 4);
-    lv_obj_set_style_text_font(info_lbl, RETRO_FONT_DEFAULT, 0);
-}
-
-/*----- Media Player -----*/
-static void create_player(void)
-{
-    lv_obj_t *player_win = player_create();
-    if (player_win) {
-        win_move_to_front(player_win);
+    if (info->magic != RETRO_APP_MAGIC ||
+        info->abi_version > RETRO_APP_ABI_VERSION) {
+        printf("[desktop] 描述符 ABI 不符 / bad descriptor: %s\n",
+               a->modname);
+        rommod_put(mod);
+        return;
     }
+
+    lv_obj_t *win = info->create();
+
+    if (win == NULL) {
+        printf("[desktop] 窗口创建失败 / create failed: %s\n", a->modname);
+        rommod_put(mod);
+        return;
+    }
+
+    win_move_to_front(win);
+    lv_obj_add_event_cb(win, modwin_delete_cb, LV_EVENT_DELETE, mod);
 }
 
-/*----- Recorder -----*/
-static void create_recorder(void)
+#else /* !CONFIG_RETRO_PKG_STORE */
+
+static void modapp_registry_init(void)
 {
-    lv_obj_t *recorder_win = recorder_create();
-    if (recorder_win) {
-        win_move_to_front(recorder_win);
-    }
+    g_nmodapps = 0;                 /* 无包存储档：仅外壳组件 */
 }
 
-/*----- SQLite Browser -----*/
-static void create_sqlite(void)
+static void modapp_action(void *arg)
 {
-    lv_obj_t *sqlite_win = sqlite_gui_create();
-    if (sqlite_win) {
-        win_move_to_front(sqlite_win);
-    }
+    (void)arg;
+    printf("[desktop] 本构建无 ROM 包存储 / pkg store disabled\n");
 }
+
+/* 注册表条目显示名（空表恒不执行，纯符号完备性实现） */
+static const char *modapp_title(const struct modapp_s *a)
+{
+    return a->title_zh;
+}
+
+#endif /* CONFIG_RETRO_PKG_STORE */
 
 /*----- Control Panel -----*/
 /* 语言切换回调 / Language switch callbacks */
@@ -816,21 +986,22 @@ static void lang_en_cb(lv_event_t *e)
     syslog(LOG_INFO, "Language changed to: en_US\n");
 }
 
-static void create_control_panel(void)
+static void create_control_panel(void *arg)
 {
+    (void)arg;
     win_info_t *wi = win_create(i18n_get("APP_CONTROL_PANEL"), 100, 60, 360, 320);
     if (!wi) return;
 
     /* 图标视图 */
-    add_prog_icon(wi, "Display",     "[■]", NULL, 0, 0);
-    add_prog_icon(wi, "Mouse",       "[+]", NULL, 1, 0);
-    add_prog_icon(wi, "Keyboard",    "[K]", NULL, 2, 0);
-    add_prog_icon(wi, "Printers",    "[P]", NULL, 0, 1);
-    add_prog_icon(wi, "Fonts",       "[F]", NULL, 1, 1);
-    add_prog_icon(wi, "Sound",       "[♪]", NULL, 2, 1);
-    add_prog_icon(wi, "Date/Time",   "[T]", NULL, 0, 2);
-    add_prog_icon(wi, "Network",     "[@]", NULL, 1, 2);
-    add_prog_icon(wi, "Language",    "[中]", create_settings, 2, 2);
+    add_prog_icon(wi, "Display",     "[■]", NULL, NULL, 0, 0);
+    add_prog_icon(wi, "Mouse",       "[+]", NULL, NULL, 1, 0);
+    add_prog_icon(wi, "Keyboard",    "[K]", NULL, NULL, 2, 0);
+    add_prog_icon(wi, "Printers",    "[P]", NULL, NULL, 0, 1);
+    add_prog_icon(wi, "Fonts",       "[F]", NULL, NULL, 1, 1);
+    add_prog_icon(wi, "Sound",       "[♪]", NULL, NULL, 2, 1);
+    add_prog_icon(wi, "Date/Time",   "[T]", NULL, NULL, 0, 2);
+    add_prog_icon(wi, "Network",     "[@]", NULL, NULL, 1, 2);
+    add_prog_icon(wi, "Language",    "[中]", create_settings, NULL, 2, 2);
 
     /* 描述区 */
     lv_obj_t *desc = lv_label_create(wi->status_bar);
@@ -840,8 +1011,9 @@ static void create_control_panel(void)
 }
 
 /*----- System Settings (语言设置) -----*/
-static void create_settings(void)
+static void create_settings(void *arg)
 {
+    (void)arg;
     win_info_t *wi = win_create("System Settings / 系统设置", 120, 80, 320, 260);
     if (!wi) return;
 
@@ -906,8 +1078,9 @@ static void create_settings(void)
 }
 
 /*----- File Manager -----*/
-static void create_file_manager(void)
+static void create_file_manager(void *arg)
 {
+    (void)arg;
     win_info_t *wi = win_create("File Manager", 60, 40, 480, 320);
     if (!wi) return;
 
@@ -984,10 +1157,12 @@ static void create_progman(void)
     lv_obj_set_style_bg_color(sep1, WIN3_BORDER_MID, LV_PART_MAIN);
 
     /* Main 组图标 */
-    add_prog_icon(g_progman, i18n_get("APP_CONTROL_PANEL"), "[■]", create_control_panel, 0, 0);
-    add_prog_icon(g_progman, i18n_get("APP_FILE_MANAGER"),   "[D]", create_file_manager,  1, 0);
+    add_prog_icon(g_progman, i18n_get("APP_CONTROL_PANEL"), "[■]", create_control_panel, NULL, 0, 0);
+    add_prog_icon(g_progman, i18n_get("APP_FILE_MANAGER"),   "[D]", create_file_manager,  NULL, 1, 0);
 
-    /* Accessories 组(两行图标) / Accessories group (two rows) */
+    /* Accessories 组(两行图标) / Accessories group (two rows)
+     * 2026-10-06 起：应用图标来自 ROM 模块注册表（.rpk 包交付），
+     * 按 4 列网格自动排布，行数随名单伸缩 */
     lv_obj_t *group2_hdr = lv_label_create(g_progman->client);
     lv_label_set_text(group2_hdr, i18n_get("PROG_ACCESSORIES"));
     lv_obj_set_pos(group2_hdr, 4, 88);
@@ -999,15 +1174,16 @@ static void create_progman(void)
     lv_obj_set_pos(sep2, 4, 104);
     lv_obj_set_style_bg_color(sep2, WIN3_BORDER_MID, LV_PART_MAIN);
 
-    add_prog_icon(g_progman, i18n_get("APP_NOTEPAD"),     "[T]", create_notepad,      0, 1);
-    add_prog_icon(g_progman, i18n_get("APP_BROWSER"),    "[W]", create_browser,      1, 1);
-    add_prog_icon(g_progman, i18n_get("APP_TERMINAL"),   "[>]", create_terminal,     2, 1);
-    add_prog_icon(g_progman, i18n_get("APP_SQLITE"),     "[D]", create_sqlite,      3, 1);
-    add_prog_icon(g_progman, i18n_get("APP_MEDIA_PLAYER"),"[♪]", create_player,      0, 2);
-    add_prog_icon(g_progman, i18n_get("APP_RECORDER"),   "[●]", create_recorder,    1, 2);
+    int cols = 4;
+    for (int i = 0; i < g_nmodapps; i++) {
+        add_prog_icon(g_progman, modapp_title(&g_modapps[i]),
+                      g_modapps[i].icon, modapp_action, &g_modapps[i],
+                      i % cols, 1 + i / cols);
+    }
 
-    /* Games 组(独立行,不再与媒体播放器同格叠压)
-     * Games group on its own row (no more cell collision) */
+    /* Games 组(独立行)——扫雷等游戏应用同样来自 ROM 模块注册表，
+     * 图标在 Accessories 网格顺序延续（2026-10-06 应用包化改造）
+     * Games group: game apps continue the registry grid */
     lv_obj_t *group3_hdr = lv_label_create(g_progman->client);
     lv_label_set_text(group3_hdr, i18n_get("PROG_GAMES"));
     lv_obj_set_pos(group3_hdr, 4, 264);
@@ -1018,8 +1194,6 @@ static void create_progman(void)
     lv_obj_set_size(sep3, sep_w, 1);
     lv_obj_set_pos(sep3, 4, 280);
     lv_obj_set_style_bg_color(sep3, WIN3_BORDER_MID, LV_PART_MAIN);
-
-    add_prog_icon(g_progman, i18n_get("APP_MINESWEEPER"), "[#]", create_minesweeper, 0, 3);
 
     /* Startup 组 / Startup group */
     lv_obj_t *group4_hdr = lv_label_create(g_progman->client);
@@ -1188,6 +1362,9 @@ void retro_desktop_init(void)
 
     lv_obj_set_style_pad_all(g_taskbar, 0, 0);
 
+    /* === ROM 模块应用注册表（包 DB 优先，ROM 直读回退）=== */
+    modapp_registry_init();
+
     /* === 构建开始菜单 === */
     build_start_menu();
 
@@ -1221,26 +1398,66 @@ int retro_desktop_ready(void)
  */
 int retro_desktop_app_launch(const char *app_id)
 {
+    /* 旧 id -> 模块名别名（应用包化 2026-10-06：七应用改 .rpk 交付，
+     * nsh/bootmenu 侧既有 id 保持兼容） */
+    static const struct
+    {
+        const char *id;
+        const char *mod;
+    } alias[] =
+    {
+        { "notepad", "editor" }, { "browser", "browser" },
+        { "terminal", "terminal" }, { "minesweeper", "minesweeper" },
+        { "player", "player" }, { "recorder", "recorder" },
+        { "sqlite", "sqlite" },
+    };
+
     if (!app_id)
         return -EINVAL;
 
     if (!g_disp || !g_desktop)
         return -ENOSYS;
 
-    if (strcmp(app_id, "notepad") == 0)           create_notepad();
-    else if (strcmp(app_id, "browser") == 0)      create_browser();
-    else if (strcmp(app_id, "terminal") == 0)     create_terminal();
-    else if (strcmp(app_id, "minesweeper") == 0)  create_minesweeper();
-    else if (strcmp(app_id, "player") == 0)       create_player();
-    else if (strcmp(app_id, "recorder") == 0)     create_recorder();
-    else if (strcmp(app_id, "sqlite") == 0)       create_sqlite();
-    else if (strcmp(app_id, "controlpanel") == 0) create_control_panel();
-    else if (strcmp(app_id, "settings") == 0)     create_settings();
-    else if (strcmp(app_id, "filemanager") == 0)  create_file_manager();
-    else
-        return -ENOENT;
+    /* 外壳系统组件（不随应用打包：窗口管理/系统设置类） */
+    if (strcmp(app_id, "controlpanel") == 0)
+    {
+        create_control_panel(NULL);
+        return OK;
+    }
+    if (strcmp(app_id, "settings") == 0)
+    {
+        create_settings(NULL);
+        return OK;
+    }
+    if (strcmp(app_id, "filemanager") == 0)
+    {
+        create_file_manager(NULL);
+        return OK;
+    }
 
-    return OK;
+    /* 模块应用：注册表内按 id 或别名命中 */
+    const char *mod = app_id;
+
+    for (size_t i = 0; i < sizeof(alias) / sizeof(alias[0]); i++)
+    {
+        if (strcmp(app_id, alias[i].id) == 0)
+        {
+            mod = alias[i].mod;
+            break;
+        }
+    }
+
+    for (int i = 0; i < g_nmodapps; i++)
+    {
+        if (strcmp(app_id, g_modapps[i].id) == 0 ||
+            strcmp(mod, g_modapps[i].modname) == 0)
+        {
+            modapp_action(&g_modapps[i]);
+            return OK;
+        }
+    }
+
+    return -ENOENT;
 }
 
 /**

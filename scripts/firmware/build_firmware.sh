@@ -75,9 +75,32 @@ build_one() {  # build_one <名称> <board> <toolchainbin>
     ( cd "$NUTTX" && PATH="$tcb:$PATH" make olddefconfig ) > /tmp/fw_old.log 2>&1 \
         || { tail -10 /tmp/fw_old.log; return 1; }
 
-    # 全量日志落盘再抽错（管道 grep|head 会 SIGPIPE 误杀 make）
+    # ROM 应用模块 stage（2026-10-06 应用/系统分离）：按板名单编 .rmo
+    # XIP 模块 + .rpk 打包 + pkg_romfs.c 镜像（静态档此为 pass0 占位）
+    if bash "$ROOT/scripts/build_romapps.sh" "$name" stage >> "/tmp/fw_$name.log" 2>&1; then
+        echo "[fw] romapps stage OK ($name)"
+    else
+        echo "[fw] romapps stage FAILED（详见 /tmp/fw_$name.log）"
+        tail -15 "/tmp/fw_$name.log"
+        return 1
+    fi
+
+    # 固件 pass1（静态档：为模块重链提供镜像地址/符号；动态档：为
+    # rom_symtab 提供符号地址）
     ( cd "$NUTTX" && PATH="$tcb:$PATH" \
         make -j"$(nproc)" APPDIR="$APPS" ) > "/tmp/fw_$name.log" 2>&1 || true
+
+    # ROM 应用 finalize：xtensa 重链模块+重镜像 / arm·riscv 生成符号表
+    if bash "$ROOT/scripts/build_romapps.sh" "$name" finalize >> "/tmp/fw_$name.log" 2>&1; then
+        echo "[fw] romapps finalize OK ($name)"
+        # pass2：增量重建（pkg_romfs.c/rom_symtab.c 已更新）
+        ( cd "$NUTTX" && PATH="$tcb:$PATH" \
+            make -j"$(nproc)" APPDIR="$APPS" ) >> "/tmp/fw_$name.log" 2>&1 || true
+    else
+        echo "[fw] romapps finalize FAILED（详见 /tmp/fw_$name.log）"
+        tail -15 "/tmp/fw_$name.log"
+        return 1
+    fi
     ( cd "$NUTTX" && ls -la nuttx.bin nuttx >/dev/null 2>&1 || true; echo staged ) > "/tmp/fw_$name.ls"
 
     # RP2040 关闭 UF2 后无 .bin 目标——从 ELF 现场生成

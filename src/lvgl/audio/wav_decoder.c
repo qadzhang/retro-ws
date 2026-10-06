@@ -9,7 +9,8 @@
  * WHY  : 播放器/录音机的音频文件解析
  * WHO  : ESP32-S3 Retro Project Team
  * WHERE: retro-ws/src/lvgl/audio/wav_decoder.c
- * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0）
+ * WHEN : 2026-03~04 初版，2026-10-04 按 5W1H 标准化（AGENTS.md 4.0），
+ *        2026-10-06 修截断死循环与负数左移 UB（宿主单测钉死）
  * HOW  : 解析 RIFF 头与 PCM 块，流式喂给音频驱动
  */
 
@@ -182,6 +183,15 @@ int wav_open(const char *path)
     while (!feof(g_wav.file)) {
         uint32_t chunk_id = read_u32(g_wav.file);
         uint32_t chunk_size = read_u32(g_wav.file);
+
+        /* 截断防护：chunk 头短读（EOF）必须立即退出扫描——下方未知
+         * chunk 分支的 fseek 会清除 EOF 标志，feof 永假导致死循环
+         * （2026-10-06 宿主单测 test_wav_decoder.c 发现）
+         * Truncation guard: break on short chunk-header read, else the
+         * fseek in the skip-unknown-chunk branch clears EOF and the
+         * !feof() loop never terminates (found by host unit test) */
+        if (feof(g_wav.file) || ferror(g_wav.file))
+            break;
 
         if (chunk_id == WAV_FMT_MAGIC) {
             /* 读取 fmt 数据 / Read fmt data */
@@ -362,7 +372,8 @@ int wav_convert_to_stereo16(const void *in_buf, void *out_buf, int in_len)
         for (int i = 0; i < count; i++) {
             /* 8-bit PCM: 0 = silent, 128 = center, 255 = max */
             /* 转换为有符号 16-bit / Convert to signed 16-bit */
-            int16_t sample = ((int16_t)in[i] - 128) << 8;
+            /* ×256 而非 <<8：负数左移是 UB（UBSan，2026-10-06 宿主测试）*/
+            int16_t sample = (int16_t)(((int16_t)in[i] - 128) * 256);
             out[i * 2]     = sample;
             out[i * 2 + 1] = sample;
         }
@@ -375,8 +386,9 @@ int wav_convert_to_stereo16(const void *in_buf, void *out_buf, int in_len)
         int count = in_len / 2;  /* 2 channels */
 
         for (int i = 0; i < count; i++) {
-            int16_t l = ((int16_t)in[i * 2] - 128) << 8;
-            int16_t r = ((int16_t)in[i * 2 + 1] - 128) << 8;
+            /* ×256 而非 <<8：负数左移是 UB（UBSan，2026-10-06 宿主测试）*/
+            int16_t l = (int16_t)(((int16_t)in[i * 2] - 128) * 256);
+            int16_t r = (int16_t)(((int16_t)in[i * 2 + 1] - 128) * 256);
             out[i * 2]     = l;
             out[i * 2 + 1] = r;
         }

@@ -16,6 +16,12 @@
 #ifndef __DESKTOP_API_H
 #define __DESKTOP_API_H
 
+#include <nuttx/config.h>
+
+#ifdef CONFIG_LVGL
+#include "lvgl/lvgl.h"
+#endif
+
 /* 外壳模式 / Shell modes */
 #define RETRO_SHELL_WIN3       0   /* Windows 3.2 任务栏风格（默认） */
 #define RETRO_SHELL_WMAKER     1   /* WindowMaker/NeXT 风格（Dock + 右键菜单） */
@@ -33,5 +39,16 @@ int  retro_desktop_set_shell(int mode);
 
 /* 当前外壳模式 / current shell mode */
 int  retro_desktop_get_shell(void);
+
+/*
+ * WHAT : 桌面窗口 API（导出给 ROM 模块应用，2026-10-06 应用/系统分离）
+ * WHY  : 模块应用经固件符号表解析本入口，创建受窗口管理器托管的
+ *        窗口（标题栏/关闭/层级/激活），无需链编 desktop 内部符号
+ * 返回 : 窗口根对象；NULL = 窗口数满
+ */
+#ifdef CONFIG_LVGL
+lv_obj_t *retro_desk_win_create(const char *title, int x, int y,
+                                int w, int h);
+#endif
 
 #endif /* __DESKTOP_API_H */

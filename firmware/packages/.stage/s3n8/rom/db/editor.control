@@ -1,0 +1,12 @@
+Package: editor
+Version: 1.0.0-1
+Arch: all
+License: Apache-2.0
+Root: system
+Type: gui
+Xip: bin/editor
+Title-Zh: 记事本
+Title-En: Notepad
+Icon: [T]
+Description: GUI 文本编辑器（行号/搜索/多标签）
+Maintainer: Retro WS Project

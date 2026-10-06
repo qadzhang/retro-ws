@@ -18,7 +18,7 @@
 | 图形引擎 | LVGL 9.5.0（仅图形档 S3/CAM） |
 | CLI 编辑器 | NuttX vi（系统默认）；GNU nano 8.4 为 .rpk 可选安装包（GPL-3.0 不入 ROM，2026-10-05 定稿） |
 | 文本浏览器 | Links 2.30（下载脚本已支持；板端移植待办，见 NEXT_STEPS 48） |
-| 状态 | **五板多目标支持已完成** |
+| 状态 | **五板多目标支持已完成；应用/系统分离（ROM 包存储 + XIP 模块，2026-10-06）** |
 
 ### 多目标支持
 
@@ -121,6 +121,11 @@ retro-ws/                        # 项目根目录（任意位置克隆均可）
 |   |   |   |   +-- nsh_cmds.c     # NSH 自定义命令（pkg 薄分发）
 |   |   |   |   +-- pkg_manager.h  # .rpk 包管理器接口（deb 风格）
 |   |   |   |   +-- pkg_manager.c  # 安装/卸载/列表/查询（ustar 流式解析）
+|   |   |   |   +-- cmd_run_main.c # run 命令：执行 ROM 模块应用（XIP）
+|   |   |   +-- pkg_mods/
+|   |   |   |   +-- sysinfo_mod.c  # sysinfo 应用模块（.rpk 交付）
+|   |   +-- rommod.[ch]            # ROM XIP 模块加载器（静态绑定档+RAM 窗口档）
+|   |   +-- pkg_rom.[ch]           # ROM 包存储：挂载/直查/枚举/首启 seed
 |   |   |   +-- driver/          # 共享驱动
 |   |   |       +-- retro_gpio.c/.h     # 脚本 GPIO 统一接口（占用拦截+/dev 后端）
 |   |   |       +-- retro_gpio_{bas,js,berry,py}.c  # 四引擎 GPIO 绑定
@@ -429,6 +434,22 @@ DENY  inbound ICMP (ping)
 - eda/：五板立创EDA 载板工程（gen_eda.py 自动布线 + check_eda.py 零交叉
   校验；全插接件、最小面积；板卡几何经官方 DXF/wiki 核实）
 
+### 2G. 应用/系统分离：ROM 包存储 + XIP 模块（2026-10-06）⭐
+- 系统边界：内核/驱动/CVBS/控制台/包管理器/桌面外壳+窗口管理/输入法服务留固件；
+  **应用软件全部 .rpk 包化**（editor/browser/terminal/player/recorder/sqlite/
+  minesweeper/sysinfo；GPL 组件 nano/ucblogo 仍走 SD 卡包通道）
+- 板级默认名单 firmware/packages/<板>.list -> build_romapps.sh 编 .rmo 模块 +
+  打 .rpk + mkromfs 树镜像（pkg_romfs.c，4096 对齐入可执行 flash 段）
+- 静态绑定档两遍构建（pass0 定槽 pad -> 固件 pass1 定地址 -> defsym 烘焙重链
+  落槽 -> pass2 收口；重定位归零、镜像布局一次收敛，详见 HARDWARE 14.3）
+- rommod.c 装载：RO 段 flash 原址执行零拷贝，RW 段直拷 arena 固定槽；
+  rommod_load_from_mem_inline 为 RAM 窗口动态档保留通道（宿主测试用）
+- **构建期离线安装**（tools/gen_pkgdb.py，2026-10-06 定稿：直接安装
+  到位）：名单包在编译 ROM 时生成 db/ 预装数据库随镜像分发，首启零
+  安装动作；pkg_manager 两级 DB（ROM 预装层 + 片上覆盖层/墓碑）；
+  CLI `run <名>` / GUI 桌面注册表（desktop.c 按两级 DB 的 Type: gui 包
+  动态装配图标，末窗关闭卸载）
+
 ## 网络架构
 
 ```
@@ -453,6 +474,10 @@ WiFi 802.11 b/g/n (2.4GHz)
 ```
 /rom/scripts/         # 板级脚本 ROMFS（只读，编入固件镜像）
                       #   每板演示/教学脚本（XIP 直跑）
+
+/rom/pkg/             # ROM 包存储（pkg_romfs.c，应用/系统分离 2026-10-06）
+                      #   bin/<名> = .rmo XIP 模块载荷（4096 对齐）
+                      #   db/ = 预装数据库（构建期离线安装产物，14.5）
 
 /opt/                 # 片上可写数据分区（littlefs，HARDWARE 12.4）
 +-- bin/ + share/     #   系统包装载位（Root: system，如 /opt/bin/nano）
@@ -561,7 +586,12 @@ cd scripts/esp32s3 && ./build.sh nuttx     # 或 esp32cam / esp32c3
 | 脚本引擎集成 | common/script_engines.c | 649+ | 完成（五引擎可配置：bas/js/be/py/lgo） |
 | curl/wget | common/network_utils.c | 487 | 完成 |
 | NSH 命令 | common/apps/system/nsh_cmds.c | 400 | 完成 |
-| .rpk 包管理器 | common/apps/system/pkg_manager.c | 600+ | 完成（deb 风格 + 双安装根 Root 字段 + DB 片上 /opt，待实机验证） |
+| .rpk 包管理器 | common/apps/system/pkg_manager.c | 600+ | 完成（deb 风格 + 双安装根 + Xip ROM 载荷登记，待实机验证） |
+| ROM XIP 模块加载器 | common/rommod.c | ~700 | 完成（静态绑定档全板 + RAM 窗口动态档；宿主端到端/蜕变/dlopen 差分/模糊 2 万轮全绿） |
+| ROM 包存储 | common/pkg_rom.c | ~380 | 完成（/rom/pkg 挂载/直查/control 直读/XIP 寻址接线） |
+| run 命令 | common/apps/system/cmd_run_main.c | 70 | 完成（CLI 模块统一入口） |
+| 模块应用包 | firmware/packages/pkgs/* | 8 包 | 完成（sysinfo + 7 GUI 应用，五板名单默认安装） |
+| 离线安装器 | tools/gen_pkgdb.py | ~120 | 完成（构建期直装 db/；格式与 pkg_manager 同构，测试契约锁定） |
 | 脚本 GPIO 接口 | common/driver/retro_gpio.c | 280 | 完成（占用拦截+四引擎绑定） |
 | 防火墙 | common/driver/firewall.c | 623 | 完成 |
 | CVBS 时序核心 | common/driver/cvbs_core.c | - | 完成（宿主解码器差分验证） |
@@ -626,4 +656,4 @@ cd scripts/esp32s3 && ./build.sh nuttx     # 或 esp32cam / esp32c3
 
 ---
 
-_最后更新: 2026-10-05（项目更名 retro-ws：五板多架构定位全面修订）_
+_最后更新: 2026-10-06（应用/系统分离：ROM 包存储 + XIP 模块体系）_

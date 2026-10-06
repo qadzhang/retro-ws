@@ -1,0 +1,12 @@
+Package: sqlite
+Version: 1.0.0-1
+Arch: all
+License: Apache-2.0
+Root: system
+Type: gui
+Xip: bin/sqlite
+Title-Zh: SQLite 工具
+Title-En: SQLite Browser
+Icon: [D]
+Description: SQL 查询/执行/结果导出
+Maintainer: Retro WS Project

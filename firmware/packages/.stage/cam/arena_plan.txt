@@ -1,0 +1,8 @@
+sysinfo 0 4096
+editor 4096 12288
+browser 16384 20480
+terminal 36864 28672
+sqlite 65536 16384
+player 81920 8192
+recorder 90112 8192
+minesweeper 98304 4096

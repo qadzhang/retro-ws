@@ -311,6 +311,24 @@ void my_keypad_read(lv_indev_t *indev, lv_indev_data_t *data)
   Apache-2.0/MIT 宽松协议栈（与 11.1 第 9 条红线一致）
 
 
+### 7.5 应用软件交付铁律 / App Delivery Rules（2026-10-06 定稿）
+
+- **应用与系统分离**：应用软件（GUI 七应用 + sysinfo 等）一律
+  `.rpk` 包语义交付，**不编入固件 builtin**；系统（内核/驱动/CVBS/
+  控制台/包管理器/桌面外壳与窗口管理/输入法服务）留固件
+- **构建期离线安装**（用户定稿策略）：各板默认名单
+  `firmware/packages/<板>.list` 在编译期经 `tools/gen_pkgdb.py`
+  **直接安装到位**——db/ 预装数据库随固件 ROM 镜像分发
+  （`/rom/pkg`），**设备首启零安装动作**（无 seed/打包/重试面）
+- **XIP 原址执行**：`.rmo` 模块只读段 Flash 零拷贝执行、可写段
+  arena 固定槽（HARDWARE.md 14 章）；**静态绑定档全板统一**
+  （构建期 defsym 烘焙、运行时零重定位）——禁止引入运行时重定位
+  方案（PC 相对 GOT 使 flash/内存分段放置不可行，宿主实测记录
+  见 HARDWARE 14.3）
+- 新增应用 = `firmware/packages/pkgs/<名>/`（control + recipe.conf
+  + 模块描述符）+ 各板名单加行；禁止绕过包体系直编固件 builtin
+  （裁剪档 `CONFIG_RETRO_PKG_STORE=n` 的例外构建除外）
+
 ---
 
 ## 8. 脚本引擎胶水层 / Script Engine Glue Layer
@@ -356,7 +374,7 @@ int retro_gpio_release(int pin);
 ### 9.2 固件构建与烧录 / Build & Flashing
 ```bash
 # 五板统一构建入口（s3/s3n8/cam/c3/pico/all）
-./scripts/build_firmware.sh all        # 产物 dist/firmware/<板>/nuttx.bin
+./scripts/firmware/build_firmware.sh all        # 产物 dist/firmware/<板>/nuttx.bin
 
 # 烧录 - ESP32-S3 / ESP32-CAM（Xtensa）
 esptool.py --chip esp32s3 --port /dev/ttyUSB0 write_flash \

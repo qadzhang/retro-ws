@@ -1,0 +1,12 @@
+Package: terminal
+Version: 1.0.0-1
+Arch: all
+License: Apache-2.0
+Root: system
+Type: gui
+Title-Zh: 终端
+Title-En: Terminal
+Icon: [>]
+Xip: bin/terminal
+Description: 命令行终端（16 个内置命令）
+Maintainer: Retro WS Project

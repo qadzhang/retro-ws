@@ -187,6 +187,19 @@ int main(int argc, char **argv)
         }
         snprintf(path, sizeof(path), "%s/ime_win95.ppm", outdir);
         screenshot(path);
+
+        /* 场景清理：删演示窗口与 IME 顶层面板，残留会盖住 wmaker 景
+         * 的 Dock 时钟与工作区（旧 wmaker 截图早于 IME 景加入，为保
+         * 文档截图同等干净，切壳前先清理）
+         * Scene cleanup: drop demo window + IME top-layer panel so the
+         * leftovers do not cover the wmaker dock clock / workspace in
+         * the next screenshot (added 2026-10-06, app-split refactor) */
+        lv_obj_delete(win);
+        for (uint32_t i = lv_obj_get_child_count(lv_layer_top()); i > 0; i--) {
+            lv_obj_t *c = lv_obj_get_child(lv_layer_top(), i - 1);
+            if (lv_obj_get_width(c) > 200)   /* 全宽 IME 面板 / IME panel */
+                lv_obj_delete(c);
+        }
     }
 
     lv_obj_invalidate(lv_screen_active());

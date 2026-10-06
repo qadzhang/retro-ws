@@ -1043,3 +1043,156 @@ cd scripts/esp32cam
    行完成、引擎只清拼音
 5. **IME 键路径**：UART 字节流组合键 Ctrl+Space=0x00 / Ctrl+Q=0x11 天然可辨；
    输入环从 #ifdef __NuttX__ 提为通用层（IME 行回放与设备 read 共用）
+
+---
+
+## 2026-10-06 应用/系统分离构建记录（ROM 模块两遍构建流水线）
+
+**问题 1：Thumb-1 无 PLT（Pico 模块链接失败）**
+- 现象：`thumb-1 mode PLT generation not currently supported`
+- 原因：静态绑定档起初用 `-shared` 链接，ld 为 defsym 绝对符号生成 PLT，
+  Cortex-M0+ 不支持
+- 解决：改 ET_EXEC 直链（`-nostdlib -Wl,-e,main`），静态绑定零重定位本就
+  不需要动态语义；rommod 放宽接受 ET_EXEC（限静态档，动态档仍须 ET_DYN）
+
+**问题 2：动态重定位分段放置不可行（设计修订，宿主测试实证）**
+- 现象：宿主装载 PIC 模块调用崩溃，`mov 0x2fa4(%rip),%rax` 读 GOT 落空
+- 原因：x86-64/ARM/RISC-V 的 GOT 访问全部 PC 相对——"RO 段 flash 原址 +
+  RW 段搬 RAM"的分段放置打断寻址（NXFLAT 用寄存器基址 PIC + GPL 专用
+  ldnxflat 解决，许可证红线不入）
+- 解决：五板统一静态绑定档（构建期 defsym 烘焙全部地址，运行时零重定位）；
+  rommod 保留 `rommod_load_from_mem_inline`（RAM 窗口整段 vaddr 布置，
+  dlopen 同款语义）供宿主测试与未来 RAM 窗口板
+
+**问题 3：链接器 gc-sections 回收弱引用 arena**
+- 现象：pass1 ELF 无 g_rommod_arena（retro_boot 弱 extern 拉不住）
+- 解决：改强引用 + 条件编译（CONFIG_RETRO_ROMMOD_ARENA_SIZE>0 与
+  rommod_arena.c 编译条件一致）
+
+**问题 4：两遍链接文件尺寸漂移（烘焙布局不稳）**
+- 现象：sysinfo 重链后 5304B -> 3176B，镜像布局断言失败
+- 原因：ld 按 "vaddr mod max-page-size" 决定段文件内偏移与头合并行为，
+  pass0 占位基址与 pass1 真实基址低 12 位不一致 -> 段填充不同
+- 解决：镜像数组 aligned(4096)（树模式一律，含 RP2040）+ bin/ 载荷数据
+  4096 对齐 + arena 槽 4096 对齐 + 显式 `-z max-page-size=0x1000` ——
+  两遍布局确定全等（构建器断言尺寸与 F 地址稳定）
+
+**问题 5：模块编译缺 nuttx/config.h（鸡蛋问题）**
+- 现象：固件 make 前模块编译 fatal（include/nuttx/config.h 尚未生成）
+- 解决：build_romapps.sh 从 .config 现场生成 config 等价物头
+  （CONFIG_INIT_ENTRYPOINT 例外跳过——sys/types.h 有同名函数声明，
+  字符串宏会炸掉它）
+
+**问题 6：RISC-V 模块编译拉进 arch/chip/irq.h**
+- 现象：c3 编 sysinfo（stdio.h 链条）fatal：arch/chip/irq.h 找不到
+  （板级 arch include 集只在固件 make 体系内）
+- 解决：sysinfo 模块免 libc 头（printf 手写 extern 声明）；GUI 模块
+  （仅 Xtensa 板）不受影响
+
+**问题 7：readelf -s 长符号名折行丢列 / defsym 名带 '['**
+- 现象：`lv_font_notosans[...]` 混入 defsym 名（ld 语法错）；lv_* 长名
+  在 readelf 输出折行导致 undef 收集不全（undefined reference）
+- 解决：改 `nm --undefined-only` 收集 + sed 剥 '[' 后缀 + 合法名过滤
+
+**问题 8：nm 列序笔误**
+- 现象：固件符号表 awk 打印 `$3,$2`（名字,类型）导致 defsym 值为 "0xT"
+- 解决：`NF==3{print $3,$1}`
+
+**问题 9：mkromfs 树模式名字区错位（python 差分测试抓获）**
+- 现象：生成器把条目名写进名字区末尾（右对齐），内核 fs_romfsutil 从
+  off+16 读到首个 NUL -> 名字为空
+- 解决：名字区头对齐写入；tests/host/python/test_romfs_tree.py 以独立
+  解析器为 oracle 的回读差分长期守护
+
+**问题 10：桌面/模块窗口 API 契约**
+- desktop.c 内嵌七应用抽离为模块后，新增导出 `retro_desk_win_create`
+  （模块经固件符号表解析）；菜单/图标动作携带注册表参数（desk_action_t
+  动作槽）；sim 截图链路由 glm53f 复核（外壳零回归）
+
+**结果**：五板两遍构建全绿（pico 1157.8KB / c3 1568.8KB / cam·s3·s3n8
+见 dist/firmware）；宿主 19 项套件 ALL PASS。
+
+**问题 11：recipe.conf 变量跨包泄漏（2026-10-06 补）**
+- 现象：minesweeper 模块链接报 retro_gui_app_info 重复定义，obj 目录里
+  出现 recorder 的 module.c.o
+- 原因：shell source 配方后变量驻留——minesweeper 配方无 MODSRC 行，
+  残留上一包（recorder）的 MODSRC，被拼进编译清单
+- 解决：source 前清零 SRCS/MODSRC/MODTYPE
+
+**问题 12：并行构建撞车（流程纪律）**
+- 现象：两个后台构建循环并发写同一 firmware/packages/.stage/<板>/ 树，
+  目标文件交叉污染
+- 解决：构建入口串行使用；stage 树按板隔离但不可多进程同板并发
+
+**问题 13：s3 arena 孤儿段漂进 rtc_slow_seg（2026-10-06 补）**
+- 现象：`.ext_ram.bss' will not fit in region rtc_slow_seg（溢出 122KB）
+- 原因：s3 链接脚本的 .ext_ram.bss 输出段包在 `#ifdef
+  CONFIG_XTENSA_EXTMEM_BSS` 里——未开该 NuttX 开关时 arena 的
+  section 属性段成孤儿，被 ld 按孤儿规则塞进 rtc_slow_seg
+- 解决：s3/s3n8/cam appconfig 增 CONFIG_XTENSA_EXTMEM_BSS=y（arena 正道
+  入 extern_ram_seg=PSRAM）
+
+**问题 14：cam arena 容量不足**
+- 现象：arena 需求 69632 > 配置 65536（7 GUI 包 × 4096 对齐槽）
+- 解决：RETRO_ROMMOD_ARENA_SIZE cam 默认 65536 -> 98304（PSRAM 之上）
+
+**问题 15：defsym 名单含模块内符号**
+- 现象：`固件 pass1 缺符号: editor_create`——它由同模块的 app_editor.c
+  定义，不在固件里（应用已抽离）
+- 原因：undef 收集是各目标文件 U 集合的并集，未扣除同模块其他文件的定义
+- 解决：nm --defined-only 求模块内定义集，comm -23 求净未定义
+
+**问题 16：模块所需符号被固件 gc-sections 回收**
+- 现象：`固件 pass1 缺符号: lv_msgbox_add_footer_button`——应用抽离后
+  固件无任何调用方，链接器回收
+- 解决：符号保持器 rom_keep.c（stage 汇总全部 .rmo 净未定义符号生成
+  引用数组；retro_boot 对 g_rom_keep 持强引用形成 gc 根链，pass1 起即
+  保留全部符号供静态绑定 defsym 解析）
+
+**问题 17：保持器引用被 -O2 常量折叠**
+- 现象：g_rom_keep 未进最终镜像（if (arr==NULL) 整段折叠删除）
+- 解决：rommod_set_keep(g_rom_keep) 真调用登记（不可折叠）
+
+**问题 18：跨模块符号（recorder -> player_play_file）**
+- 现象：保持器链接报 undefined——符号定义在另一个 .rmo 里
+- 解决：finalize 构建跨模块符号表（pass0 TEXT 区符号 + 该模块最终
+  text_base 换算），defsym 解析顺序：固件符号表 -> 跨模块表 -> 报错
+
+**策略修订（2026-10-06 同日，用户定稿）：构建期离线安装替代首启 seed**
+- 名单包编译 ROM 时直接安装到位：gen_pkgdb.py 生成 db/ 预装数据库
+  （control/manifest/info）随镜像只读分发；镜像去 .rpk 中间态
+  （只含 bin/ + db/，build_romapps stage 不再调 make_package）
+- pkg_manager 两级 DB（ROM 预装层 + 片上覆盖层/墓碑）；卸载预装包 =
+  停用；pkg seed 子命令与 seeder 全链路删除
+- 实现侧新坑：pkg_rom.c 的 data_offset 未实现 bin/ 4096 对齐（宿主
+  测试抓到数据错位）——按父目录名判定对齐修复
+
+**问题 19：mawk 无 strtonum（跨模块符号表 awk 脚本报错）**
+- 现象：`awk: line 3: function strtonum never defined`（Debian 默认
+  mawk，非 gawk）
+- 解决：符号地址过滤换 python3 内联（构建环境已硬依赖 python）
+
+**问题 20：Xtensa 两遍链接尺寸漂移（2026-10-06，最终方案：固定槽）**
+- 现象：editor 重链 24472 -> 21996/26092（--no-relax 后仍漂移；
+  不同板不同向）
+- 原因（实验链）：Xtensa ld 存在残余地址敏感布局——窗口调用跨
+  0x40000000 象限为硬错误（实验 TEXT_BASE=0x3F420000 实锤
+  dangerous relocation），relax/蹦床/字面量排布均随最终地址变化；
+  --no-relax 只消除了大部分但未全部
+- 解决（固定槽填充，五板统一）：pass0 链接后把模块 pad 到
+  align(size+4096, 4096) 的槽——镜像内占位钉死，finalize 重链只需
+  落槽（断言 ≤ 槽尺寸，溢出即报错），尾零填充对 rommod 无害（ELF
+  解析按节表偏移走）；镜像布局/F/烘焙地址一次收敛无需迭代。arena
+  槽同样加一页余量。辅助旗标保留：-Wl,--no-relax + 占位地址
+  0x40000000|crc32(符号名)（同象限互异）
+
+**问题 21：modsyms 地址双 0x 前缀（2026-10-06）**
+- 现象：`--defsym:38: syntax error`——跨模块符号 defsym 值为
+  "0x0x420f2e88"
+- 原因：modsyms 行由 python 生成已带 0x 前缀，awk 回落查询又拼 "0x"
+- 解决：modsyms 侧 awk 直接取 $2
+
+**问题 22：槽余量推高 arena 需求（cam 102400 > 98304）**
+- 原因：固定槽方案每模块 RW 槽加一页余量（8 模块 × 4096 = +32KB）
+- 解决：cam RETRO_ROMMOD_ARENA_SIZE 98304 -> 131072（PSRAM 板与 s3
+  同档）

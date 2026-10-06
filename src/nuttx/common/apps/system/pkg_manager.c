@@ -39,6 +39,13 @@
 
 #include "pkg_manager.h"
 
+/*
+ * ROM 包存储直查（pkg_rom.c 提供；弱符号——pkg_manager 单独编入
+ * 宿主测试或无 ROM 存储档时该地址为 NULL，Xip 包返回 -ENOSYS）
+ */
+extern int retro_pkg_rom_find(const char *relpath, const uint8_t **data,
+                              size_t *len) __attribute__((weak));
+
 #define TAR_BLOCK_SIZE     512
 #define RPKG_MAX_PATH      384
 
@@ -158,6 +165,7 @@ int rpkg_db_path(char *buf, int buflen, const char *fmt, ...)
 static const char *g_field_names[PKG_FLD_COUNT] = {
     "Package", "Version", "Arch", "Depends", "License", "Root",
     "Description", "Installed-Size", "Maintainer",
+    "Xip", "Type", "Title-Zh", "Title-En", "Icon",
 };
 
 /*
@@ -227,14 +235,46 @@ static int root_field_valid(const struct rpkg_control_s *ctl)
  *  已安装查询 / 依赖检查
  *==========================*/
 
+/*
+ * WHAT : 墓碑存在判定（预装包被卸载：片上 removed/<包名>）
+ */
+static int pkg_tombstoned(const char *pkg_name)
+{
+    char path[RPKG_MAX_PATH];
+    struct stat st;
+
+    snprintf(path, sizeof(path), "%s/removed/%s", PKG_DB_ROOT, pkg_name);
+    return stat(path, &st) == 0;
+}
+
+/*
+ * WHAT : ROM 预装层 control 存在判定（构建期离线安装产物）
+ */
+static int rom_control_exists(const char *pkg_name)
+{
+    char path[RPKG_MAX_PATH];
+    struct stat st;
+
+    snprintf(path, sizeof(path), "%s/%s.control", PKG_ROM_DB_ROOT,
+             pkg_name);
+    return stat(path, &st) == 0;
+}
+
 int rpkg_is_installed(const char *pkg_name)
 {
     char path[RPKG_MAX_PATH];
     struct stat st;
 
-    if (rpkg_db_path(path, sizeof(path), "%s.control", pkg_name) != OK)
-        return 0;
-    return stat(path, &st) == 0 ? 1 : 0;
+    if (pkg_tombstoned(pkg_name))
+        return 0;                   /* 预装包已卸载（墓碑优先） */
+
+    /* 片上覆盖层（后装/升级包）优先 */
+    if (rpkg_db_path(path, sizeof(path), "%s.control", pkg_name) == OK &&
+        stat(path, &st) == 0)
+        return 1;
+
+    /* ROM 预装层（构建期直接安装到位，2026-10-06） */
+    return rom_control_exists(pkg_name);
 }
 
 /*
@@ -547,19 +587,22 @@ static bool arch_match(const char *pkg_arch)
  *==========================*/
 
 /* 打包器 manifest 的内存镜像："<crc8hex> <path>" 逐行；path 为
- * 相对 data/ 的路径（推荐，与安装根解耦）或任一安装根下的绝对路径 */
+ * 相对 data/ 的路径（推荐）或任一安装根下的绝对路径；ROM 直跑载荷
+ * 行为 "rom:<相对 ROM 存储根的路径>"（2026-10-06 Xip 扩展） */
 struct manifest_ent_s {
     uint32_t crc;
-    char     rel[RPKG_MAX_PATH];   /* 相对安装根的路径 */
+    bool     rom;                  /* true = ROM 载荷（不在 tar data/ 内） */
+    char     rel[RPKG_MAX_PATH];   /* 相对安装根 / ROM 存储根的路径 */
 };
 
 /*
  * WHAT : 解析打包器 manifest 到条目数组
  * WHY  : 安装落盘时逐文件比对 CRC，损坏/篡改的包必须被拒绝
  * HOW  : 逐行 sscanf "%x %s"；绝对路径须在任一安装根（sdcard/system）
- *        之下（剥离之），裸相对路径直接采用；且必须通过
- *        path_is_safe——否则该行直接丢弃（防止恶意 manifest 借
- *        卸载之名删除任意文件）
+ *        之下（剥离之），裸相对路径直接采用；"rom:" 前缀 = ROM 直跑
+ *        载荷（安装期只校验 CRC 不拷贝，卸载不删 ROM）；且必须通过
+ *        path_is_safe——否则该行直接丢弃（防恶意 manifest 借卸载
+ *        之名删除任意文件）
  * 返回 : 解析出的有效条目数（0 = 无可校验清单，不视为错误）
  */
 static int manifest_parse(struct manifest_ent_s *ents, int max_ents,
@@ -584,17 +627,22 @@ static int manifest_parse(struct manifest_ent_s *ents, int max_ents,
             size_t plen = strlen(PKG_INSTALL_PREFIX);
             size_t slen = strlen(PKG_SYSTEM_PREFIX);
             const char *rel = path;
+            bool rom = false;
 
-            /* 只接受安装根之下的绝对路径（两个根任一） */
-            if (strncmp(path, PKG_INSTALL_PREFIX, plen) == 0 &&
-                path[plen] == '/')
+            if (strncmp(path, "rom:", 4) == 0) {
+                rom = true;
+                rel = path + 4;
+            } else if (strncmp(path, PKG_INSTALL_PREFIX, plen) == 0 &&
+                       path[plen] == '/') {
                 rel = path + plen + 1;
-            else if (strncmp(path, PKG_SYSTEM_PREFIX, slen) == 0 &&
-                     path[slen] == '/')
+            } else if (strncmp(path, PKG_SYSTEM_PREFIX, slen) == 0 &&
+                       path[slen] == '/') {
                 rel = path + slen + 1;
+            }
 
             if (path_is_safe(rel)) {
                 ents[n].crc = (uint32_t)crcval;
+                ents[n].rom = rom;
                 snprintf(ents[n].rel, sizeof(ents[n].rel), "%s", rel);
                 n++;
             }
@@ -855,6 +903,88 @@ int rpkg_install(const char *rpk_path)
 
     int nments = manifest_parse(ments, RPKG_MANIFEST_MAX, manifest_buf);
 
+    /* --- ROM 直跑载荷（Xip，2026-10-06）：CRC 校验 + DB 登记，不落盘 ---
+     * .rmo 载荷常驻 /rom/pkg（flash XIP），安装 = 校验完整性 + 数据库
+     * manifest 登记（卸载只清登记不删 ROM 文件）；control Xip 清单
+     * 与 manifest rom: 行逐项交叉核对，防打包错位 */
+    size_t mlen = 0;
+    int nchecked = 0;
+
+    const char *xip_list = control_get(&ctl, PKG_FLD_XIP);
+    if (xip_list) {
+        char xl[PKG_FIELD_MAX];
+        char *save = NULL;
+
+        snprintf(xl, sizeof(xl), "%s", xip_list);
+        for (char *tok = strtok_r(xl, ", ", &save); tok;
+             tok = strtok_r(NULL, ", ", &save)) {
+            bool found = false;
+
+            for (int i = 0; i < nments; i++) {
+                if (ments[i].rom && strcmp(ments[i].rel, tok) == 0) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                printf("Xip 载荷缺 manifest 条目 / xip not in manifest: "
+                       "%s\n", tok);
+                ret = -EINVAL;
+                goto out_free;
+            }
+        }
+    }
+
+    for (int i = 0; i < nments; i++) {
+        if (!ments[i].rom)
+            continue;
+
+        if (retro_pkg_rom_find == NULL) {
+            printf("本固件无 ROM 包存储 / no rom store\n");
+            ret = -ENOSYS;
+            goto out_free;
+        }
+
+        const uint8_t *rdata = NULL;
+        size_t rlen = 0;
+
+        if (retro_pkg_rom_find(ments[i].rel, &rdata, &rlen) != OK) {
+            printf("ROM 载荷缺失 / rom payload missing: %s\n",
+                   ments[i].rel);
+            ret = -ENOENT;
+            goto out_free;
+        }
+
+        uint32_t crc = 0;
+        for (size_t off = 0; off < rlen; off += TAR_BLOCK_SIZE) {
+            size_t want = rlen - off;
+
+            if (want > TAR_BLOCK_SIZE)
+                want = TAR_BLOCK_SIZE;
+            crc = crc32_update(crc, rdata + off, want);
+        }
+
+        if (crc != ments[i].crc) {
+            printf("ROM 载荷校验失败 / rom CRC mismatch: %s "
+                   "(包=%08lx 实测=%08lx)\n", ments[i].rel,
+                   (unsigned long)ments[i].crc, (unsigned long)crc);
+            ret = -EILSEQ;
+            goto out_free;
+        }
+
+        int m = snprintf(manifest_out + mlen, RPKG_SCRIPT_MAX - mlen,
+                         "%08lx " PKG_ROM_ROOT "/%s\n",
+                         (unsigned long)crc, ments[i].rel);
+        if (m < 0 || (size_t)m >= RPKG_SCRIPT_MAX - mlen) {
+            ret = -ENOSPC;
+            goto out_free;
+        }
+        mlen += (size_t)m;
+        nchecked++;
+        printf("  ROM 载荷 %s (%u B，Flash 直跑不拷贝)\n",
+               ments[i].rel, (unsigned)rlen);
+    }
+
     /* 检查全部通过：脚本落库，执行 preinst */
     ret = scripts_store(scripts, nscripts, pkg);
     if (ret < 0) {
@@ -881,9 +1011,7 @@ int rpkg_install(const char *rpk_path)
     it.remain = 0;
     it.eof = false;
 
-    size_t mlen = 0;
     int nrollback = 0;
-    int nchecked = 0;
 
     while ((ret = tar_next(&it, name, sizeof(name), &fsize, &type)) == 0) {
         if (strncmp(name, PKG_PATH_DATA "/", 5) != 0)
@@ -1044,6 +1172,46 @@ int rpkg_remove(const char *pkg_name)
         return -ENOENT;
     }
 
+    /* 预装包（ROM 层直接安装，2026-10-06）：卸载 = 停用——执行 prerm
+     * （ROM info/ 内若有）+ 片上写墓碑；ROM 文件只读不可删，载荷
+     * 常驻 Flash 不占 RAM，墓碑即语义终点。片上有覆盖快照（后装/
+     * 升级）则走常规删除路径 */
+    {
+        char lpath[RPKG_MAX_PATH];
+        struct stat lst;
+
+        rpkg_db_path(lpath, sizeof(lpath), "%s.control", pkg_name);
+        if (stat(lpath, &lst) != 0 && rom_control_exists(pkg_name)) {
+            snprintf(path, sizeof(path), "%s/info/%s.prerm",
+                     PKG_ROM_DB_ROOT, pkg_name);
+            if (run_script(path) != OK) {
+                printf("prerm 失败，中止卸载\n");
+                return -EIO;
+            }
+
+            snprintf(path, sizeof(path), "%s/removed", PKG_DB_ROOT);
+            mkdirs(path);
+            snprintf(path, sizeof(path), "%s/removed/%s", PKG_DB_ROOT,
+                     pkg_name);
+            FILE *f = fopen(path, "w");
+
+            if (f) {
+                fprintf(f, "disabled\n");
+                fclose(f);
+            }
+
+            snprintf(path, sizeof(path), "%s/info/%s.postrm",
+                     PKG_ROM_DB_ROOT, pkg_name);
+            run_script(path);
+
+            printf("预装包已停用 / preinstalled disabled: %s"
+                   "（ROM 载荷常驻，重装: pkg install 同名 .rpk）\n",
+                   pkg_name);
+            syslog(LOG_INFO, "[rpkg] disabled preinstalled %s\n", pkg_name);
+            return OK;
+        }
+    }
+
     /* prerm */
     rpkg_db_path(path, sizeof(path), "info/%s.prerm", pkg_name);
     if (run_script(path) != OK) {
@@ -1100,62 +1268,133 @@ int rpkg_remove(const char *pkg_name)
     return OK;
 }
 
+/* 枚举去重表（两级合并；包数受名单+后装约束，8/16/32 档够用） */
+#define RPKG_ITER_MAX 32
+
+struct rpkg_iter_s
+{
+    char seen[RPKG_ITER_MAX][PKG_FIELD_MAX];
+    int nseen;
+};
+
+static bool iter_seen(struct rpkg_iter_s *it, const char *pkg)
+{
+    for (int i = 0; i < it->nseen; i++)
+        if (strcmp(it->seen[i], pkg) == 0)
+            return true;
+    if (it->nseen < RPKG_ITER_MAX)
+        snprintf(it->seen[it->nseen++], PKG_FIELD_MAX, "%s", pkg);
+    return false;                   /* 首见：登记并返回未见 */
+}
+
 /*
- * WHAT : rpkg_list - 列出已安装包（读数据库 *.control 首行）
+ * WHAT : 扫一层 DB 目录的 *.control（ROM 预装层或片上覆盖层）
+ * HOW  : 同名跳过（先扫的层优先——调用方先片上后 ROM）；墓碑过滤
+ * 返回 : OK；cb 负数透传中止
+ */
+static int scan_db_layer(const char *dbroot, struct rpkg_iter_s *it,
+                         int (*cb)(const char *pkg,
+                                   const char *control_path, void *arg),
+                         void *arg)
+{
+    DIR *dir = opendir(dbroot);
+    struct dirent *ent;
+
+    if (dir == NULL)
+        return OK;                  /* 层不存在 = 空层，非错误 */
+
+    while ((ent = readdir(dir)) != NULL) {
+        size_t len = strlen(ent->d_name);
+        char path[RPKG_MAX_PATH];
+
+        if (len < 8 || len >= PKG_FIELD_MAX + 8 ||
+            strcmp(ent->d_name + len - 8, ".control") != 0)
+            continue;
+
+        char pkg[PKG_FIELD_MAX];
+
+        snprintf(pkg, len - 7, "%s", ent->d_name);
+        if (pkg_tombstoned(pkg) || iter_seen(it, pkg))
+            continue;
+
+        snprintf(path, sizeof(path), "%s/%s", dbroot, ent->d_name);
+        int ret = cb(pkg, path, arg);
+
+        if (ret < 0) {
+            closedir(dir);
+            return ret;
+        }
+    }
+    closedir(dir);
+    return OK;
+}
+
+int rpkg_iter_installed(int (*cb)(const char *pkg,
+                                  const char *control_path, void *arg),
+                        void *arg)
+{
+    struct rpkg_iter_s it;
+
+    memset(&it, 0, sizeof(it));
+    mkdirs(PKG_DB_ROOT);            /* 覆盖层目录（墓碑写入位） */
+
+    int ret = scan_db_layer(PKG_DB_ROOT, &it, cb, arg);
+
+    if (ret == OK)
+        ret = scan_db_layer(PKG_ROM_DB_ROOT, &it, cb, arg);
+    return ret;
+}
+
+/* rpkg_list 的枚举回调：读 control 快照打表行 */
+struct list_ctx_s
+{
+    int count;
+};
+
+static int list_one(const char *pkg, const char *control_path, void *arg)
+{
+    struct list_ctx_s *ctx = arg;
+    char line[PKG_FIELD_MAX + 32];
+    char ver[PKG_FIELD_MAX] = "";
+    char desc[PKG_FIELD_MAX] = "";
+
+    FILE *f = fopen(control_path, "r");
+
+    if (f == NULL)
+        return OK;
+    while (fgets(line, sizeof(line), f)) {
+        if (strncmp(line, "Version:", 8) == 0)
+            sscanf(line + 8, "%255s", ver);
+        else if (strncmp(line, "Description:", 12) == 0) {
+            snprintf(desc, sizeof(desc), "%s", line + 12);
+            char *d = desc;
+            while (*d == ' ')
+                d++;
+            char *nl = strchr(d, '\n');
+            if (nl)
+                *nl = '\0';
+        }
+    }
+    fclose(f);
+
+    printf("%-16s %-12s %s\n", pkg, ver, desc);
+    ctx->count++;
+    return OK;
+}
+
+/*
+ * WHAT : rpkg_list - 列出已安装包（ROM 预装层 + 片上覆盖层合并）
  */
 int rpkg_list(void)
 {
-    char path[RPKG_MAX_PATH];
-    char line[PKG_FIELD_MAX];
-
-    mkdirs(PKG_DB_ROOT);
-
-    DIR *dir = opendir(PKG_DB_ROOT);
-    if (!dir) {
-        printf("包数据库为空（%s）\n", PKG_DB_ROOT);
-        return -ENOENT;
-    }
+    struct list_ctx_s ctx = { 0 };
 
     printf("%-16s %-12s %s\n", "Package", "Version", "Description");
     printf("%-16s %-12s %s\n", "-------", "-------", "-----------");
 
-    struct dirent *ent;
-    int count = 0;
-    while ((ent = readdir(dir)) != NULL) {
-        size_t len = strlen(ent->d_name);
-        if (len < 8 || strcmp(ent->d_name + len - 8, ".control") != 0)
-            continue;
+    rpkg_iter_installed(list_one, &ctx);
 
-        snprintf(path, sizeof(path), "%s/%s", PKG_DB_ROOT, ent->d_name);
-
-        char pkg[PKG_FIELD_MAX] = "", ver[PKG_FIELD_MAX] = "",
-             desc[PKG_FIELD_MAX] = "";
-
-        FILE *f = fopen(path, "r");
-        if (!f)
-            continue;
-        while (fgets(line, sizeof(line), f)) {
-            if (strncmp(line, "Package:", 8) == 0)
-                sscanf(line + 8, "%255s", pkg);
-            else if (strncmp(line, "Version:", 8) == 0)
-                sscanf(line + 8, "%255s", ver);
-            else if (strncmp(line, "Description:", 12) == 0) {
-                snprintf(desc, sizeof(desc), "%s", line + 12);
-                char *d = desc;
-                while (*d == ' ')
-                    d++;
-                char *nl = strchr(d, '\n');
-                if (nl) *nl = '\0';
-            }
-        }
-        fclose(f);
-
-        printf("%-16s %-12s %s\n", pkg, ver, desc);
-        count++;
-    }
-    closedir(dir);
-
-    if (count == 0)
+    if (ctx.count == 0)
         printf("  (无已安装包，安装: pkg install /sdcard/pkg/*.rpk)\n");
 
     return OK;
@@ -1179,7 +1418,11 @@ int rpkg_info(const char *pkg_name)
         return -ENOENT;
     }
 
-    rpkg_db_path(path, sizeof(path), "%s.control", pkg_name);
+    /* 片上覆盖层优先，回落 ROM 预装层 */
+    if (rpkg_db_path(path, sizeof(path), "%s.control", pkg_name) != OK ||
+        fopen(path, "r") == NULL)
+        snprintf(path, sizeof(path), "%s/%s.control", PKG_ROM_DB_ROOT,
+                 pkg_name);
 
     FILE *f = fopen(path, "r");
     if (!f)
