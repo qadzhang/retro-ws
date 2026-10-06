@@ -676,6 +676,7 @@ tools/fonts/
 | 验收 | 四板 selftest 各 15/15 PASS（占用表 S3=34/CAM=26/C3=21 项与 hw 档案一致；EBUSY 脚 S3=GP2/GP38、CAM=GP25/GP33、C3=GP1/GP12）；ASAN+UBSan 本仓库代码零报错；glm53f 像素验收 4×12 张全 PASS（pico 回归 12/12 同批通过） |
 | 内存实测 | 双池模型（HARDWARE 12.3/12.5）：S3/S3N8/CAM 帧缓冲 76800B 驻 PSRAM、SRAM 只计内核 ~64KB+NSH栈 ~8KB+脚本堆 ~16KB+静态 0.7KB → 空闲 S3/S3N8 ~423.3KB、CAM ~307.3KB，PSRAM 池余 7.9/3.9MB；C3/Pico 无 PSRAM，fb 75KB 计 SRAM → 空闲 ~292.3/~156.3KB |
 | 板间差异落地 | wifi：S3/S3N8/CAM/C3 显示就绪状态、pico 拒绝；ps：双核板 Core0=程序/Core1=媒体（LCD_CAM/DAC1/PIO），C3 单核无 Core 标注；键盘：S3=USB HID、CAM=BLE HID、C3=UART 泵、pico=PIO-USB/UART；pkg arch=xtensa/riscv/arm |
+| a100d12 同步 | 输入法三层语义入模拟器：cmd_ime 对齐真命令面（on/off/status/autostart on|off，文案逐字同 cmd_ime_main.c；<拼音> 参数=键盘泵逐键 feed 模拟）；selftest IME 断言重组为 test_ime 口径（输入链候选/选字/回放 + 三层态 0x00 收起·直通返回0·调回 + 0x11 彻底退出 + autostart set/get 往返，CVBS_IME_CONF 编译期指向 /tmp/retro_sim/ime.conf——板上为 /opt/etc/ime.conf），总断言保持 15 行满屏；会话 12_ime 幕补 ime status（服务运行中/状态条/随系统启动可视化）；五板 selftest 15/15×5、ASAN 零报错×5、run_all 19 项 ALL PASS、verify 绿、glm53f 变更镜头 20/20 PASS |
 | 9447001 同步 | 会话扩至 14 幕：pkg list 镜像 rpkg_list 三列格式与两级 DB（ROM 预装 pico/c3=sysinfo、s3 系=8 包 GUI 应用；覆盖层空/nano 走 .rpk 后装）；run nosuch 报真实错误文案、run sysinfo 直链真 sysinfo_mod.c（板 CONFIG 快照编译，-Dmain 改名）；free 记 XIP arena（14.4：s3/s3n8/cam=128KB 入 .ext_ram.bss→PSRAM 池、c3=16KB/pico=8KB 入 SRAM）；固件体积（提交口径）pico 1155/c3 1569/cam 2111/s3·s3n8 2115KB |
 
 ---

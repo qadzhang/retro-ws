@@ -535,7 +535,7 @@ static void cmd_help(void)
     printf("  uname free ps ls cat echo clear\n");
     printf("  script <file>    运行 BASIC/JS 教学脚本\n");
     printf("  run <模块>       执行 ROM 预装模块（XIP, 14.5）\n");
-    printf("  ime on|off|<拼音> CCDOS 式输入法\n");
+    printf("  ime on|off|status|autostart  CCDOS 式输入法\n");
     printf("  gpio config|write|read|release <pin> [arg]\n");
     printf("  led on|off       板载指示灯（系统直控）\n");
     printf("  pkg list         ROM 预装包（两级 DB 合并）\n");
@@ -706,25 +706,62 @@ static void cmd_run(int argc, char **argv)
     sysinfo_mod_main(argc - 1, argv + 1);
 }
 
-static void cmd_ime(const char *arg)
+/* 三层语义对齐 src/nuttx/common/apps/system/cmd_ime_main.c（a100d12）：
+ * 默认不启动 -> ime on 常驻服务 -> Ctrl+Space(0x00) 调出/收起=中英
+ * 切换（收起态普通键直通）-> Ctrl+Q(0x11)/ime off 彻底退出；
+ * 其余参数 = 键盘键入模拟（对应真实键盘泵逐键 cvbs_ime_feed） */
+static void cmd_ime(int argc, char **argv)
 {
-    if (!arg || !*arg) {
-        printf("用法: ime on|off|<拼音>[候选序号]\n");
+    const char *sub = argc >= 2 ? argv[1] : NULL;
+
+    if (!sub || strcmp(sub, "help") == 0) {
+        printf("用法: ime on|off|status|autostart on|off\n");
+        printf("  on          启动输入法服务（底部常驻输入法条）\n");
+        printf("  off         彻底退出并释放状态条\n");
+        printf("  status      查看状态\n");
+        printf("  autostart   是否随系统启动（默认: 不启动）\n");
+        printf("组合键: Ctrl+Space 调出/收起输入法条（调出=中文/全角，\n");
+        printf("        收起=英文直通）/ Ctrl+Q 彻底退出\n");
         return;
     }
-    if (strcmp(arg, "on") == 0) {
+    if (strcmp(sub, "on") == 0) {
         cvbs_ime_enable(true);
-        printf("输入法已启动(底部状态条)\n");
+        printf("输入法服务已启动（Ctrl+Space 调出/收起，Ctrl+Q 退出）\n");
         return;
     }
-    if (strcmp(arg, "off") == 0) {
+    if (strcmp(sub, "off") == 0) {
         cvbs_ime_enable(false);
-        printf("输入法已关闭\n");
+        printf("输入法已退出，状态条已释放\n");
+        return;
+    }
+    if (strcmp(sub, "status") == 0) {
+        printf("输入法服务: %s\n",
+               cvbs_ime_active() ? "运行中" : "未启动");
+        if (cvbs_ime_active())
+            printf("状态条: %s\n", cvbs_ime_statusline());
+        printf("随系统启动: %s\n",
+               cvbs_ime_autostart_get() ? "开" : "关");
+        return;
+    }
+    if (strcmp(sub, "autostart") == 0) {
+        if (argc >= 3 && strcmp(argv[2], "on") == 0) {
+            int ret = cvbs_ime_autostart_set(true);
+            if (ret != 0)
+                printf("ime: 写配置失败(%d)，片上可写区未就绪?\n", ret);
+            else
+                printf("已设置随系统启动（/opt/etc/ime.conf）\n");
+        } else if (argc >= 3 && strcmp(argv[2], "off") == 0) {
+            cvbs_ime_autostart_set(false);
+            printf("已取消随系统启动（默认）\n");
+        } else {
+            printf("随系统启动: %s\n",
+                   cvbs_ime_autostart_get() ? "开" : "关");
+        }
         return;
     }
     if (!cvbs_ime_active())
         cvbs_ime_enable(true);
-    for (const char *p = arg; *p; p++)
+    for (const char *p = sub; *p; p++)
         cvbs_ime_feed((unsigned char)*p);
 }
 
@@ -762,6 +799,21 @@ static void self_check_f(const char *name, bool ok, const char *fmt, ...)
     vsnprintf(detail, sizeof(detail), fmt, ap);
     va_end(ap);
     self_check(name, ok, detail);
+}
+
+/* 状态条可见性：扫描 fb 末文字行（CELL_H=14）是否有墨迹——
+ * 中文条=整行反色有墨；收起/退出后恢复空正文行=全零。
+ * 调用前提：IME 段前已清屏，末行无正文/光标残留 */
+static bool ime_bar_visible(void)
+{
+    int w, h;
+    const uint8_t *fb = cvbs_console_fb(&w, &h);
+
+    for (int y = h - 14; y < h; y++)
+        for (int x = 0; x < w; x++)
+            if (fb[(size_t)y * w + x])
+                return true;
+    return false;
 }
 
 static void cmd_selftest(void)
@@ -854,9 +906,9 @@ static void cmd_selftest(void)
                  cvbs_console_rows() - 1 && y0 == cvbs_console_rows() - 1,
                  "y=%d", cvbs_console_cursor_y());
 
-    /* 10. IME：ni 候选 -> 选 '1' 提交 == 显示首候选（引擎一致性）。
-     * 注：词典多字条目受尾部截断逻辑约束，"ni" 的可达候选是
-     * "nin"单字"您"——断言校验显示/选字一致性而非特定汉字 */
+    /* 10. IME 输入链：ni 候选 -> 选 '1' == 显示首候选 -> 回车回放
+     * （三项合并一行；"ni" 的可达候选是 "nin"单字"您"——词典尾部
+     * 截断逻辑所致，断言校验显示/选字一致性而非特定汉字） */
     cvbs_ime_enable(true);
     cvbs_console_write("\033[2J\033[H", 7);
     cvbs_ime_feed('n');
@@ -864,20 +916,14 @@ static void cmd_selftest(void)
     sl = cvbs_ime_statusline();
     const char *cand[9];
     int ncand = cli_pinyin_candidates(cand, 9);
-    self_check_f("IME ni 候选非空",
-                 ncand > 0 && sl && strstr(sl, "1") != NULL,
-                 "n=%d bar=%s", ncand, sl ? sl : "(null)");
+    bool cand_ok = ncand > 0 && sl && strstr(sl, "1") != NULL;
     /* 快照首候选（cand 指向引擎 static 缓冲,选字后会被重写） */
-    char first_cand[16];
+    char first_cand[16] = "";
     if (ncand > 0)
         snprintf(first_cand, sizeof(first_cand), "%s", cand[0]);
     cvbs_ime_feed('1');
-    self_check_f("IME 选字==首候选",
-                 ncand > 0 &&
-                 strcmp(cli_pinyin_get_input(), first_cand) == 0,
-                 "cand=%s input=%s", first_cand,
-                 cli_pinyin_get_input());
-    /* 回放断言（内容无关）：回车后输入环收 committed 全字节 + '\n' */
+    bool sel_ok = ncand > 0 &&
+                  strcmp(cli_pinyin_get_input(), first_cand) == 0;
     char committed[16];
     snprintf(committed, sizeof(committed), "%s", cli_pinyin_get_input());
     size_t committed_len = strlen(committed);
@@ -887,12 +933,39 @@ static void cmd_selftest(void)
     for (size_t k = 0; k < committed_len && ring_ok; k++)
         ring_ok = cvbs_console_input_pop(&ic) == 1 && ic == committed[k];
     ring_ok = ring_ok && cvbs_console_input_pop(&ic) == 1 && ic == '\n';
-    self_check_f("IME 回车回放 UTF-8", ring_ok, "committed=%s",
-                 committed);
-    cvbs_ime_enable(false);
+    self_check_f("IME 输入链(候选/选字/回放)",
+                 cand_ok && sel_ok && ring_ok,
+                 "cand=%s input=%s", first_cand,
+                 cli_pinyin_get_input());
+
+    /* 11. IME 三层态（a100d12）：0x00 收起=英文直通（普通键 feed
+     * 返回 0 不消费、条释放）-> 0x00 调回中文条重现 -> 0x11 彻底
+     * 退出 active=false；条可见性以 fb 末文字行墨迹扫描为准 */
+    cvbs_ime_feed(0x00);                    /* 收起 = 英文直通 */
+    bool collapsed = strstr(cvbs_ime_statusline(), "英文") != NULL &&
+                     !ime_bar_visible();
+    int pass_thru = cvbs_ime_feed('a');     /* 收起态不消费 */
+    cvbs_ime_feed(0x00);                    /* 调回中文 */
+    bool recalled = strstr(cvbs_ime_statusline(), "拼音") != NULL &&
+                    ime_bar_visible();
+    cvbs_ime_feed(0x11);                    /* Ctrl+Q 彻底退出 */
+    bool exited = !cvbs_ime_active() && !ime_bar_visible();
+    self_check_f("IME 三层态(收起/直通/调回/退出)",
+                 collapsed && pass_thru == 0 && recalled && exited,
+                 "pass=%d", pass_thru);
+
+    /* 12. IME autostart 往返（CVBS_IME_CONF 编译期指向宿主可写
+     * 路径；板上为 /opt/etc/ime.conf——语义同 test_ime.c） */
+    bool as_def = !cvbs_ime_autostart_get();
+    int as_set = cvbs_ime_autostart_set(true);
+    bool as_on = as_set == 0 && cvbs_ime_autostart_get();
+    int as_clr = cvbs_ime_autostart_set(false);
+    bool as_off = as_clr == 0 && !cvbs_ime_autostart_get();
+    self_check_f("IME autostart 往返", as_def && as_on && as_off,
+                 "set=%d clr=%d", as_set, as_clr);
     put("\033[2J\033[H");              /* 清 IME 上屏残留,归零光标 */
 
-    /* 11. BASIC 引擎（真实 my_basic 源码；静默捕获只进断言缓冲） */
+    /* 13. BASIC 引擎（真实 my_basic 源码；静默捕获只进断言缓冲） */
     g_cap_silent = true;
     cap_begin();
     r = run_script("board_demo.bas");
@@ -903,7 +976,7 @@ static void cmd_selftest(void)
                  strstr(g_lastcap, "count 5") != NULL,
                  "ret=%d", r);
 
-    /* 12. JS 引擎（真实 duktape 源码；静默捕获同上） */
+    /* 14. JS 引擎（真实 duktape 源码；静默捕获同上） */
     g_cap_silent = true;
     cap_begin();
     r = run_script("board_demo.js");
@@ -986,7 +1059,7 @@ static void dispatch(char *line)
     } else if (strcmp(argv[0], "script") == 0 && argc >= 2) {
         run_script(argv[1]);
     } else if (strcmp(argv[0], "ime") == 0 && argc >= 2) {
-        cmd_ime(argv[1]);
+        cmd_ime(argc, argv);
     } else if (strcmp(argv[0], "gpio") == 0) {
         cmd_gpio(argc, argv);
     } else if (strcmp(argv[0], "led") == 0) {

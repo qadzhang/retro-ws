@@ -35,6 +35,7 @@ shot 11_run
 clear
 ime on
 ime shijie
+ime status
 shot 12_ime
 ime 1
 shot 13_commit

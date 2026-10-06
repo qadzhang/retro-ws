@@ -135,6 +135,7 @@ for b in $BOARDS; do
         "$ROOT/src/nuttx/common/apps/pkg_mods/sysinfo_mod.c" \
         -o "/tmp/lvgl_obj/sysinfo_$b.o"
     gcc -Wall -Wextra -g -DCONFIG_RETRO_PINYIN_CLI=1 "-D$BDEF=1" \
+        -DCVBS_IME_CONF="\"/tmp/retro_sim/ime.conf\"" \
         -I "$ROOT/tests/host/stubs" \
         -I "$ROOT/src/nuttx/common" -I "$ROOT/src/nuttx/common/driver" \
         -I "$BINC" \
