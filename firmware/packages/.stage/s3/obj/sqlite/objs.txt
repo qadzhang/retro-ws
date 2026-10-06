@@ -1,2 +1,0 @@
-/home/user/retro-ws/firmware/packages/.stage/s3/obj/sqlite/firmware_packages_pkgs_sqlite_module.c.o
-/home/user/retro-ws/firmware/packages/.stage/s3/obj/sqlite/src_lvgl_app_app_sqlite.c.o

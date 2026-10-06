@@ -1,2 +1,0 @@
-minesweeper_create
-retro_gui_app_info

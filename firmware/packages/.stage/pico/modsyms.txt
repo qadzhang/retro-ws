@@ -1,3 +1,0 @@
-main 0x101190c4
-__printf_veneer 0x10119118
-TEXT_BASE 0x10119000

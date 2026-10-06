@@ -1,2 +1,0 @@
-/home/user/retro-ws/firmware/packages/.stage/s3n8/obj/recorder/firmware_packages_pkgs_recorder_module.c.o
-/home/user/retro-ws/firmware/packages/.stage/s3n8/obj/recorder/src_lvgl_app_app_recorder.c.o

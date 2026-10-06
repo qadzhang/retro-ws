@@ -26,3 +26,6 @@ apps-extra/*/src/
 # 语法矩阵生成层（check_syntax.sh 每次重建）/ generated realinc layer
 tests/host/realinc/
 deps/lv_conf.h
+
+# ROM 应用构建工作区（build_romapps.sh 生成物，2026-10-06）
+firmware/packages/.stage/

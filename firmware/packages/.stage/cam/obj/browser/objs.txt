@@ -1,2 +1,0 @@
-/home/user/retro-ws/firmware/packages/.stage/cam/obj/browser/firmware_packages_pkgs_browser_module.c.o
-/home/user/retro-ws/firmware/packages/.stage/cam/obj/browser/src_lvgl_app_app_browser.c.o
