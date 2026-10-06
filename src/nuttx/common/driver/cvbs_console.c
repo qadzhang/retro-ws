@@ -1029,9 +1029,10 @@ static int cvbs_input_task(int argc, char *argv[])
             for (ssize_t i = 0; i < n; i++) {
                 unsigned char ch = (unsigned char)buf[i];
 
-                /* CCDOS 式 IME：激活时键先喂输入法（Ctrl+Space=0x00
-                 * 中英切换 / Ctrl+Q=0x11 关闭——IME 内处理），IME
-                 * 消费的键不再进入终端输入流 */
+                /* CCDOS 式 IME：服务运行时键先喂输入法（Ctrl+Space=
+                 * 0x00 调出/收起输入法条=中英 / Ctrl+Q=0x11 彻底退出
+                 * ——IME 内处理；收起态普通键 feed 返回 0 直通终端），
+                 * IME 消费的键不再进入终端输入流 */
                 if (cvbs_ime_active() && cvbs_ime_feed(ch))
                     continue;
 

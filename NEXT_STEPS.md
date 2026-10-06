@@ -78,7 +78,7 @@ c3（合宙核心板 CLI 档）、pico（本地教学终端 CLI 档）。
 | 19 | UCBLogo NuttX 适配 | 核对 src/*.c 文件清单、终端 IO（-termios/textscreen 依赖需换 NSH stdin/stdout）、Makefile 通配符改显式列表 |
 | ~~19a~~ | ~~retro_gpio 后端验证~~ 已完成(2026-10-05 全关) | ioctl 按真实头修正 + 占用拦截宿主测试全绿（10-04）；五板 defconfig 已按芯片能力开 DEV_GPIO/ADC/PWM（S3 全三件、CAM GPIO+LEDC、C3 GPIO、Pico 全三件——ESP32/C3 芯片层无 ADC/PWM lower half）；剩实机点灯/读值 |
 | ~~19b~~ | ~~WindowMaker 外壳编译验证~~ 已完成(2026-10-04) | 真实 LVGL9.5 头语法矩阵 + 无头模拟渲染（两种外壳截图 + glm 视觉审查）通过；剩实机 Dock/根菜单操作验证 |
-| ~~20~~ | ~~CLI `ime` 命令~~ 已完成(2026-10-05) | CCDOS 式：ime on 底部常驻反色条（cvbs_ime.c）+ Ctrl+Space 切换 + Ctrl+Q 退出；宿主 38 检查 + glm53f 验收 pass |
+| ~~20~~ | ~~CLI `ime` 命令~~ 已完成(2026-10-05；2026-10-06 三层语义修订) | CCDOS 式：ime on 底部常驻反色条（cvbs_ime.c）+ Ctrl+Q 退出；Ctrl+Space 原为单纯中英切换，2026-10-06 定稿为"调出/收起输入法条"（调出=中文/全角，收起=英文直通透传）+ `ime autostart` 自启配置（默认关）；宿主 45 检查 pass |
 | 20a | GUI 词组完整上屏 | 候选机制现为单字（词组取首字）；升级 candidates 为码点串以整词上屏（你好）；CLI 侧已整词 |
 | 21 | GUI 输入法系统服务化 | 文本框焦点驱动自动唤起候选条（app_pinyin.c 与 desktop.c 集成） |
 | ~~22~~ | ~~LVGL PC 模拟器~~ 已完成(2026-10-04) | tools/sim/build.sh：无头 LVGL9.5 + 真实 desktop/wmaker/i18n 渲染出图；含 cvbs_pipeline 全链路波形验证 |

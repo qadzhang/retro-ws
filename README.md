@@ -296,7 +296,7 @@ cd scripts/esp32s3 && ./nuttx_build.sh defconfig && ./build.sh nuttx && ./build.
 | 拼音输入法 | app_pinyin.c | 557 | 完成 |
 | 多语种框架 | i18n.c | 493 | 完成 |
 | Logo 海龟画图 | logo/ | ~400 | 完成 |
-| 扫雷游戏 | desktop.c | 内嵌 | 完成 |
+| 扫雷游戏 | app_minesweeper.c | ~90 | 完成（.rpk 预装包，2026-10-06 应用/系统分离） |
 | 文件管理器 | desktop.c | 内嵌 | 完成 |
 | 控制面板 | desktop.c | 内嵌 | 完成 |
 
@@ -461,8 +461,7 @@ retro-ws/
 |   +-- firmware/          # 五板固件统一构建入口
 |   |   +-- build_firmware.sh   # <s3|s3n8|cam|c3|pico|all>
 |   |   +-- prepare_esp_hal.sh  # NuttX esp-hal 准备
-|   +-- build_romapps.sh        # ROM 应用模块构建（.rmo/.rpk/镜像/两遍链接）
-|   +-- gen_romsymtab.py        # 动态档符号表生成（tools/）
+|   +-- build_romapps.sh        # ROM 应用模块构建（.rmo/镜像/两遍链接/离线安装）
 |   +-- esp32s3/           # ESP32-S3 编译脚本（旧入口）
 |   |   +-- build.sh
 |   |   +-- nuttx_build.sh
@@ -487,6 +486,8 @@ retro-ws/
 |   +-- fonts/            # 字体文件
 |   +-- sim/              # LVGL 无头模拟器 + CVBS 全链路管线
 |   |                   #   + 五板 CLI 交互模拟器（board_cli_sim）
+|   +-- gen_pkgdb.py      # 构建期离线安装（db/ 预装数据库生成）
+|   +-- gen_romsymtab.py  # 动态档符号表生成（RAM 窗口档备用）
 +-- configs/               # 配置文件
 |   +-- nuttx-defconfig           # NuttX 内核配置
 |   +-- nuttx-defconfig-combined  # 组合配置

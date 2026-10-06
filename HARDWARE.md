@@ -1014,7 +1014,7 @@ USB 网卡（ASIX AX88772 等）= USB 设备 + 以太网 MAC/PHY 桥接芯片，
 
 | 分区 | 内容 | 可写性 | 说明 |
 |------|------|--------|------|
-| 固件区 | nuttx.bin（内核 + builtin + ROMFS 板级脚本） | 只读（烧录写入） | S3/CAM/C3 经 esptool 分区表烧录；Pico 固件占 flash 头部（UF2） |
+| 固件区 | nuttx.bin（内核+驱动+系统 builtin + ROMFS 板级脚本 + **ROM 包存储 /rom/pkg**：bin/ .rmo XIP 载荷 + db/ 预装数据库，2026-10-06 应用/系统分离，见 14 章） | 只读（烧录写入） | S3/CAM/C3 经 esptool 分区表烧录；Pico 固件占 flash 头部（UF2） |
 | **片上数据区** | littlefs，挂载点 **`/opt`** | **可写** | 固件区之后的剩余 flash：系统包安装位（`/opt/bin`、`/opt/share/<包>`）、包数据库（`/opt/var/lib/rpkg`）、系统配置（`/opt/etc`：crontab/boot.cfg/lang.conf/**network.conf**——WiFi 凭据+dhcp|static 固定 IP）、重启计数（`/opt/var/log/reboot.log`，安全模式判定用）、用户数据（`/opt/home`）、BLE bond（`/opt/var/ble_bond.dat`）——**无 SD 卡时系统完整可用** |
 | SD 卡（可选硬件） | FAT32，`/sdcard` | 可写 | 大容量扩展：第三方包默认根（`/sdcard/apps`）、用户脚本库 |
 

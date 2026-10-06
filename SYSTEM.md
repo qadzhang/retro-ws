@@ -392,6 +392,10 @@ DENY  inbound ICMP (ping)
   未来 BLE HID）经 common hid_ascii.c（HID 键码→ASCII 纯函数，按下沿差分）
   直喂输入环，与 UART 泵共用同一道 IME 门控；串口泵在 C3 为 BLE 就绪前
   的过渡、在 Pico 为唯一路线（无蓝牙/无 USB 主机）
+- **IME 三层语义**（2026-10-06 定稿，cvbs_ime.c）：默认不启动 →
+  `ime on` 常驻服务 → Ctrl+Space 调出/收起输入法条（调出=中文/全角，
+  收起=英文直通键透传）→ Ctrl+Q/`ime off` 彻底退出；
+  `ime autostart on|off` 自启配置（默认关，/opt/etc/ime.conf）
 
 ### 2C. 总线兼容层 / 脚本 ROM（2026-10-04 晚）
 - common/driver/retro_bus.[ch]：I2C/SPI/UART machine 风格（硬后端探测 + 位摆软回退）+ retro_bus_{bas,berry,js}.c
@@ -401,7 +405,9 @@ DENY  inbound ICMP (ping)
   2026-10-05 起 nano 出 ROM 转 .rpk 包（apps-extra/nano），本垫片随包构建复用
 
 ### 2D. 内置程序（2026-10-04 晚）
-- Application.mk PROGNAME/MAINSRC 配对注册：retro_boot(init)、script、pkg、sysinfo、shell、ime
+- Application.mk PROGNAME/MAINSRC 配对注册：retro_boot(init)、script、pkg、
+  run（ROM 模块入口，2026-10-06）、shell、ime；sysinfo 出固件改为 .rpk
+  预装包（`run sysinfo`；无 PKG_STORE 裁剪档回退 builtin）
 - src/nuttx/common/apps/system/cmd_*_main.c：薄壳 main → cmd_*()
 - 系统编辑器 vi 为 nuttx-apps 内置（CONFIG_SYSTEM_VI）；nano 为 .rpk 包（不占 builtin）
 
@@ -439,7 +445,8 @@ DENY  inbound ICMP (ping)
   **应用软件全部 .rpk 包化**（editor/browser/terminal/player/recorder/sqlite/
   minesweeper/sysinfo；GPL 组件 nano/ucblogo 仍走 SD 卡包通道）
 - 板级默认名单 firmware/packages/<板>.list -> build_romapps.sh 编 .rmo 模块 +
-  打 .rpk + mkromfs 树镜像（pkg_romfs.c，4096 对齐入可执行 flash 段）
+  mkromfs 树镜像（pkg_romfs.c，bin/ 载荷 4096 对齐入可执行 flash 段；
+  gen_pkgdb.py 离线安装 db/ 随镜像分发）
 - 静态绑定档两遍构建（pass0 定槽 pad -> 固件 pass1 定地址 -> defsym 烘焙重链
   落槽 -> pass2 收口；重定位归零、镜像布局一次收敛，详见 HARDWARE 14.3）
 - rommod.c 装载：RO 段 flash 原址执行零拷贝，RW 段直拷 arena 固定槽；
@@ -448,7 +455,9 @@ DENY  inbound ICMP (ping)
   到位）：名单包在编译 ROM 时生成 db/ 预装数据库随镜像分发，首启零
   安装动作；pkg_manager 两级 DB（ROM 预装层 + 片上覆盖层/墓碑）；
   CLI `run <名>` / GUI 桌面注册表（desktop.c 按两级 DB 的 Type: gui 包
-  动态装配图标，末窗关闭卸载）
+  动态装配图标，末窗关闭卸载）；模块 ABI = retro_gui_app_info 描述符
+  （src/lvgl/app/retro_app_module.h）+ retro_desk_win_create 桌面窗口
+  API（desktop_api.h 导出，rom_keep 符号保持器保障 gc 不回收）
 
 ## 网络架构
 
