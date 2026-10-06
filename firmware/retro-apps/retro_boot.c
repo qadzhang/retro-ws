@@ -87,6 +87,18 @@ int retro_boot_main(int argc, char *argv[])
     }
 #endif
 
+#ifdef CONFIG_RETRO_PINYIN_CLI
+    /* CLI 输入法自启（默认不启动）：`ime autostart on` 写入
+     * /opt/etc/ime.conf 后随系统启动（三层语义，2026-10-06） */
+    {
+        extern bool cvbs_ime_autostart_get(void);
+        extern void cvbs_ime_enable(bool on);
+
+        if (cvbs_ime_autostart_get())
+            cvbs_ime_enable(true);
+    }
+#endif
+
 #ifdef CONFIG_RETRO_PKG_STORE
     /* 符号保持器 gc 根链：模块所需而固件无引用的符号（rom_keep.c，
      * stage 生成）登记进 rommod 形成引用（调用不可折叠，比较会被

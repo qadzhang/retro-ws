@@ -384,7 +384,7 @@ DENY  inbound ICMP (ping)
 
 共用：common/driver/cvbs_core.c（行长运行时可配 + 单行 API）、drv_cvbs.c（weak emit_line/frame 供板覆盖）。
 
-### 2B. /dev/cvbscon 字符控制台（2026-10-04 晚）
+### 2B. /dev/cvbscon 字符控制台（2026-10-04 晚；2026-10-06 IME 三层语义）
 - common/driver/cvbs_console.c：UTF-8 点阵渲染 + ANSI/CSI 子集 + 可见光标 + 输入环 + poll 等待队列 + TIOCGWINSZ
 - UART 键盘泵（avkbin 任务）→ NSH 经 CONFIG_NSH_CONDEV=/dev/cvbscon 跑 AV 屏（C3/Pico）
 - **输入多源化（2026-10-05，输入优先级原则 USB > 蓝牙 > 串口）**：
@@ -602,6 +602,7 @@ cd scripts/esp32s3 && ./build.sh nuttx     # 或 esp32cam / esp32c3
 | Cron | common/driver/cron.c | 739 | 完成 |
 | RTC 驱动 | common/driver/drv_rtc.c | 538 | 完成 |
 | 拼音输入法驱动 | common/driver/drv_pinyin.c | 1014 | 完成 |
+| CCDOS 输入法（三层语义+自启） | common/driver/cvbs_ime.c | ~210 | 完成（默认不启动；Ctrl+Space 调出/收起=中英；Ctrl+Q/ime off 退出；ime autostart 配置随系统启动） |
 | 媒体播放器驱动 | common/driver/drv_player.c | 549 | 完成 |
 | 录音机驱动 | common/driver/drv_recorder.c | 518 | 完成 |
 | SQLite 驱动 | common/driver/drv_sqlite.c | 995 | 完成 |

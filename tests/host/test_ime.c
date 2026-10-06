@@ -14,7 +14,8 @@
  * WHEN : 2026-10-05 新增
  * HOW  : 宿主直链 console+pinyin+ime；断言：条占用后滚动不侵入末行、
  *        statusline 含拼音与候选、feed 数字后正文出现 UTF-8 汉字、
- *        Enter 后输入环收到 整行+\n、0x00 切模式、0x11 关闭释放条
+ *        Enter 后输入环收到 整行+\n、0x00 调出/收起（中英=显隐，
+ *        收起态普通键直通返回 0）、0x11 彻底退出、autostart 读写
  */
 
 #include <stdio.h>
@@ -101,13 +102,14 @@ static void test_ime_basic(void)
     CHECK_EQ_INT(c, '\n');
     CHECK_EQ_INT(cvbs_console_input_pop(&c), 0);     /* 环空 */
 
-    /* 5) Ctrl+Space(0x00)：切英文 -> 条显示英文直通 */
+    /* 5) Ctrl+Space(0x00)：切英文=收起条 -> 普通键纯直通（返回 0） */
     CHECK_EQ_INT(cvbs_ime_feed(0x00), 1);
     CHECK(strstr(cvbs_ime_statusline(), "英文") != NULL);
-    CHECK_EQ_INT(cvbs_ime_feed('a'), 1);             /* 直通进行缓冲 */
-    CHECK(strstr(cli_pinyin_get_input(), "a") != NULL);
-    CHECK_EQ_INT(cvbs_ime_feed('\b'), 1);            /* 退格消 a */
-    CHECK_EQ_INT(cli_pinyin_get_input_len(), 0);
+    CHECK(!statusbar_row_blank());                   /* 条已收起 */
+    CHECK_EQ_INT(cvbs_ime_feed('a'), 0);             /* 直通：不消费 */
+    CHECK_EQ_INT(cvbs_ime_feed(0x00), 1);            /* 调回中文=条重现 */
+    CHECK(statusbar_row_blank());
+    CHECK(strstr(cvbs_ime_statusline(), "拼音") != NULL);
 
     /* 6) Ctrl+Q(0x11)：关闭并释放状态条（末行恢复黑） */
     CHECK_EQ_INT(cvbs_ime_feed(0x11), 1);
@@ -138,10 +140,24 @@ static void test_ime_scroll_protect(void)
     CHECK(!statusbar_row_blank());
 }
 
+/*
+ * 自启动配置：写->读真；关->读假且文件删除；默认（无文件）假
+ */
+static void test_ime_autostart(void)
+{
+    CHECK(!cvbs_ime_autostart_get());                /* 默认不启动 */
+    CHECK_EQ_INT(cvbs_ime_autostart_set(true), 0);
+    CHECK(cvbs_ime_autostart_get());
+    CHECK_EQ_INT(cvbs_ime_autostart_set(false), 0);
+    CHECK(!cvbs_ime_autostart_get());
+    CHECK_EQ_INT(cvbs_ime_autostart_set(false), 0);  /* 幂等删 */
+}
+
 int main(void)
 {
     test_ime_basic();
     test_ime_scroll_protect();
+    test_ime_autostart();
     cvbs_core_fb_free();
 
     printf("test_ime: %d checks, %d failed\n",

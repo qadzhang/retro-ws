@@ -712,3 +712,12 @@ _最后更新: 2026-10-06（ESP32 系列四板 CLI 模拟验收 + free 双池内
       漂移（pad 到 align(size+4096,4096)，落槽断言）；符号保持器
       （rom_keep.c，gc 根链）；跨模块符号表（recorder->player 同款）；
       CONFIG_XTENSA_EXTMEM_BSS（arena 入 PSRAM）
+## 2026-10-06（同日晚）CLI 输入法三层语义 + 自启动
+
+- [x] cvbs_ime 三层模型（用户定稿）：默认不启动 -> `ime on` 启动常驻
+      服务 -> Ctrl+Space 调出/收起输入法条（调出=中文/全角输入，收起=
+      英文直通、普通键透传终端、组合键驻留）-> Ctrl+Q/`ime off` 彻底退出
+- [x] `ime autostart on|off` 自启动配置（默认关，/opt/etc/ime.conf；
+      retro_boot 启动期读取）；`ime status` 显示服务/自启双状态
+- [x] test_ime 适配新语义 + 新增收起直通/调出往返/autostart 读写用例
+      （45 项 0 失败）；宿主 19 项套件 ALL PASS；五板重编绿

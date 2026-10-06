@@ -14,9 +14,9 @@
  * WHO  : cvbs_console 键盘泵（拦截）、NSH `ime` 命令（开关）
  * WHERE: retro-ws/src/nuttx/common/driver/cvbs_ime.h
  * WHEN : 2026-10-05 新增
- * HOW  : 组合键（UART 字节流）：Ctrl+Space=0x00 中英切换、
- *        Ctrl+Q=0x11 关闭 IME 释放状态条；数字 1-9 选字、空格=?
- *        （空格保留给终端）、Enter=首选上屏+行结束
+ * HOW  : 组合键（UART 字节流）：Ctrl+Space=0x00 调出/收起输入法条
+ *        （调出=中文/全角输入；收起=英文直通、键透传终端）、
+ *        Ctrl+Q=0x11 彻底退出释放状态条；数字 1-9 选字、Enter=行结束
  */
 
 #ifndef __CVBS_IME_H
@@ -39,5 +39,12 @@ int  cvbs_ime_feed(int ch);
 
 /* 条文本（调试/测试断言用）：'拼音[ni] 1你 2尼...' / '英文' / '中文' */
 const char *cvbs_ime_statusline(void);
+
+/*
+ * 自启动配置（默认不启动；`ime autostart on` 写 /opt/etc/ime.conf，
+ * retro_boot 启动期查询——存在 autostart=1 即 ime on）
+ */
+bool cvbs_ime_autostart_get(void);
+int  cvbs_ime_autostart_set(bool on);
 
 #endif /* __CVBS_IME_H */

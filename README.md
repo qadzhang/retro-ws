@@ -73,8 +73,10 @@ cvbs_console（12px 点阵、半角 6px/全角 12px 半格网格，半角与全�
 | ![GUI 输入法](docs/screenshots/ime_win95.png) | 见上图控制台截图底部反色条 |
 
 - **GUI**：文本框聚焦自动唤起；键盘 `nihao` → 候选 `1.你 2.您`，数字键选字
-- **CLI**：`ime on` 屏幕最下方出现常驻反色输入法条（占末行、正文照常滚动）；
-  `Ctrl+Space` 中英切换、`Ctrl+Q` 退出释放；Enter 整行回放给终端
+- **CLI**（三层语义，默认不启动）：`ime on` 启动常驻输入法服务（屏幕底部
+  反色输入法条）；`Ctrl+Space` 调出/收起输入法条——调出=中文/全角输入，
+  收起=英文直通（键透传终端）；`Ctrl+Q` 或 `ime off` 彻底退出释放；
+  `ime autostart on|off` 配置是否随系统启动（默认关，/opt/etc/ime.conf）
 
 > 截图再生成：`bash tools/sim/build.sh && /tmp/retro_sim/lvgl_sim_color
 > && /tmp/retro_sim/console_sim`（宿主机渲染管线，与固件同一份 UI 源码）；

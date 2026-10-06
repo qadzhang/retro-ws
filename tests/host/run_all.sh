@@ -187,8 +187,9 @@ else
     echo ">>> FAIL (see /tmp/ra3d.log)"; FAIL=1
 fi
 
-step "build+unit CCDOS 输入法（状态条/选字/回放/组合键）"
+step "build+unit CCDOS 输入法（状态条/选字/回放/组合键/自启）"
 if $CC -Wall -Wextra $SAN -DCONFIG_RETRO_PINYIN_CLI=1 \
+      -DCVBS_IME_CONF="\"/tmp/retro_test/ime.conf\"" \
       -I "$STUBS" -I "$DRVINC" -I "$ROOT/src/lvgl/fonts" -I /tmp/fontbridge \
       "$ROOT/tests/host/test_ime.c" \
       "$DRVINC/cvbs_ime.c" "$DRVINC/cvbs_console.c" "$DRVINC/cvbs_core.c" \
